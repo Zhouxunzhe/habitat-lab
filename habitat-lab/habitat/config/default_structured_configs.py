@@ -50,6 +50,7 @@ __all__ = [
     "EmptyActionConfig",
     "ArmActionConfig",
     "BaseVelocityActionConfig",
+    "BaseVelocityNonCylinderActionConfig",
     "HumanoidJointActionConfig",
     "HumanoidPickActionConfig",
     "RearrangeStopActionConfig",
@@ -294,6 +295,16 @@ class BaseVelocityNonCylinderActionConfig(ActionConfig):
     enable_lateral_move: bool = False
     # If the condition of sliding includs the checking of rotation
     enable_rotation_check_for_dyn_slide: bool = True
+    # If we want to do leg animation or not
+    animate_leg: bool = True
+    # Leg animation checkpoint file
+    leg_animation_checkpoint: str = (
+        "data/robots/spot_data/spot_walking_trajectory.csv"
+    )
+    # The play step interval of the leg animation
+    play_i_perframe: int = 5
+    # The start and end frames of the leg animation data
+    use_range: Optional[List[int]] = field(default_factory=lambda: [107, 863])
 
 
 @dataclass
@@ -351,7 +362,7 @@ class OracleNavActionConfig(ActionConfig):
     dist_thresh: float = 0.2
     lin_speed: float = 10.0
     ang_speed: float = 10.0
-    allow_dyn_slide: bool = True
+    allow_dyn_slide: bool = False
     allow_back: bool = True
     spawn_max_dist_to_obj: float = 2.0
     num_spawn_attempts: int = 200
@@ -359,12 +370,36 @@ class OracleNavActionConfig(ActionConfig):
     # between the robot and the human and decide if the human wants to walk or not
     human_stop_and_walk_to_robot_distance_threshold: float = -1.0
 
+    # For BaseVelocityNonCylinderAction
+    longitudinal_lin_speed: float = 10.0
+    lateral_lin_speed: float = 10.0
+    # There is a collision if the difference between the clamped NavMesh position and target position
+    # is more than collision_threshold for any point.
+    collision_threshold: float = 1e-5
+    # The x and y locations of the clamped NavMesh position
+    navmesh_offset: Optional[List[List[float]]] = None
+    # If we allow the robot to move laterally.
+    enable_lateral_move: bool = False
+    # If the condition of sliding includs the checking of rotation
+    enable_rotation_check_for_dyn_slide: bool = True
+    # If we want to do leg animation or not
+    animate_leg: bool = True
+    # Leg animation checkpoint file
+    leg_animation_checkpoint: str = (
+        "data/robots/spot_data/spot_walking_trajectory.csv"
+    )
+    # The play step interval of the leg animation
+    play_i_perframe: int = 5
+    # The start and end frames of the leg animation data
+    use_range: Optional[List[int]] = field(default_factory=lambda: [107, 863])
+
 
 @dataclass
 class SelectBaseOrArmActionConfig(ActionConfig):
     r"""
     In rearrangement tasks only, if the robot calls this action, the task will end.
     """
+
     type: str = "SelectBaseOrArmAction"
 
 

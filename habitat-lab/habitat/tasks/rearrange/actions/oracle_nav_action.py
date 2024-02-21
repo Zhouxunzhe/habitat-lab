@@ -12,6 +12,7 @@ from habitat.articulated_agent_controllers import HumanoidRearrangeController
 from habitat.core.registry import registry
 from habitat.tasks.rearrange.actions.actions import (
     BaseVelAction,
+    BaseVelNonCylinderAction,
     HumanoidJointAction,
 )
 from habitat.tasks.rearrange.utils import place_agent_at_dist_from_pos
@@ -20,7 +21,7 @@ from habitat_sim.physics import VelocityControl
 
 
 @registry.register_task_action
-class OracleNavAction(BaseVelAction, HumanoidJointAction):
+class OracleNavAction(BaseVelNonCylinderAction, HumanoidJointAction):
     """
     An action that will convert the index of an entity (in the sense of
     `PddlEntity`) to navigate to and convert this to base/humanoid joint control to move the
@@ -30,11 +31,15 @@ class OracleNavAction(BaseVelAction, HumanoidJointAction):
     a joint control.
     """
 
-    def __init__(self, *args, task, **kwargs):
+    def __init__(self, *args, **kwargs):
         config = kwargs["config"]
+        task = kwargs["task"]
         self.motion_type = config.motion_control
         if self.motion_type == "base_velocity":
             BaseVelAction.__init__(self, *args, **kwargs)
+
+        elif self.motion_type == "base_velocity_non_cylinder":
+            BaseVelNonCylinderAction.__init__(self, *args, **kwargs)
 
         elif self.motion_type == "human_joints":
             HumanoidJointAction.__init__(self, *args, **kwargs)
@@ -230,6 +235,28 @@ class OracleNavAction(BaseVelAction, HumanoidJointAction):
                 BaseVelAction.step(self, *args, **kwargs)
                 return
 
+            elif self.motion_type == "base_velocity_non_cylinder":
+                if not at_goal:
+                    if dist_to_final_nav_targ < self._config.dist_thresh:
+                        # Look at the object
+                        vel = OracleNavAction._compute_turn(
+                            rel_pos, self._config.turn_velocity, robot_forward
+                        )
+                    elif angle_to_target < self._config.turn_thresh:
+                        # Move towards the target
+                        vel = [self._config.forward_velocity, 0]
+                    else:
+                        # Look at the target waypoint.
+                        vel = OracleNavAction._compute_turn(
+                            rel_targ, self._config.turn_velocity, robot_forward
+                        )
+                else:
+                    vel = [0, 0]
+                    self.skill_done = True
+                kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
+                BaseVelNonCylinderAction.step(self, *args, **kwargs)
+                return
+
             elif self.motion_type == "human_joints":
                 # Update the humanoid base
                 self.humanoid_controller.obj_transform_base = base_T
@@ -249,9 +276,9 @@ class OracleNavAction(BaseVelAction, HumanoidJointAction):
                     self.skill_done = True
 
                 base_action = self.humanoid_controller.get_pose()
-                kwargs[
-                    f"{self._action_arg_prefix}human_joints_trans"
-                ] = base_action
+                kwargs[f"{self._action_arg_prefix}human_joints_trans"] = (
+                    base_action
+                )
 
                 HumanoidJointAction.step(self, *args, **kwargs)
                 return
@@ -262,17 +289,21 @@ class OracleNavAction(BaseVelAction, HumanoidJointAction):
 
 
 @registry.register_task_action
-class OracleNavCoordinateAction(BaseVelAction, HumanoidJointAction):  # type: ignore
+class OracleNavCoordinateAction(BaseVelNonCylinderAction, HumanoidJointAction):  # type: ignore
     """
     An action to drive the anget to a given coordinate
     """
 
-    def __init__(self, *args, task, **kwargs):
+    def __init__(self, *args, **kwargs):
         config = kwargs["config"]
+        task = kwargs["task"]
         self.motion_type = config.motion_control
         self._targets = {}
         if self.motion_type == "base_velocity":
             BaseVelAction.__init__(self, *args, **kwargs)
+
+        elif self.motion_type == "base_velocity_non_cylinder":
+            BaseVelNonCylinderAction.__init__(self, *args, **kwargs)
 
         elif self.motion_type == "human_joints":
             HumanoidJointAction.__init__(self, *args, **kwargs)
@@ -477,6 +508,30 @@ class OracleNavCoordinateAction(BaseVelAction, HumanoidJointAction):  # type: ig
                 kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
                 return BaseVelAction.step(self, *args, **kwargs)
 
+            elif self.motion_type == "base_velocity_non_cylinder":
+                if not at_goal:
+                    if dist_to_final_nav_targ < self._config.dist_thresh:
+                        # Look at the object
+                        vel = OracleNavAction._compute_turn(
+                            rel_pos,
+                            self._config.turn_velocity,
+                            robot_forward,
+                        )
+                    elif angle_to_target < self._config.turn_thresh:
+                        # Move towards the target
+                        vel = [self._config.forward_velocity, 0]
+                    else:
+                        # Look at the target waypoint.
+                        vel = OracleNavAction._compute_turn(
+                            rel_targ,
+                            self._config.turn_velocity,
+                            robot_forward,
+                        )
+                else:
+                    vel = [0, 0]
+                kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
+                return BaseVelNonCylinderAction.step(self, *args, **kwargs)
+
             elif self.motion_type == "human_joints":
                 # Update the humanoid base
                 self.humanoid_controller.obj_transform_base = base_T
@@ -502,9 +557,9 @@ class OracleNavCoordinateAction(BaseVelAction, HumanoidJointAction):  # type: ig
                 # This line is important to reset the controller
                 self._update_controller_to_navmesh()
                 base_action = self.humanoid_controller.get_pose()
-                kwargs[
-                    f"{self._action_arg_prefix}human_joints_trans"
-                ] = base_action
+                kwargs[f"{self._action_arg_prefix}human_joints_trans"] = (
+                    base_action
+                )
 
                 return HumanoidJointAction.step(self, *args, **kwargs)
             else:
