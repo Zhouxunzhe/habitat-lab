@@ -256,6 +256,12 @@ class ObjectSampler:
                 sim.pathfinder, sim, allow_outdoor=False
             )
 
+        rec_up_global = (
+            receptacle.get_global_transform(sim)
+            .transform_vector(receptacle.up)
+            .normalized()
+        )
+
         while num_placement_tries < self.max_placement_attempts:
             num_placement_tries += 1
 
@@ -264,7 +270,7 @@ class ObjectSampler:
                 receptacle.sample_uniform_global(
                     sim, self.sample_region_ratio[receptacle.name]
                 )
-                + self._translation_up_offset * receptacle.up
+                + self._translation_up_offset * rec_up_global
             )
 
             # instance the new potential object from the handle
@@ -294,7 +300,7 @@ class ObjectSampler:
             if isinstance(receptacle, OnTopOfReceptacle):
                 snap_down = False
             if snap_down:
-                support_object_ids = [-1]
+                support_object_ids = [habitat_sim.stage_id]
                 # add support object ids for non-stage receptacles
                 if receptacle.is_parent_object_articulated:
                     ao_instance = sim.get_articulated_object_manager().get_object_by_handle(
