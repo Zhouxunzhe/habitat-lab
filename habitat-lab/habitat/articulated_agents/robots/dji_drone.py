@@ -1,0 +1,70 @@
+# Copyright (c) Meta Platforms, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+import magnum as mn
+import numpy as np
+
+from habitat.articulated_agents.mobile_manipulator import (
+    ArticulatedAgentCameraParams,
+    MobileManipulator,
+    MobileManipulatorParams,
+)
+
+
+class DJIDrone(MobileManipulator):
+    """DJI Drone with a controllable base."""
+    def _get_params(self):
+        return MobileManipulatorParams(
+            arm_joints=[],
+            gripper_joints=[],
+            wheel_joints=[],
+            arm_init_params=np.array([], dtype=np.float32),
+            gripper_init_params=np.array([], dtype=np.float32),
+            ee_offset=[mn.Vector3(0, 0, 0)],
+            ee_links=[0],
+            ee_constraint=np.array([[[-np.inf, np.inf], [-np.inf, np.inf], [-np.inf, np.inf]]], dtype=np.float32),
+            cameras={                
+                "head": ArticulatedAgentCameraParams(
+                    cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
+                    cam_look_at_pos=mn.Vector3(0.1, 0.0, 0.1),
+                    attached_link_id=5,
+                    # relative_transform=mn.Matrix4.rotation_y(mn.Deg(-90))
+                    # @ mn.Matrix4.rotation_z(mn.Deg(-90)),
+                ),
+                "third": ArticulatedAgentCameraParams(
+                    cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
+                    cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
+                    attached_link_id=-1,
+                ),
+            },
+            gripper_closed_state=np.array([], dtype=np.float32),
+            gripper_open_state=np.array([], dtype=np.float32),
+            gripper_state_eps=0.0,
+            arm_mtr_pos_gain=0.0,
+            arm_mtr_vel_gain=0.0,
+            arm_mtr_max_impulse=0.0,
+            wheel_mtr_pos_gain=0.0,
+            wheel_mtr_vel_gain=0.0,
+            wheel_mtr_max_impulse=0.0,
+            base_offset=mn.Vector3(0, 0, 0),
+            base_link_names={"m100_base_link"},
+        )
+    
+    @property
+    def base_transformation(self):
+        add_rot = mn.Matrix4.rotation(
+            mn.Rad(-np.pi / 2), mn.Vector3(1.0, 0, 0)
+        )
+        return self.sim_obj.transformation @ add_rot
+
+    def __init__(
+        self, agent_cfg, sim, limit_robo_joints=True, fixed_base=False
+    ):
+        super().__init__(
+            self._get_params(),
+            agent_cfg,
+            sim,
+            limit_robo_joints,
+            fixed_base,
+        )
