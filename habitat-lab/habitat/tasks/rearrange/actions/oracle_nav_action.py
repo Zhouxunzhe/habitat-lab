@@ -21,7 +21,7 @@ from habitat_sim.physics import VelocityControl
 
 
 @registry.register_task_action
-class OracleNavAction(BaseVelNonCylinderAction, HumanoidJointAction):
+class OracleNavAction(BaseVelAction, BaseVelNonCylinderAction, HumanoidJointAction):
     """
     An action that will convert the index of an entity (in the sense of
     `PddlEntity`) to navigate to and convert this to base/humanoid joint control to move the
