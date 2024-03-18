@@ -10,7 +10,7 @@ from habitat.articulated_agents.mobile_manipulator import (
     MobileManipulator,
     MobileManipulatorParams,
 )
-
+from habitat_sim.physics import MotionType
 
 class DJIDrone(MobileManipulator):
     """DJI Drone with a controllable base."""
@@ -68,3 +68,12 @@ class DJIDrone(MobileManipulator):
             limit_robo_joints,
             fixed_base,
         )
+    
+    def reconfigure(self) -> None:
+        super().reconfigure()
+        # Disable Drone's dynamics and collision by default 
+        self.sim_obj.motion_type = MotionType.KINEMATIC
+        # self.sim_obj.is_collidable = False # exception
+        
+        
+    

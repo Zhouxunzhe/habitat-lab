@@ -51,6 +51,7 @@ __all__ = [
     "ArmActionConfig",
     "BaseVelocityActionConfig",
     "BaseVelocityNonCylinderActionConfig",
+    "DroneBaseVelActionConfig",
     "HumanoidJointActionConfig",
     "HumanoidPickActionConfig",
     "RearrangeStopActionConfig",
@@ -171,6 +172,45 @@ class MoveForwardActionConfig(DiscreteNavigationActionConfig):
     """
     type: str = "MoveForwardAction"
 
+@dataclass 
+class MoveBackwardActionConfig(DiscreteNavigationActionConfig):
+    r"""
+    In Navigation tasks only, this discrete action will move the robot backward by
+    a fixed amount determined by the SimulatorConfig.forward_step_size amount.
+    """
+    type: str = "MoveBackwardAction"
+    
+@dataclass
+class MoveLeftActionConfig(DiscreteNavigationActionConfig):
+    r"""
+    In Navigation tasks only, this discrete action will move the robot left by
+    a fixed amount determined by the SimulatorConfig.forward_step_size amount.
+    """
+    type: str = "MoveLeftAction"
+    
+@dataclass
+class MoveRightActionConfig(DiscreteNavigationActionConfig):
+    r"""
+    In Navigation tasks only, this discrete action will move the robot right by
+    a fixed amount determined by the SimulatorConfig.forward_step_size amount.
+    """
+    type: str = "MoveRightAction"
+    
+@dataclass
+class MoveUpActionConfig(DiscreteNavigationActionConfig):
+    r"""
+    In Navigation tasks only, this discrete action will move the robot up by
+    a fixed amount determined by the SimulatorConfig.forward_step_size amount.
+    """
+    type: str = "MoveUpAction"
+    
+@dataclass
+class MoveDownActionConfig(DiscreteNavigationActionConfig):
+    r"""
+    In Navigation tasks only, this discrete action will move the robot down by
+    a fixed amount determined by the SimulatorConfig.forward_step_size amount.
+    """
+    type: str = "MoveDownAction"
 
 @dataclass
 class TurnLeftActionConfig(DiscreteNavigationActionConfig):
@@ -290,7 +330,7 @@ class BaseVelocityNonCylinderActionConfig(ActionConfig):
     # is more than collision_threshold for any point.
     collision_threshold: float = 1e-5
     # The x and y locations of the clamped NavMesh position
-    navmesh_offset: Optional[List[float]] = None
+    navmesh_offset: Optional[List[List[float]]] = None
     # If we allow the robot to move laterally.
     enable_lateral_move: bool = False
     # If the condition of sliding includs the checking of rotation
@@ -305,6 +345,17 @@ class BaseVelocityNonCylinderActionConfig(ActionConfig):
     play_i_perframe: int = 5
     # The start and end frames of the leg animation data
     use_range: Optional[List[int]] = field(default_factory=lambda: [107, 863])
+
+@dataclass
+class DroneBaseVelActionConfig(ActionConfig):
+    r"""
+    In Rearrangement only. Corresponds to the base velocity. Contains two continuous actions, the first one controls linear velocity and the second controls angular velocity.
+    """
+    type: str = "DroneBaseVelAction"
+    lin_speed: float = 10.0
+    ang_speed: float = 10.0
+    allow_dyn_slide: bool = True
+    allow_back: bool = True
 
 
 @dataclass
@@ -1739,6 +1790,8 @@ class SimulatorConfig(HabitatBaseConfig):
     type: str = "Sim-v0"
     forward_step_size: float = 0.25  # in metres
     turn_angle: int = 10  # angle to rotate left or right in degrees
+    look_angle: int = 30  # angle to look up or down in degrees
+    up_step_size: float = 0.1  # in metres
     create_renderer: bool = False
     requires_textures: bool = True
     # Sleep options
