@@ -25,12 +25,17 @@ class DJIDrone(MobileManipulator):
             ee_links=[0],
             ee_constraint=np.array([[[-np.inf, np.inf], [-np.inf, np.inf], [-np.inf, np.inf]]], dtype=np.float32),
             cameras={                
+                # "head": ArticulatedAgentCameraParams(
+                #     cam_offset_pos=mn.Vector3(0.0, 0.0, 0.0),
+                #     cam_look_at_pos=mn.Vector3(1.0, 0.0, 1.0),
+                #     attached_link_id=5, # realsense_depth_optical_frame
+                #     relative_transform=mn.Matrix4.rotation_y(mn.Deg(-90))
+                #     @ mn.Matrix4.rotation_z(mn.Deg(180)),
+                # ),
                 "head": ArticulatedAgentCameraParams(
-                    cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
-                    cam_look_at_pos=mn.Vector3(0.1, 0.0, 0.1),
-                    attached_link_id=5,
-                    # relative_transform=mn.Matrix4.rotation_y(mn.Deg(-90))
-                    # @ mn.Matrix4.rotation_z(mn.Deg(-90)),
+                    cam_offset_pos=mn.Vector3(0.0, 0.0, 0.0),
+                    cam_look_at_pos=mn.Vector3(1.0, -1.0, 0.0),
+                    attached_link_id=-1,
                 ),
                 "third": ArticulatedAgentCameraParams(
                     cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
