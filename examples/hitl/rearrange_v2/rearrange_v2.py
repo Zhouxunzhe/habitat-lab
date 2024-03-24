@@ -24,8 +24,8 @@ from habitat_hitl.core.text_drawer import TextOnScreenAlignment
 from habitat_hitl.environment.camera_helper import CameraHelper
 from habitat_hitl.environment.controllers.gui_controller import (
     GuiHumanoidController,
+    GuiRobotController,
 )
-from habitat_hitl.environment.gui_navigation_helper import GuiNavigationHelper
 from habitat_hitl.environment.gui_pick_helper import GuiPickHelper
 from habitat_hitl.environment.gui_placement_helper import GuiPlacementHelper
 from habitat_hitl.environment.hablab_utils import get_agent_art_obj_transform
@@ -42,7 +42,8 @@ class AppStateRearrangeV2(AppState):
 
     def __init__(self, app_service):
         self._app_service = app_service
-        self._gui_agent_ctrl = self._app_service.gui_agent_controller
+        self._gui_agent_controllers = self._app_service.gui_agent_controllers
+        self._num_users = len(self._gui_agent_controllers)
         self._can_grasp_place_threshold = (
             self._app_service.hitl_config.can_grasp_place_threshold
         )
@@ -52,6 +53,7 @@ class AppStateRearrangeV2(AppState):
         self._opened_ao_set: Set = set()
 
         self._cam_transform = None
+        self._camera_user_index = 0
         self._held_obj_id = None
         self._recent_reach_pos = None
         self._paused = False
@@ -62,27 +64,39 @@ class AppStateRearrangeV2(AppState):
             self._app_service.gui_input,
         )
 
-        self._nav_helper = GuiNavigationHelper(
-            self._app_service, self.get_gui_controlled_agent_index()
-        )
         self._pick_helper = GuiPickHelper(
             self._app_service,
-            self.get_gui_controlled_agent_index(),
         )
         self._placement_helper = GuiPlacementHelper(self._app_service)
+        self._client_helper = None
         if self._app_service.hitl_config.networking.enable:
             self._client_helper = ClientHelper(self._app_service)
-
-        self._gui_agent_ctrl.line_renderer = app_service.line_render
 
         self._has_grasp_preview = False
         self._frame_counter = 0
         self._sps_tracker = AverageRateTracker(2.0)
 
+        self._task_instruction = ""
+
     # needed to avoid spurious mypy attr-defined errors
     @staticmethod
     def get_sim_utilities() -> Any:
         return sim_utilities
+
+    def _remap_key(self, user_index, key):
+        key_remap = {
+            GuiInput.KeyNS.SPACE: GuiInput.KeyNS.N,
+            GuiInput.KeyNS.Z: GuiInput.KeyNS.X,
+        }
+        if user_index == 1:
+            assert key in key_remap
+            key = key_remap[key]
+        return key
+
+    def _get_user_key_down(self, user_index, key):
+        return self._app_service.gui_input.get_key_down(
+            self._remap_key(user_index, key)
+        )
 
     def _open_close_ao(self, ao_handle: str):
         if not ENABLE_ARTICULATED_OPEN_CLOSE:
@@ -105,16 +119,12 @@ class AppStateRearrangeV2(AppState):
         else:
             self._opened_ao_set.add(ao_handle)
 
-    def _find_reachable_ao(self, player: GuiHumanoidController) -> str:
+    def _find_reachable_ao(self, player_pos) -> str:
         """Returns the handle of the nearest reachable articulated object. Returns None if none is found."""
         if not ENABLE_ARTICULATED_OPEN_CLOSE:
             return None
 
         max_distance = 2.0  # TODO: Const
-        player_root_node = (
-            player.get_articulated_agent().sim_obj.get_link_scene_node(-1)
-        )
-        player_pos = player_root_node.absolute_translation
         player_pos_xz = mn.Vector3(player_pos.x, 0.0, player_pos.z)
         min_dist: float = max_distance
         output: str = None
@@ -159,10 +169,16 @@ class AppStateRearrangeV2(AppState):
 
         self._held_obj_id = None
 
-        self._nav_helper.on_environment_reset()
         self._pick_helper.on_environment_reset()
 
         self._camera_helper.update(self._get_camera_lookat_pos(), dt=0)
+
+        # Set the task instruction
+        current_episode = self._app_service.env.current_episode
+        if current_episode.info.get("extra_info") is not None:
+            self._task_instruction = current_episode.info["extra_info"][
+                "instruction"
+            ]
 
         client_message_manager = self._app_service.client_message_manager
         if client_message_manager:
@@ -181,7 +197,12 @@ class AppStateRearrangeV2(AppState):
     def get_sim(self):
         return self._app_service.sim
 
-    def _update_grasping_and_set_act_hints(self):
+    def _get_gui_agent_translation(self, user_index):
+        return get_agent_art_obj_transform(
+            self.get_sim(), self.get_gui_controlled_agent_index(user_index)
+        ).translation
+
+    def _update_grasping_and_set_act_hints(self, user_index):
         drop_pos = None
         grasp_object_id = None
         throw_vel = None
@@ -189,24 +210,25 @@ class AppStateRearrangeV2(AppState):
 
         self._has_grasp_preview = False
 
+        # todo: implement grasping properly for each user. _held_obj_id, _has_grasp_preview, etc. must be tracked per user.
         if self._held_obj_id is not None:
-            if self._app_service.gui_input.get_key_down(GuiInput.KeyNS.SPACE):
+            if self._get_user_key_down(user_index, GuiInput.KeyNS.SPACE):
                 if DO_HUMANOID_GRASP_OBJECTS:
                     # todo: better drop pos
-                    drop_pos = self._gui_agent_ctrl.get_base_translation()
+                    drop_pos = self._get_gui_agent_translation(
+                        user_index
+                    )  # self._gui_agent_controllers.get_base_translation()
                 else:
                     # GuiPlacementHelper has already placed this object, so nothing to do here
                     pass
                 self._held_obj_id = None
         else:
-            query_pos = self._gui_agent_ctrl.get_base_translation()
+            query_pos = self._get_gui_agent_translation(user_index)
             obj_id = self._pick_helper.get_pick_object_near_query_position(
                 query_pos
             )
             if obj_id:
-                if self._app_service.gui_input.get_key_down(
-                    GuiInput.KeyNS.SPACE
-                ):
+                if self._get_user_key_down(user_index, GuiInput.KeyNS.SPACE):
                     if DO_HUMANOID_GRASP_OBJECTS:
                         grasp_object_id = obj_id
                     self._held_obj_id = obj_id
@@ -229,8 +251,11 @@ class AppStateRearrangeV2(AppState):
         #     walk_dir = candidate_walk_dir
         #     distance_multiplier = candidate_distance_multiplier
 
-        assert isinstance(self._gui_agent_ctrl, GuiHumanoidController)
-        self._gui_agent_ctrl.set_act_hints(
+        gui_agent_controller = self._gui_agent_controllers[user_index]
+        assert isinstance(
+            gui_agent_controller, (GuiHumanoidController, GuiRobotController)
+        )
+        gui_agent_controller.set_act_hints(
             walk_dir,
             distance_multiplier,
             grasp_object_id,
@@ -242,15 +267,15 @@ class AppStateRearrangeV2(AppState):
 
         return drop_pos
 
-    def get_gui_controlled_agent_index(self):
-        return self._gui_agent_ctrl._agent_idx
+    def get_gui_controlled_agent_index(self, user_index):
+        return self._gui_agent_controllers[user_index]._agent_idx
 
     def _get_controls_text(self):
         def get_grasp_release_controls_text():
             if self._held_obj_id is not None:
-                return "Spacebar: put down\n"
+                return "Space/N: put down\n"
             elif self._has_grasp_preview:
-                return "Spacebar: pick up\n"
+                return "Space/N: pick up\n"
             else:
                 return ""
 
@@ -258,25 +283,33 @@ class AppStateRearrangeV2(AppState):
         if not self._hide_gui_text:
             if self._sps_tracker.get_smoothed_rate() is not None:
                 controls_str += f"server SPS: {self._sps_tracker.get_smoothed_rate():.1f}\n"
-            if self._client_helper.display_latency_ms:
+            if self._client_helper and self._client_helper.display_latency_ms:
                 controls_str += f"latency: {self._client_helper.display_latency_ms:.0f}ms\n"
             controls_str += "H: show/hide help text\n"
             controls_str += "P: pause\n"
             controls_str += "I, K: look up, down\n"
             controls_str += "A, D: turn\n"
-            controls_str += "W, S: walk\n"
+            controls_str += "W/F, S/V: walk\n"
+            controls_str += "N: next episode\n"
             if ENABLE_ARTICULATED_OPEN_CLOSE:
-                controls_str += "Z: open/close receptacle\n"
+                controls_str += "Z/X: open/close receptacle\n"
             controls_str += get_grasp_release_controls_text()
+            if self._num_users > 1 and self._held_obj_id is None:
+                controls_str += "T: toggle camera user\n"
 
         return controls_str
 
     def _get_status_text(self):
         status_str = ""
 
+        if len(self._task_instruction) > 0:
+            status_str += "\nInstruction: " + self._task_instruction + "\n"
         if self._paused:
             status_str += "\n\npaused\n"
-        if self._client_helper.do_show_idle_kick_warning:
+        if (
+            self._client_helper
+            and self._client_helper.do_show_idle_kick_warning
+        ):
             status_str += (
                 "\n\nAre you still there?\nPress any key to keep playing!\n"
             )
@@ -295,11 +328,14 @@ class AppStateRearrangeV2(AppState):
             self._app_service.text_drawer.add_text(
                 status_str,
                 TextOnScreenAlignment.TOP_CENTER,
+                text_delta_x=-280,
+                text_delta_y=-50,
             )
 
     def _get_camera_lookat_pos(self):
         agent_root = get_agent_art_obj_transform(
-            self.get_sim(), self.get_gui_controlled_agent_index()
+            self.get_sim(),
+            self.get_gui_controlled_agent_index(self._camera_user_index),
         )
         lookat_y_offset = mn.Vector3(0, 1, 0)
         lookat = agent_root.translation + lookat_y_offset
@@ -309,40 +345,13 @@ class AppStateRearrangeV2(AppState):
         return not self._app_service.gui_input.get_any_key_down()
 
     def _check_change_episode(self):
-        if self._paused:
+        if self._paused or not self._app_service.gui_input.get_key_down(
+            GuiInput.KeyNS.N
+        ):
             return
 
-        # episode_id should be a string, e.g. "5"
-        episode_ids_by_dataset = {
-            "data/datasets/hssd/rearrange/{split}/social_rearrange.json.gz": [
-                "23775",
-                "23776",
-            ]
-        }
-        fallback_episode_ids = ["0", "1"]
-        dataset_key = self._app_service.config.habitat.dataset.data_path
-        episode_ids = (
-            episode_ids_by_dataset[dataset_key]
-            if dataset_key in episode_ids_by_dataset
-            else fallback_episode_ids
-        )
-
-        # use number keys to select episode
-        episode_index_by_key = {
-            GuiInput.KeyNS.ONE: 0,
-            GuiInput.KeyNS.TWO: 1,
-        }
-        assert len(episode_index_by_key) == len(episode_ids)
-
-        for key in episode_index_by_key:
-            if self._app_service.gui_input.get_key_down(key):
-                episode_id = episode_ids[episode_index_by_key[key]]
-                # episode_id should be a string, e.g. "5"
-                assert isinstance(episode_id, str)
-                self._app_service.episode_helper.set_next_episode_by_id(
-                    episode_id
-                )
-                self._app_service.end_episode(do_reset=True)
+        if self._app_service.episode_helper.next_episode_exists():
+            self._app_service.end_episode(do_reset=True)
 
     def _update_held_object_placement(self):
         if not self._held_obj_id:
@@ -384,23 +393,35 @@ class AppStateRearrangeV2(AppState):
 
         self._check_change_episode()
 
-        reachable_ao_handle = self._find_reachable_ao(
-            self._app_service.gui_agent_controller
-        )
-        if reachable_ao_handle is not None:
-            self._highlight_ao(reachable_ao_handle)
-            if self._app_service.gui_input.get_key_down(GuiInput.KeyNS.Z):
-                self._open_close_ao(reachable_ao_handle)
+        for user_index in range(self._num_users):
+            reachable_ao_handle = self._find_reachable_ao(
+                self._get_gui_agent_translation(user_index)
+            )
+            if reachable_ao_handle is not None:
+                self._highlight_ao(reachable_ao_handle)
+                if self._get_user_key_down(user_index, GuiInput.KeyNS.Z):
+                    self._open_close_ao(reachable_ao_handle)
 
         if not self._paused:
-            self._update_grasping_and_set_act_hints()
+            for user_index in range(self._num_users):
+                self._update_grasping_and_set_act_hints(user_index)
             self._app_service.compute_action_and_step_env()
         else:
             # temp hack: manually add a keyframe while paused
             self.get_sim().gfx_replay_manager.save_keyframe()
 
+        # todo: visualize objects properly for each user (this requires a separate debug_line_render per user!), or find a reasonable debug line visualization that can be shared between both users every frame.
         if self._held_obj_id is None:
             self._pick_helper.viz_objects()
+
+        if (
+            self._num_users > 1
+            and self._held_obj_id is None
+            and self._app_service.gui_input.get_key_down(GuiInput.KeyNS.T)
+        ):
+            self._camera_user_index = (
+                self._camera_user_index + 1
+            ) % self._num_users
 
         self._camera_helper.update(self._get_camera_lookat_pos(), dt)
 
