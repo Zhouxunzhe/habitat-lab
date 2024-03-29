@@ -8,13 +8,13 @@ import numpy as np
 import open3d as o3d
 from scipy.spatial import KDTree
 from habitat_sim import Simulator, scene
+import networkx as nx
 
 # local import
 from scene_graph.config import SceneGraphHabitatConfig
 from scene_graph.region_layer import RegionLayer, RegionNode
 from scene_graph.object_layer import ObjectLayer, ObjectNode
 from scene_graph.agent_layer import AgentLayer, AgentNode
-from scene_graph.utils import get_corners
 from perception.grid_map import GridMap
 from perception.nav_mesh import NavMesh
 
@@ -41,13 +41,38 @@ class SceneGraphBase:
         self.grid_map: GridMap = None
         self.nav_mesh: NavMesh = None
         
+    def load_gt_scene_graph(self, sim: Simulator):
+        """Load the ground truth scene graph from habitat simulator"""
+        raise NotImplementedError
+    
+    def load_gt_geometry(self):
+        """Load the ground truth geometry from habitat simulator"""
+        raise NotImplementedError
+        
     def get_full_graph(self):
         """Return the full scene graph"""
         raise NotImplementedError
 
-    def generate_scene_description(self):
-        """Generate scene description for the scene graph"""
-        raise NotImplementedError
+    def build_nx_region_graph(self):
+        assert self.nav_mesh is not None, "Navmesh is not initialized"
+        
+        # Initialize the graph
+        G = nx.Graph()
+        
+        # Add nodes to the graph representing each region
+        for region_id, region in self.region_layer.region_dict.items():
+            G.add_node(region)
+        
+        # Add edges between regions if they are connected in the navigation mesh
+        for i, region_a in enumerate(regions):
+            for j, region_b in enumerate(regions):
+                if i != j:
+                    # Check if regions are connected (this is a simplified check)
+                    if nav_mesh.are_connected(region_a.get_center(), region_b.get_center()):
+                        G.add_edge(i, j)
+        
+        return G
+
     
     def sample_graph(self, method, *args, **kwargs):
         """Return the sub-sampled scene graph

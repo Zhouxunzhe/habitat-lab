@@ -1,5 +1,5 @@
 import copy
-
+from typing import List, Dict
 import numpy as np
 
 # from utils.open3d_utils import
@@ -12,7 +12,7 @@ from scipy.spatial import cKDTree
 class RegionNode:
     def __init__(
         self,
-        id,
+        region_id,
         bbox,
         grid_map=None,
         grid_size=0.1,
@@ -20,8 +20,8 @@ class RegionNode:
         label=None,
     ):
         # required field: minimum attributes for a region: id, bounding box
-        self.id = id
-        self.bbox = bbox
+        self.region_id = region_id
+        self.bbox: np.ndarray = bbox # (2,3)
 
         # optional field
         self.grid_map = grid_map
@@ -42,7 +42,7 @@ class RegionLayer:
 
         self.flag_grid_map = False
         self.region_ids = []
-        self.region_dict = {}
+        self.region_dict: Dict[int, RegionNode] = {}
         return
 
     def __len__(self):
@@ -121,17 +121,3 @@ class RegionLayer:
         self.segment_grid[region_mask] = region_id
 
         return region_mask
-
-    def create_topological_map(self):
-        # fp = ndimage.generate_binary_structure(3,1)
-        #     dilated_label_map = ndimage.morphology.grey_dilation(label_map, footprint=fp)
-        pass
-
-    def get_region_by_idx(self, idx):
-        idx = np.argwhere(self.region_ids == idx)[0][0]
-        return self.region_dict[idx]
-
-    # def query_points_regions(self, points):
-
-    #     dists, indices = self.grid_kd_tree.query(points)
-    #     return self.grid_labels[indices]
