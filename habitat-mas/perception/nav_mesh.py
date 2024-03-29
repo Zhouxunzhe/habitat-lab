@@ -1,5 +1,10 @@
 import numpy as np
 import open3d as o3d
+from typing import Dict, List
+from perception.mesh_utils import (
+    compute_triangle_adjacency, 
+    propagate_triangle_region_ids
+)
 
 class NavMesh:
     """Wrapper for navmesh stored as triangle meshes and helper function"""
@@ -8,23 +13,50 @@ class NavMesh:
         self.vertices = vertices
         self.triangles = triangles.reshape(-1, 3)
         
-        self.mesh = self._build_triangle_mesh(vertices, self.triangles)
+        # build the triangle mesh
+        self._build_triangle_mesh(vertices, self.triangles)
+        
+        # compute triangle adjacency list
+        self._triangle_adjacency_list = compute_triangle_adjacency(self.triangles)
+        self.mesh.compute_adjacency_list()
+        # self._vertex_adjaceny_list = self.mesh.adjacency_list
         
         # by default, compute navmesh sgementation 
-        self.slope_threshold = kwargs.get("slope_threshold", 20)
+        self.slope_threshold = kwargs.get("slope_threshold", 30)
         self.is_flat_ground = self.segment_by_slope(slope_threshold=self.slope_threshold)
-       
-    def _build_triangle_mesh(self, vertices, triangles):
-        """Build a triangle mesh from vertices and triangles"""
-        mesh = o3d.geometry.TriangleMesh()
-        mesh.vertices = o3d.utility.Vector3dVector(vertices)
-        mesh.triangles = o3d.utility.Vector3iVector(triangles)
-        mesh.compute_vertex_normals()
-        mesh.compute_triangle_normals()
-        mesh.paint_uniform_color([0.5, 0.5, 0.5])
-        return mesh
+        self.triangle_region_ids = None
     
-    def segment_by_slope(self, slope_threshold=20):
+    @property
+    def triangle_adjacency_list(self):
+        return self._triangle_adjacency_list
+    
+    @property
+    def vertex_adjacency_list(self):
+        return self.mesh.adjacency_list
+       
+    def _build_triangle_mesh(self, vertices, triangles) -> o3d.geometry.TriangleMesh:
+        """Build a triangle mesh from vertices and triangles"""
+        self.mesh = o3d.geometry.TriangleMesh()
+        self.mesh.vertices = o3d.utility.Vector3dVector(vertices)
+        self.mesh.triangles = o3d.utility.Vector3iVector(triangles)
+        
+        # Remove duplicated vertices
+        self.mesh = self.mesh.remove_duplicated_vertices()
+
+        # Remove degenerated triangles
+        self.mesh = self.mesh.remove_degenerate_triangles()
+
+        # Remove duplicated triangles
+        self.mesh = self.mesh.remove_duplicated_triangles()
+        
+        self.mesh.compute_vertex_normals()
+        self.mesh.compute_triangle_normals()
+        self.mesh.paint_uniform_color([0.5, 0.5, 0.5])
+        
+        self.vertices = np.asarray(self.mesh.vertices)
+        self.triangles = np.asarray(self.mesh.triangles)
+    
+    def segment_by_slope(self, slope_threshold=30):
         """Segment the navmesh by slope angle"""
         
         assert self.mesh is not None, "Mesh is not initialized"
@@ -63,3 +95,39 @@ class NavMesh:
         return is_flat_ground
     
 
+
+    def segment_by_region_bbox(self, 
+                               region_bbox_dict: Dict[int, np.ndarray],
+                               upper_edge: float = -0.1, 
+                               lower_edge: float = 0.1,
+                            ):
+        """
+        Segment the triangle navigation mesh by region bounding box.
+        For each region, assign vertices inside the 
+        Arguments:
+            region_bbox_dict: dict, region id to region bounding box mapping
+            upper_edge: float, upper edge of the region bounding box
+            lower_edge: float, lower edge of the region bounding box
+        
+        """
+        # calculate triangle centers 
+        triangle_centers = np.mean(self.vertices[self.triangles], axis=1)
+        # default region id is -1
+        self.triangle_region_ids = -np.ones(len(self.triangles), dtype=int)
+        
+        
+        for region_id, region_bbox in region_bbox_dict.items():
+            # if triangle center is inside the region bbox, assign the region id
+            trimmed_region_bbox = region_bbox.copy()
+            trimmed_region_bbox[0, 1] += upper_edge
+            trimmed_region_bbox[1, 1] += lower_edge
+            
+            # check if the triangle center is inside the region bbox
+            is_inside = np.logical_and(
+                np.all(triangle_centers >= trimmed_region_bbox[0], axis=1),
+                np.all(triangle_centers <= trimmed_region_bbox[1], axis=1)
+            )
+            
+            # assign the region id to the triangle
+            self.triangle_region_ids[is_inside] = region_id
+            
