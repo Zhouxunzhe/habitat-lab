@@ -19,6 +19,12 @@ class NavMesh:
         # compute triangle adjacency list
         self._triangle_adjacency_list = compute_triangle_adjacency(self.triangles)
         self.mesh.compute_adjacency_list()
+        
+        # create raycasting scene for localization
+        self._raycasting_scene = o3d.t.geometry.RaycastingScene()
+        self._mesh_tensor = o3d.t.geometry.TriangleMesh.from_legacy(self.mesh)
+        self._raycasting_scene.add_triangles(self._mesh_tensor)
+        
         # self._vertex_adjaceny_list = self.mesh.adjacency_list
         
         # by default, compute navmesh sgementation 
@@ -138,3 +144,19 @@ class NavMesh:
         self.triangle_region_ids = propagate_triangle_region_ids(
             self.triangle_region_ids, self.triangle_adjacency_list
         )
+        
+    def find_triangle_agent_on(self, agent_pos: np.ndarray):
+        """Find the triangle the agent is on"""
+        # build the ray pointing down from the agent position, -y direction
+        ray = o3d.core.Tensor([[*agent_pos, 0, -1, 0]], dtype=o3d.core.Dtype.Float32)
+        # ['primitive_uvs', 'primitive_ids', 'geometry_ids', 'primitive_normals', 't_hit']
+        ans = self._raycasting_scene.cast_rays(ray)
+        triangle_ids = ans['primitive_ids'].numpy()
+        
+        # collect all triangles hit by the ray
+        triangle_centers = np.mean(self.vertices[self.triangles], axis=1)
+        
+        # find the triangle below the agent
+        triangle_id = np.argmax(np.linalg.norm(triangle_centers - agent_pos, axis=1)[triangle_ids])
+        
+        return triangle_id

@@ -13,13 +13,15 @@ from scipy import stats
 from scipy.ndimage.morphology import binary_dilation
 import quaternion as qt
 from habitat_sim import Simulator
+from habitat_sim.agent import AgentState
 
 from utils.constants import coco_categories, coco_label_mapping
 from scene_graph.scene_graph_base import SceneGraphBase
 from scene_graph.utils import (
     visualize_scene_graph,
     generate_region_adjacency_description,
-    generate_region_description
+    generate_region_description,
+    generate_agents_description
 )
 from perception.grid_map import GridMap
 from perception.nav_mesh import NavMesh
@@ -126,7 +128,19 @@ class SceneGraphMP3D(SceneGraphBase):
             self.region_layer.add_region_adjacency_edges(
                 self.nav_mesh.triangle_region_ids, self.nav_mesh.triangle_adjacency_list
             )
-                    
+            
+            # TODO: load agent externally from habitat-lab API
+            # 5. add agent layer to scene graph 
+            for i, agent in enumerate(self.sim.agents):
+                agent_id = i
+                agent_name = agent.agent_config.body_type
+                agent_state:AgentState  = agent.get_state()
+                self.agent_layer.add_agent(
+                    agent_id, 
+                    agent_name,
+                    agent_state.position,
+                    agent_state.rotation
+                )  
                     
     def load_gt_geometry(self):
         # load the ply file of the scene
@@ -174,24 +188,27 @@ if __name__ == "__main__":
     
     ############# Visualization ##################
     
-    visualize_scene_graph(
-        scene_graph=sg,
-        scene_o3d=sg.gt_point_cloud,
-        vis_region_bbox=True,
-        vis_object_bbox=False,
-        vis_navmesh=True,
-        navmesh_shift=[0, 0, -8.0],
-        vis_region_graph=True,
-        region_graph_shift=[0, 0, 10.0],
-        mp3d_coord=True
-    )
+    # visualize_scene_graph(
+    #     scene_graph=sg,
+    #     scene_o3d=sg.gt_point_cloud,
+    #     vis_region_bbox=True,
+    #     vis_object_bbox=False,
+    #     vis_navmesh=True,
+    #     navmesh_shift=[0, 0, -8.0],
+    #     vis_region_graph=True,
+    #     region_graph_shift=[0, 0, 10.0],
+    #     mp3d_coord=True
+    # )
 
     ############ Generate scene description ###########
 
-    # # Generate scene descriptions
-    # region_scene_graph_description = generate_region_adjacency_description(sg.region_layer)
-    # region_description = generate_region_description(sg.region_layer, region_id=0)
-
-    # print(region_scene_graph_description)
-    # print("\n")
-    # print(region_description)
+    # Generate scene descriptions
+    region_scene_graph_description = generate_region_adjacency_description(sg.region_layer)
+    region_description = generate_region_description(sg.region_layer, region_id=0)
+    agent_description = generate_agents_description(sg.agent_layer, sg.region_layer, sg.nav_mesh)
+        
+    print(region_scene_graph_description)
+    print("\n")
+    print(region_description)
+    print("\n")
+    print(agent_description)

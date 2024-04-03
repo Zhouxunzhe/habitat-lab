@@ -3,28 +3,53 @@ from typing import List, Dict, Tuple
 import numpy as np
 import open3d as o3d
 from scene_graph.utils import project_points_to_grid_xz
-
+from perception.nav_mesh import NavMesh
 
 class AgentNode:
     def __init__(
         self,
         agent_id,
+        agent_name,
         position,
         orientation,
-        bbox,
+        # bbox,
         description="",
     ):
 
         # required attributes
         self.agent_id = agent_id
-        self.position = position  # [x,y,z]
-        self.orientation = orientation  # [x,y,z,w]
-        self.bbox = bbox  # [x_min, y_min, z_min, x_max, y_max, z_max]  
+        self.agent_name = agent_name
+        self.position = np.array(position)  # [x,y,z]
+        self.orientation = np.array(orientation)  # [x,y,z,w]
+        # self.bbox = np.array(bbox)  # [x_min, y_min, z_min, x_max, y_max, z_max]  
         self.description = description
         
-    def generate_agent_description(self):
+    def locate_region_by_position(self, navmesh: NavMesh, visualize=True):
+        """Locate the region where the agent is located"""
+        assert navmesh.triangle_region_ids is not None, "Exception in locate_region_by_position: Navmesh region ids are not available"
+        # project the agent position to the navmesh
+        agent_position = np.array(self.position)
+        agent_position[1] = navmesh.vertices[:, 1].min()
+        triangle_id = navmesh.find_triangle_agent_on(agent_position)
+        region_id = navmesh.triangle_region_ids[triangle_id]
         
-        raise NotImplementedError
+        if visualize: 
+            # visualize the agent position
+            agent_pos = o3d.geometry.TriangleMesh.create_sphere(radius=0.1)
+            agent_pos.paint_uniform_color([1, 0, 0])
+            agent_pos.translate(agent_position)
+            
+            # visualize the navmesh with the triangle colored by blue
+            triangle_mesh = o3d.geometry.TriangleMesh()
+            triangle_mesh.vertices = o3d.utility.Vector3dVector(navmesh.vertices)
+            triangle_mesh.triangles = o3d.utility.Vector3iVector(navmesh.triangles)
+            triangle_mesh.vertex_colors = o3d.utility.Vector3dVector(np.array([0.5, 0.5, 0.5]) * np.ones_like(navmesh.vertices))
+            triangle_mesh.vertex_colors[navmesh.triangles[triangle_id]] = [0, 0, 1]
+             
+            
+            o3d.visualization.draw_geometries([navmesh.mesh, agent_pos])
+        
+        return region_id
 
 class AgentLayer:
     def __init__(self):
@@ -35,23 +60,6 @@ class AgentLayer:
 
     def __len__(self):
         return len(self.agent_ids)
-
-    def init_map(self, bounds, grid_size, free_space_grid, project_mode="xz"):
-
-        self.bounds = (
-            bounds  # the real map area corresponding to free space grid
-        )
-        self.grid_size = grid_size
-        self.segment_grid = np.zeros_like(free_space_grid, dtype=int) - 1
-        self.free_space_grid = np.array(free_space_grid).astype(bool)
-        self.project_mode = (
-            project_mode  # 'xz' means project xz axes in 3D to xy axes in map
-        )
-
-        # implement the data structure for closest grid point searching
-        # self.grid_kd_tree = cKDTree(self.free_space_grid)
-        self.flag_grid_map = True
-        return
 
     def add_agent(
         self,
@@ -68,30 +76,11 @@ class AgentLayer:
 
         return agent
     
-    def segment_agent_on_grid_map_xz(self, agent_id):
-        # TODO: deprecate grid map or add floor node to manage grid map 
-        assert (
-            self.flag_grid_map
-        ), "called 'segment_region_on_grid_map_xz()' before grid map being initialized"
-        agent_bbox = self.agent_dict[agent_id].bbox
-        agent_2d_bbox = project_points_to_grid_xz(
-            self.bounds, agent_bbox, self.grid_size
-        )
 
-        agent_mask = np.zeros_like(self.free_space_grid).astype(bool)
-        # NOTE: (row_idx, col_idx) corresponds to (y, x) in 2d grid map
-        agent_mask[
-            int(np.ceil(agent_2d_bbox[0][1])) : int(np.floor(agent_2d_bbox[1][1])),
-            int(np.ceil(agent_2d_bbox[0][0])) : int(np.floor(agent_2d_bbox[1][0])),
-        ] = True
-        # color the region on global grid map
-        if (self.segment_grid[agent_mask] == -1).all():
-            self.segment_grid[agent_mask] = agent_id
-        else:
-            print(
-                f"Warning: agentect {agent_id} overlap with agentect {self.segment_grid[agent_mask]}"
-            )
-            self.segment_grid[agent_mask] = agent_id
-
-        return agent_mask
-    
+    def get_agents_region_ids(self, navmesh: NavMesh)->Dict[int, int]:
+        """Get all agents' region ids"""
+        agents_region_ids = {}
+        for agent_id, agent in self.agent_dict.items():
+            region_id = agent.locate_region_by_position(navmesh)
+            agents_region_ids[agent_id] = region_id
+        return agents_region_ids
