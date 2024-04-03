@@ -93,7 +93,7 @@ class SceneGraphHM3D(SceneGraphBase):
                 
                 region_node = self.region_layer.add_region(
                     region_bbox,
-                    id=region_id,
+                    region_id=region_id,
                     class_name=region_class_name,
                     label=region_label,
                 )

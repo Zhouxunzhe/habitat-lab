@@ -7,7 +7,7 @@ import numpy as np
 from scene_graph.object_layer import ObjectNode
 from scene_graph.utils import project_points_to_grid_xz
 from scipy.spatial import cKDTree
-
+import networkx as nx
 
 class RegionNode:
     def __init__(
@@ -37,16 +37,13 @@ class RegionNode:
         return
 
 
-class RegionLayer:
+class RegionLayer(nx.Graph):
     def __init__(self):
-
+        super().__init__()
         self.flag_grid_map = False
         self.region_ids = []
         self.region_dict: Dict[int, RegionNode] = {}
         return
-
-    def __len__(self):
-        return len(self.region_ids)
 
     # TODO: consider creating a standalone map class?
     def init_map(self, bounds, grid_size, free_space_grid, project_mode="xz"):
@@ -66,25 +63,26 @@ class RegionLayer:
         self.flag_grid_map = True
         return
 
-    def add_region(self, bbox, id=None, class_name=None, label=None):
+    def add_region(self, bbox, region_id=None, class_name=None, label=None):
 
         # add region node
-        if id == None or id in self.region_ids:
+        if region_id == None or region_id in self.region_ids:
             new_id = 0
             if len(self.region_ids) > 0:
                 new_id = max(self.region_ids) + 1
             print(
-                f"Warning: region id {id} already exists in region layer. Assign id {new_id} instead"
+                f"Warning: region id {region_id} already exists in region layer. Assign id {new_id} instead"
             )
-            id = new_id
-        self.region_ids.append(id)
-        region_node = RegionNode(id, bbox)
-        self.region_dict[id] = region_node
+            region_id = new_id
+        self.region_ids.append(region_id)
+        region_node = RegionNode(region_id, bbox)
+        self.region_dict[region_id] = region_node
+        self.add_node(region_node)
 
         # add segment on layer free space grid map
         if self.flag_grid_map:
             if self.project_mode == "xz":
-                region_grid_map = self.segment_region_on_grid_map_xz(id, bbox)
+                region_grid_map = self.segment_region_on_grid_map_xz(region_id, bbox)
             else:  # TODO: if there are other datasets ...
                 raise NotImplementedError
             region_node.grid_size = self.grid_size
@@ -121,3 +119,26 @@ class RegionLayer:
         self.segment_grid[region_mask] = region_id
 
         return region_mask
+
+
+    def add_region_adjacency_edges(self, triangle_region_ids, adjacency_list)->nx.Graph:
+        """
+        Build a region adjacency graph from a triangle mesh and triangle region segmentation.
+        
+        Parameters:
+            triangle_region_ids: np.ndarray, a list of region IDs corresponding to each triangle
+            adjacency_list: A list of lists, where each list contains the indices of neighboring triangles for each triangle
+        """
+
+        region_ids = np.unique(triangle_region_ids)
+        # assert len(region_ids>=0) == len(self.region_ids), "Exception in add_region_adjacency_edges: Region number mismatch"
+
+        # Check adjacency between triangles and add edges between corresponding regions
+        for i, neighbors in enumerate(adjacency_list):
+            current_region_id = triangle_region_ids[i]
+            for neighbor in neighbors:
+                neighbor_region_id = triangle_region_ids[neighbor]
+                if current_region_id != neighbor_region_id and current_region_id >= 0 and neighbor_region_id >= 0:
+                    current_region = self.region_dict[current_region_id]
+                    neighbor_region = self.region_dict[neighbor_region_id]
+                    self.add_edge(current_region, neighbor_region)

@@ -40,6 +40,14 @@ class SceneGraphBase:
         self.sim: Simulator = None
         self.grid_map: GridMap = None
         self.nav_mesh: NavMesh = None
+     
+    @property
+    def regions(self)->List[RegionNode]:
+        return list(self.region_layer.region_dict.values())
+     
+    @property
+    def objects(self)->List[ObjectNode]:
+        return list(self.object_layer.obj_dict.values())
         
     def load_gt_scene_graph(self, sim: Simulator):
         """Load the ground truth scene graph from habitat simulator"""

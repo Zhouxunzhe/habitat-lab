@@ -129,11 +129,33 @@ def aggregate_bboxes(bboxes):
 
 ########### Scene to text ###################
 
-def describe_region_graph(regoin_graph: nx.Graph):
-    for region_id, data in regoin_graph.nodes(data=True):
-        print(f"Region name_id: {region_id}_{data['name']}")
-        print("Adjacent Regions: ", [adj_region for adj_region in regoin_graph[region_id]])
-        print("\n")
+def generate_region_adjacency_description(reion_layer):
+    num_regions = len(reion_layer.nodes)
+    description = "There are {} regions in the scene.\n".format(num_regions)
+    
+    for region_node in reion_layer.nodes:
+        region_id = region_node.region_id
+        region_name = region_node.class_name + str(region_id)
+        description += "The {}-th region is named {}.\n".format(
+            region_id, region_name
+        )
+        for neighbor_node in reion_layer.neighbors(region_node):
+            neighbor_id = neighbor_node.region_id
+            neighbor_name = neighbor_node.class_name + str(neighbor_id)
+            description += "{} is connected to {}.\n".format(region_name, neighbor_name)
+
+    return description
+
+def generate_region_description(region_layer, region_id):
+
+    region = region_layer.region_dict[region_id]
+    region_full_name = region.class_name + str(region_id)
+    description = "Region {} contains the following objects:\n".format(region_full_name)
+    for obj in region.objects:
+        description += f"{obj.class_name}_{obj.id}; "
+    description += "\n"
+        
+    return description
 
 
 ############ Visualization ############################
@@ -150,7 +172,6 @@ def visualize_scene_graph(
     vis_navmesh=False,
     navmesh_shift=[0, 0, 0],
     vis_region_graph=False,
-    region_graph=None,
     region_graph_shift=[0, 0, 0],
     save_file=None,
     use_o3d_bbox=False,
@@ -238,11 +259,10 @@ def visualize_scene_graph(
             o3d_vis_list.append(mesh)
 
     ############# visualize region graph ##################
-    if vis_region_graph and region_graph is not None:
+    if vis_region_graph:
         # Add nodes as bbox to the scene
-        for node_id in region_graph.nodes:
-            node = region_graph.nodes[node_id]
-            bbox_center = node["bbox_center"]
+        for region_node in scene_graph.region_layer.nodes:
+            bbox_center = region_node.bbox.mean(axis=0)
             if mp3d_coord:
                 bbox_center = bbox_center @ r_h2m.T
             
@@ -255,16 +275,16 @@ def visualize_scene_graph(
             o3d_vis_list.append(bbox)
         
         # Add edges as lines to the scene
-        for edge in region_graph.edges:
-            node1 = region_graph.nodes[edge[0]]
-            node2 = region_graph.nodes[edge[1]]
+        for edge in scene_graph.region_layer.edges:
+            node1 = edge[0]
+            node2 = edge[1]
             line = o3d.geometry.LineSet()
             if mp3d_coord:
-                start_point = node1["bbox_center"] @ r_h2m.T + np.array(region_graph_shift)
-                end_point = node2["bbox_center"] @ r_h2m.T + np.array(region_graph_shift)
+                start_point = node1.bbox.mean(axis=0) @ r_h2m.T + np.array(region_graph_shift)
+                end_point = node2.bbox.mean(axis=0) @ r_h2m.T + np.array(region_graph_shift)
             else:
-                start_point = node1["bbox_center"] + np.array(region_graph_shift)
-                end_point = node2["bbox_center"] + np.array(region_graph_shift)
+                start_point = node1.bbox.mean(axis=0) + np.array(region_graph_shift)
+                end_point = node2.bbox.mean(axis=0) + np.array(region_graph_shift)
                 
             line.points = o3d.utility.Vector3dVector([start_point, end_point])
             line.lines = o3d.utility.Vector2iVector([[0, 1]])
