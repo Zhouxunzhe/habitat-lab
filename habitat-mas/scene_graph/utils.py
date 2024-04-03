@@ -157,6 +157,16 @@ def generate_region_description(region_layer, region_id):
         
     return description
 
+def generate_agents_description(agent_layer, region_layer, nav_mesh):
+    agent_description = ""
+    
+    agents_region_ids = agent_layer.get_agents_region_ids(nav_mesh)
+    for agent_id, region_id in agents_region_ids.items():
+        agent_name = agent_layer.agent_dict[agent_id].agent_name + "_" + str(agent_id)
+        region_name = region_layer.region_dict[region_id].class_name + "_" + str(region_id)
+        agent_description += f"{agent_name} is in {region_name}.\n"
+    
+    return agent_description
 
 ############ Visualization ############################
 
