@@ -131,3 +131,10 @@ class NavMesh:
             # assign the region id to the triangle
             self.triangle_region_ids[is_inside] = region_id
             
+
+    def propagate_region_ids(self):
+        """Propagate region ids to all connected triangles"""
+        assert self.triangle_region_ids is not None, "Region ids are not initialized"
+        self.triangle_region_ids = propagate_triangle_region_ids(
+            self.triangle_region_ids, self.triangle_adjacency_list
+        )

@@ -18,15 +18,11 @@ from utils.constants import coco_categories, coco_label_mapping
 from scene_graph.scene_graph_base import SceneGraphBase
 from scene_graph.utils import (
     visualize_scene_graph,
+    generate_region_adjacency_description,
+    generate_region_description
 )
 from perception.grid_map import GridMap
 from perception.nav_mesh import NavMesh
-from perception.mesh_utils import (
-    compute_triangle_adjacency,
-    propagate_triangle_region_ids,
-    build_region_triangle_adjacency_graph
-)
-
 class SceneGraphMP3D(SceneGraphBase):
 
     def __init__(self, **kwargs) -> None:
@@ -82,7 +78,7 @@ class SceneGraphMP3D(SceneGraphBase):
                 
                 region_node = self.region_layer.add_region(
                     region_bbox,
-                    id=region_id,
+                    region_id=region_id,
                     class_name=region_class_name,
                     label=region_label,
                 )
@@ -119,6 +115,18 @@ class SceneGraphMP3D(SceneGraphBase):
 
                         # connect object to region
                         region_node.add_object(object_node)
+                    
+            # 4. build region triangle adjacency graph
+            # algorithm to build abstract scene graph:
+            # 1) segment navmesh with region bbox; 2) propogate non-labeled triangles 3) build adjaceny graph
+            self.nav_mesh.segment_by_region_bbox(
+                {region.region_id: region.bbox for region in self.regions}
+            )
+            self.nav_mesh.propagate_region_ids()
+            self.region_layer.add_region_adjacency_edges(
+                self.nav_mesh.triangle_region_ids, self.nav_mesh.triangle_adjacency_list
+            )
+                    
                     
     def load_gt_geometry(self):
         # load the ply file of the scene
@@ -158,78 +166,32 @@ if __name__ == "__main__":
     sg.load_gt_scene_graph(sim)
     sg.load_gt_geometry()
 
-    # Segment navigation mesh by region bounding box
-    region_bbox_dict = {
-        region_id: region.bbox for region_id, region in sg.region_layer.region_dict.items()
-    }
-
     # save the navmesh triangle mesh and region bounding box dict to files
     # o3d.io.write_triangle_mesh("1LXtFkjw3qL.obj", sg.nav_mesh.mesh)
     # pickle.dump(region_bbox_dict, open("1LXtFkjw3qL_region_bbox_dict.pkl", "wb"))
-
-    # algorithm to build abstract scene graph:
-    # 1) segment navmesh with region bbox; 2) propogate non-labeled triangles 3) build adjaceny graph
-    sg.nav_mesh.segment_by_region_bbox(region_bbox_dict)
-    sg.nav_mesh.triangle_region_ids = propagate_triangle_region_ids(
-        sg.nav_mesh.triangle_region_ids, sg.nav_mesh.triangle_adjacency_list
-    )
-    abs_graph = build_region_triangle_adjacency_graph(
-        sg.nav_mesh.triangle_region_ids, sg.nav_mesh.triangle_adjacency_list
-    )
-
-    # assign region name and bbox center to each region node
-    for region_id in abs_graph.nodes:
-        abs_graph.nodes[region_id]["name"] = sg.region_layer.region_dict[region_id].class_name + str(region_id)
-        abs_graph.nodes[region_id]["bbox_center"] = sg.region_layer.region_dict[region_id].bbox.mean(axis=0)
 
     sim.close()
     
     ############# Visualization ##################
     
-    # visualize_scene_graph(
-    #     scene_graph=sg,
-    #     scene_o3d=sg.gt_point_cloud,
-    #     vis_region_bbox=True,
-    #     vis_object_bbox=False,
-    #     vis_navmesh=True,
-    #     navmesh_shift=[0, 0, -8.0],
-    #     vis_region_graph=True,
-    #     region_graph=abs_graph,
-    #     region_graph_shift=[0, 0, 10.0],
-    #     mp3d_coord=True
-    # )
+    visualize_scene_graph(
+        scene_graph=sg,
+        scene_o3d=sg.gt_point_cloud,
+        vis_region_bbox=True,
+        vis_object_bbox=False,
+        vis_navmesh=True,
+        navmesh_shift=[0, 0, -8.0],
+        vis_region_graph=True,
+        region_graph_shift=[0, 0, 10.0],
+        mp3d_coord=True
+    )
 
     ############ Generate scene description ###########
-    def generate_region_scene_graph_description(abs_graph):
-        num_regions = len(abs_graph.nodes)
-        description = "There are {} regions in the scene.\n".format(num_regions)
-        
-        for region_id in abs_graph.nodes:
-            region = abs_graph.nodes[region_id]
-            description += "The {}-th region is named {} with a center at ({}).\n".format(
-                region_id, region["name"], region["bbox_center"]
-            )
-            for neighbor_id in abs_graph.neighbors(region_id):
-                description += "{} is connected to {}.\n".format(region["name"], abs_graph.nodes[neighbor_id]["name"])
 
-        return description
+    # # Generate scene descriptions
+    # region_scene_graph_description = generate_region_adjacency_description(sg.region_layer)
+    # region_description = generate_region_description(sg.region_layer, region_id=0)
 
-    def generate_region_description(region_layer):
-        description = "The following  text contains the objects contained in each region:\n"
-        for region_id, region in region_layer.region_dict.items():
-            region_full_name = region.class_name + str(region_id)
-            description += "Region {} contains the following objects:\n".format(region_full_name)
-            for obj in region.objects:
-                description += f"{obj.class_name}_{obj.id}; "
-            description += "\n"
-            
-        return description
-        
-
-    # Generate scene descriptions
-    region_scene_graph_description = generate_region_scene_graph_description(abs_graph)
-    region_description = generate_region_description(sg.region_layer)
-
-    print(region_scene_graph_description)
-    print("\n")
-    print(region_description)
+    # print(region_scene_graph_description)
+    # print("\n")
+    # print(region_description)

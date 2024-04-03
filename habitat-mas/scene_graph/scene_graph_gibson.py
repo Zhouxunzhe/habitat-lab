@@ -74,7 +74,7 @@ class SceneGraphGibson(SceneGraphBase):
                 )
                 region_node = self.region_layer.add_region(
                     region_bbox,
-                    id=sg_region_id,
+                    region_id=sg_region_id,
                     class_name=region.category.name(),
                     label=region.category.index(),
                 )
