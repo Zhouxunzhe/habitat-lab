@@ -67,6 +67,17 @@ class OracleNavAction(BaseVelAction, BaseVelNonCylinderAction, HumanoidJointActi
             vel = [0, turn_vel]
         return vel
 
+    def update_base(self, *args, **kwargs):
+        """
+        Choose the update_base method based on the motion type
+        """
+        if self.motion_type == "base_velocity":
+            return BaseVelAction.update_base(self, *args, **kwargs)
+        elif self.motion_type == "base_velocity_non_cylinder":
+            return BaseVelNonCylinderAction.update_base(self, *args, **kwargs)
+        else:
+            raise ValueError(f"Unrecognized motion type {self.motion_type} for update_base function")
+
     def lazy_inst_humanoid_controller(self, task, config):
         # Lazy instantiation of humanoid controller
         # We assign the task with the humanoid controller, so that multiple actions can
@@ -289,7 +300,7 @@ class OracleNavAction(BaseVelAction, BaseVelNonCylinderAction, HumanoidJointActi
 
 
 @registry.register_task_action
-class OracleNavCoordinateAction(BaseVelNonCylinderAction, HumanoidJointAction):  # type: ignore
+class OracleNavCoordinateAction(BaseVelAction, BaseVelNonCylinderAction, HumanoidJointAction):  # type: ignore
     """
     An action to drive the anget to a given coordinate
     """
@@ -301,6 +312,7 @@ class OracleNavCoordinateAction(BaseVelNonCylinderAction, HumanoidJointAction): 
         self._targets = {}
         if self.motion_type == "base_velocity":
             BaseVelAction.__init__(self, *args, **kwargs)
+            
 
         elif self.motion_type == "base_velocity_non_cylinder":
             BaseVelNonCylinderAction.__init__(self, *args, **kwargs)
@@ -322,6 +334,17 @@ class OracleNavCoordinateAction(BaseVelNonCylinderAction, HumanoidJointAction): 
         else:
             vel = [0, turn_vel]
         return vel
+
+    def update_base(self, *args, **kwargs):
+        """
+        Choose the update_base method based on the motion type
+        """
+        if self.motion_type == "base_velocity":
+            return BaseVelAction.update_base(self, *args, **kwargs)
+        elif self.motion_type == "base_velocity_non_cylinder":
+            return BaseVelNonCylinderAction.update_base(self, *args, **kwargs)
+        else:
+            raise ValueError(f"Unrecognized motion type {self.motion_type} for update_base function")
 
     def lazy_inst_humanoid_controller(self, task, config):
         # Lazy instantiation of humanoid controller
