@@ -73,6 +73,21 @@ class GuiRobotController(GuiController):
         self._cam_yaw = cam_yaw
         self._hint_target_dir = target_dir
 
+    def get_articulated_agent(self):
+        return self._articulated_agent
+    
+    def get_base_translation(self):
+        return self._articulated_agent.base_transformation.translation
+
+    def _get_grasp_mgr(self):
+        agents_mgr = self._articulated_agent._sim.agents_mgr
+        grasp_mgr = agents_mgr._all_agent_data[self._agent_idx].grasp_mgr
+        return grasp_mgr
+
+    @property
+    def is_grasped(self):
+        return self._get_grasp_mgr().is_grasped
+
     def angle_from_sim_obj_forward_dir_to_target_yaw(
         self, sim_obj, target_yaw
     ):

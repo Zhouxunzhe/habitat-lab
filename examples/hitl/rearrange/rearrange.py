@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import hydra
 import magnum as mn
@@ -20,6 +20,7 @@ from habitat_hitl.core.text_drawer import TextOnScreenAlignment
 from habitat_hitl.environment.camera_helper import CameraHelper
 from habitat_hitl.environment.controllers.gui_controller import (
     GuiHumanoidController,
+    GuiRobotController,
 )
 from habitat_hitl.environment.gui_navigation_helper import GuiNavigationHelper
 from habitat_hitl.environment.hablab_utils import (
@@ -46,7 +47,7 @@ class AppStateRearrange(AppState):
         app_service: AppService,
     ):
         self._app_service = app_service
-        self._gui_agent_ctrl: Any = (
+        self._gui_agent_ctrl: Union[GuiHumanoidController, GuiRobotController] = (
             self._app_service.gui_agent_controllers[0]
             if len(self._app_service.gui_agent_controllers)
             else None
@@ -279,13 +280,11 @@ class AppStateRearrange(AppState):
         return self._gui_agent_ctrl._agent_idx
 
     def _get_agent_translation(self):
-        assert isinstance(self._gui_agent_ctrl, GuiHumanoidController)
         return (
-            self._gui_agent_ctrl._humanoid_controller.obj_transform_base.translation
+            self._gui_agent_ctrl.get_base_translation()
         )
 
     def _get_agent_feet_height(self):
-        assert isinstance(self._gui_agent_ctrl, GuiHumanoidController)
         base_offset = (
             self._gui_agent_ctrl.get_articulated_agent().params.base_offset
         )
@@ -523,7 +522,7 @@ def create_app_state(app_service):
 
 
 @hydra.main(
-    version_base=None, config_path="config", config_name="hitl_rearrange"
+    version_base=None, config_path="config", config_name="hitl_rearrange_spot"
 )
 def main(config):
     hitl_main(config, create_app_state)
