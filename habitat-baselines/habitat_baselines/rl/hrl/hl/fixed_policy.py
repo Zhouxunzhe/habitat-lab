@@ -55,13 +55,20 @@ class FixedHighLevelPolicy(HighLevelPolicy):
                 hl_action.name,
                 [x.name for x in hl_action.param_values],
             )
-            solution_actions.append(sol_action)
-
+            # Avoid adding plan actions that are assigned to other agents to the list.
+            agent_idx = self._agent_name.split("_")[-1]
+            for j, param in enumerate(hl_action.params):
+                param_name = param.name
+                param_value = hl_action.param_values[j].name
+                # if the action is assigned to current agent, add it to the list
+                if param_name == "robot" and param_value.split("_")[-1] == agent_idx:
+                    solution_actions.append(sol_action)
+            
             if self._config.add_arm_rest and i < (len(solution) - 1):
                 solution_actions.append(parse_func("reset_arm(0)"))
 
         # Add a wait action at the end.
-        solution_actions.append(parse_func("wait(30)"))
+        solution_actions.append(parse_func("wait(3000)"))
 
         return solution_actions
 
