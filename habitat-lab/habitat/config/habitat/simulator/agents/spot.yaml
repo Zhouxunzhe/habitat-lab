@@ -4,6 +4,7 @@ defaults:
   - _self_
 
 radius: 0.25
-height: 1.41
+height: 1.0
 articulated_agent_type: "SpotRobot"
 articulated_agent_urdf: data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf
+ik_arm_urdf: "data/robots/hab_spot_arm/urdf/hab_spot_onlyarm_dae.urdf"

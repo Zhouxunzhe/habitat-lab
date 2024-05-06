@@ -52,7 +52,7 @@ class DJIDrone(MobileManipulator):
             wheel_mtr_pos_gain=0.0,
             wheel_mtr_vel_gain=0.0,
             wheel_mtr_max_impulse=0.0,
-            base_offset=mn.Vector3(0, 0, 0),
+            base_offset=mn.Vector3(0, -1.5, 0),
             base_link_names={"m100_base_link"},
         )
     

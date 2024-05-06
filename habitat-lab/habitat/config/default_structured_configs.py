@@ -297,6 +297,17 @@ class ArmActionConfig(ActionConfig):
     center_cone_vector: Optional[List[float]] = None
     auto_grasp: bool = False
 
+@dataclass
+class OracleArmActionConfig(ArmActionConfig):
+    r"""
+    In Rearrangement tasks only, the action that will move the robot arm around. The action represents to delta angle (in radians) of each joint.
+    Use pybullet IK planner to control the arm action.
+    """
+    type: str = "ArmAction"
+    arm_controller: str = "OraclePickAction"
+    grip_controller: str = "SuctionGraspAction"
+    grasp_thresh_dist: float = 0.0
+    render_ee_target: bool = True
 
 @dataclass
 class BaseVelocityActionConfig(ActionConfig):
@@ -737,6 +748,10 @@ class HasFinishedOracleNavSensorConfig(LabSensorConfig):
 class HasFinishedHumanoidPickSensorConfig(LabSensorConfig):
     type: str = "HasFinishedHumanoidPickSensor"
 
+
+@dataclass
+class HasFinishedArmActionSensorConfig(LabSensorConfig):
+    type: str = "HasFinishedArmActionSensor"
 
 @dataclass
 class OtherAgentGpsConfig(LabSensorConfig):
@@ -2067,6 +2082,13 @@ cs.store(
     node=ArmActionConfig,
 )
 cs.store(
+    package="habitat.task.actions.arm_action",
+    group="habitat/task/actions",
+    name="oracle_arm_action",
+    node=OracleArmActionConfig,
+)
+
+cs.store(
     package="habitat.task.actions.base_velocity",
     group="habitat/task/actions",
     name="base_velocity",
@@ -2077,6 +2099,12 @@ cs.store(
     group="habitat/task/actions",
     name="base_velocity_non_cylinder",
     node=BaseVelocityNonCylinderActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.drone_base_velocity",
+    group="habitat/task/actions",
+    name="drone_base_velocity",
+    node=DroneBaseVelActionConfig,
 )
 cs.store(
     package="habitat.task.actions.humanoidjoint_action",
