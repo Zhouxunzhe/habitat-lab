@@ -119,7 +119,11 @@ class OracleNavPolicy(NnSkillPolicy):
         return ret
 
     def _parse_skill_arg(self, skill_name: str, skill_arg):
-        if len(skill_arg) == 2:
+        # if skill arg is a dictionary
+        if isinstance(skill_arg, dict):
+            # decode string to dictionary
+            search_target = skill_arg["target_obj"]
+        elif len(skill_arg) == 2:
             search_target, _ = skill_arg
         elif len(skill_arg) == 3:
             _, search_target, _ = skill_arg
