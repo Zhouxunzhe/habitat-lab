@@ -28,7 +28,7 @@ To run the demo, you need to first install [habitat-lab](../habitat-lab/) and [h
 The dataset used in the demo is the same as [Habitat-3.0 Multi-Agent Training](../habitat-baselines/README.md#habitat-30-multi-agent-training). You can download the dataset by running the following command:
 
 ```sh
-python -m habitat_sim.utils.datasets_download --uids hssd-hab hab3-episodes habitat_humanoids hab3_bench_assets
+python -m habitat_sim.utils.datasets_download --uids hssd-hab hab3-episodes habitat_humanoids hab3_bench_assets rearrange_task_assets
 ```
 
 Besides, you should also download a drone urdf to insert into the environment. You can download the urdf from [here](https://drive.google.com/file/d/1WO4yUQaZRvlYcDY-A0ukNjOWmVg2nWEd/view?usp=sharing)
