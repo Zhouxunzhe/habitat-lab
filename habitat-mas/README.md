@@ -22,7 +22,7 @@ pip install -e habitat-mas
 
 ## Usage
 
-To run the demo, you need to first install [habitat-lab](../habitat-lab/) and [habitat-baselines](../habitat-baselines/) following the normal habitat-lab installation guide.
+To run the demo, you need to first install [habitat-lab](../README.md) and [habitat-baselines](../habitat-baselines/) following the normal habitat-lab installation guide.
 
 ### Download Data
 The dataset used in the demo is the same as [Habitat-3.0 Multi-Agent Training](../habitat-baselines/README.md#habitat-30-multi-agent-training). You can download the dataset by running the following command:
