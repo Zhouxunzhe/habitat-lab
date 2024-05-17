@@ -3,8 +3,8 @@ import open3d as o3d
 import os
 import pickle
 import numpy as np
-from perception.nav_mesh import NavMesh
-from perception.mesh_utils import (
+from habitat_mas.perception.nav_mesh import NavMesh
+from habitat_mas.perception.mesh_utils import (
     propagate_triangle_region_ids,
     propagate_vertex_region_ids,
     visualize_triangle_region_segmentation
