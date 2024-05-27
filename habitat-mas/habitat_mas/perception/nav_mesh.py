@@ -1,7 +1,7 @@
 import numpy as np
 import open3d as o3d
 from typing import Dict, List
-from perception.mesh_utils import (
+from habitat_mas.perception.mesh_utils import (
     compute_triangle_adjacency, 
     propagate_triangle_region_ids
 )

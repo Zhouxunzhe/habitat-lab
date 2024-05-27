@@ -1,9 +1,32 @@
 import os
+from typing import Dict, List, Tuple
+import numpy as np
+import magnum as mn
 from openai import OpenAI
 from urchin import URDF, Link, Joint
-from habitat_mas.agents.llm_api_keys import get_openai_client
 import networkx as nx
 from networkx.readwrite.text import generate_network_text
+import habitat_sim
+from omegaconf import DictConfig
+from habitat.articulated_agents.mobile_manipulator import (
+    ArticulatedAgentCameraParams,
+    MobileManipulatorParams
+)
+from habitat.articulated_agents.articulated_agent_base import ArticulatedAgentBase
+from habitat.articulated_agents.robots.fetch_robot import FetchRobot
+from habitat.articulated_agents.robots.spot_robot import SpotRobot
+from habitat.articulated_agents.robots.stretch_robot import StretchRobot
+from habitat.articulated_agents.robots.dji_drone import DJIDrone
+
+from habitat_mas.agents.llm_api_keys import get_openai_client
+from habitat_mas.agents.sim_utils import make_cfg, default_sim_settings
+from habitat_mas.agents.robots.defaults import (
+    get_robot_link_id2name_map,
+    fetch_camera_params,
+    spot_camera_params,
+    stretch_camera_params,
+    dji_camera_params
+)
 
 default_tasks = """
 Cross-floor object rearrangement (pick and place objects from one floor to another);
@@ -11,12 +34,145 @@ Cooperative Perception for manipulation: Robots need to search for and perceive 
 Home arrangement: Robots need to rearrange the furniture in the home, especially the objects in abnormal positions like on the high shelf and under table.
 """
 
+def generate_robot_link_id2name():
+    # Define the settings for the simulator
+    produce_debug_video = False
+    observations = []
+    cfg_settings = default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
 
-        
-# Function to read and parse URDF file
+    # Create the simulator configuration
+    hab_cfg = make_cfg(cfg_settings)
+    # Define the robots to initialize
+    robot_configs = [
+        {"path": "data/robots/hab_fetch/robots/hab_fetch.urdf", "class": FetchRobot},
+        {"path": "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf", "class": SpotRobot},
+        {"path": "data/robots/hab_stretch/urdf/hab_stretch.urdf", "class": StretchRobot},
+        # NOTE: DJI Drone already has a camera in the URDF
+        # {"path": "data/robots/hab_dji_drone/robots/hab_dji_drone.urdf", "class": DJIDrone},
+    ]
+    
+    robot_link_id2name_map = {}
+
+    for robot_config in robot_configs:
+        with habitat_sim.Simulator(hab_cfg) as sim:
+            obj_template_mgr = sim.get_object_template_manager()
+            rigid_obj_mgr = sim.get_rigid_object_manager()
+
+            # setup the camera for debug video (looking at 0,0,0)
+            sim.agents[0].scene_node.translation = [0.0, -1.0, 2.0]
+
+            # add a ground plane
+            cube_handle = obj_template_mgr.get_template_handles("cubeSolid")[0]
+            cube_template_cpy = obj_template_mgr.get_template_by_handle(cube_handle)
+            cube_template_cpy.scale = np.array([5.0, 0.2, 5.0])
+            obj_template_mgr.register_template(cube_template_cpy)
+            ground_plane = rigid_obj_mgr.add_object_by_template_handle(cube_handle)
+            ground_plane.translation = [0.0, -0.2, 0.0]
+            ground_plane.motion_type = habitat_sim.physics.MotionType.STATIC
+
+            # compute a navmesh on the ground plane
+            navmesh_settings = habitat_sim.NavMeshSettings()
+            navmesh_settings.set_defaults()
+            navmesh_settings.include_static_objects = True
+            sim.recompute_navmesh(sim.pathfinder, navmesh_settings)
+            sim.navmesh_visualization = True
+
+            # add the robot to the world via the wrapper
+            robot_path = robot_config["path"]
+            robot_class = robot_config["class"]
+            agent_config = DictConfig({"articulated_agent_urdf": robot_path})
+            robot = robot_class(agent_config, sim, fixed_base=True)
+
+            # reconfigure and update the robot
+            robot.reconfigure()
+            robot.update()
+
+            # map link ids to names and print the map
+            map_link_id_to_name = {}
+            for link_id in robot.sim_obj.get_link_ids():
+                map_link_id_to_name[link_id] = robot.sim_obj.get_link_name(link_id)
+            
+            robot_link_id2name_map[robot_class.__name__] = map_link_id_to_name
+            
+    return robot_link_id2name_map
+
+################# URDF Processing #################
+
 def parse_urdf(file_path):
-    robot = URDF.load(file_path)
+    """Function to read and parse URDF file"""
+    robot = URDF.load(file_path, lazy_load_meshes=True)
     return robot
+
+def add_cameras_to_urdf(urdf: URDF, camera_params: Dict[str, ArticulatedAgentCameraParams], 
+                        robot_name:str, skip_link=["third"]):
+    """
+    Add camera to the URDF
+    
+    Parameters:
+        urdf (URDF): The URDF object to which the camera is to be added.
+        camera_params: A dictionary containing the camera parameters.
+        robot_name: The name of the robot. [FetchRobot, SpotRobot, StretchRobot]
+        skip_link: A list of links to skip when calculating the height of the camera. Default is ["third"].
+    """
+    robot_link_id2name_map = get_robot_link_id2name_map(robot_name)
+    
+    for camera_name, camera_param in camera_params.items():
+        if camera_name in skip_link:
+            continue
+        camera_link = Link(
+            name=camera_name,
+            inertial=None,
+            visuals=[],
+            collisions=[],
+        )
+        urdf._links.append(camera_link)
+        
+        if camera_param.attached_link_id == -1:
+            camera_attached_link = urdf.base_link.name
+        else:
+            camera_attached_link = robot_link_id2name_map[camera_param.attached_link_id]
+        
+        # Origin must be specified as a 4x4 homogenous transformation matrix
+        # Convert camera_param.cam_offset_pos to 4x4 matrix
+        origin = np.eye(4, dtype=np.float64)
+        origin[:3, 3] = np.array(camera_param.cam_offset_pos)
+        # TODO: orientation not used in following applications, skip for now
+        # orientation = camera_param.cam_orientation
+        relative_transform: mn.Matrix4 = camera_param.relative_transform
+        
+        # transform the origin matrix with relative_transform
+        habitat2urdf_transform = mn.Matrix4.rotation_x(mn.Deg(90))
+        origin[:3, 3] = habitat2urdf_transform.transform_point(
+            relative_transform.transform_point(origin[:3, 3])
+        )
+
+        # orientation = relative_transform.transform_vector(orientation)
+        
+        camera_joint = Joint(
+            name=f"{camera_name}_joint",
+            parent=camera_attached_link,
+            child=camera_name,
+            joint_type="fixed",
+            origin=origin,
+            # axis=orientation
+        )
+        urdf._joints.append(camera_joint)
+        
+
+def save_urdf(urdf: URDF, file_path):
+    """Function to save URDF to file"""
+    urdf.save(file_path)
+
+def save_urdf_with_cameras(urdf_file_path: str, camera_params: Dict[str, ArticulatedAgentCameraParams], file_path, robot_name):
+    """Function to save URDF with cameras to file"""
+    urdf = parse_urdf(urdf_file_path)
+    add_cameras_to_urdf(urdf, camera_params, robot_name)
+    save_urdf(urdf, file_path)
+
+
+################# LLM URDF Understanding #################
 
 def generate_tree_text_with_edge_types(graph, root):
     """
@@ -115,6 +271,7 @@ Please provide a summary of the robot's physics capabilities based on this infor
     summary = response.choices[0].message.content
     return summary
 
+
 def generate_physics_summary(urdf_file_path:str, save_path=None):
     urdf = parse_urdf(urdf_file_path)
     summary = query_llm_with_urdf(urdf)
@@ -124,9 +281,46 @@ def generate_physics_summary(urdf_file_path:str, save_path=None):
         with open(save_path, "w") as f:
             f.write(summary)
 
+
+def generate_urdf_with_cameras():
+    
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+    
+    robot_urdfs = {
+        "FetchRobot": os.path.join(data_dir, "robots/hab_fetch/robots/hab_fetch.urdf"),
+        "SpotRobot": os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf"),
+        "StretchRobot": os.path.join(data_dir, "robots/hab_stretch/urdf/hab_stretch.urdf"),
+        # "DJIDrone": os.path.join(data_dir, "robots/hab_dji_drone/robots/hab_dji_drone.urdf"),
+    }
+    
+    robot_camera_params = {
+        "FetchRobot": fetch_camera_params["default"],
+        "SpotRobot": spot_camera_params["default"],
+        "StretchRobot": stretch_camera_params["default"],
+    }
+
+    for robot_name, urdf_file_path in robot_urdfs.items():
+        urdf_file_name = os.path.basename(urdf_file_path).split(".")[0]
+        save_path = os.path.join(cur_dir, f"../../data/robot_urdf/{urdf_file_name}_with_cameras.urdf")
+        robot_class:ArticulatedAgentBase = eval(robot_name)
+        camera_params = robot_camera_params[robot_name]
+        save_urdf_with_cameras(urdf_file_path, camera_params, save_path, robot_name)
+
+
 if __name__ == "__main__":
     cur_dir = os.path.dirname(os.path.realpath(__file__))
     data_dir = os.path.join(cur_dir, "../../../../data")
-    urdf_file_path = os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf")
-    save_path = os.path.join(cur_dir, "../../data/robot_resume/hab_spot_arm.txt")
-    generate_physics_summary(urdf_file_path, save_path)
+
+    # Data generation: Get robot link to name mapping from classes
+    # robot_link_id2name_map = generate_robot_link_id2name()
+    # print("\n----------------------------------------------------------------------------\n")
+    # print(robot_link_id2name_map)
+    
+    # Data generation: Add cameras to urdf file and save to new file
+    generate_urdf_with_cameras()
+
+    # urdf_file_path = os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf")
+    # save_path = os.path.join(cur_dir, "../../data/robot_resume/hab_spot_arm.txt")
+    # urdf_file_path = os.path.join(cur_dir, "../../data/robot_urdf/hab_spot_arm_with_cameras.urdf")
+    # save_path = os.path.join(cur_dir, "../../data/robot_resume/hab_spot_arm_with_cameras.txt")
+    # generate_physics_summary(urdf_file_path, save_path)
