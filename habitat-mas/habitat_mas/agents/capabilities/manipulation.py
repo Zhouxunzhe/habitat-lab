@@ -11,8 +11,14 @@ from habitat.tasks.rearrange.rearrange_sim import RearrangeSim
 from habitat.tasks.rearrange.utils import get_aabb, IkHelper
 from matplotlib import pyplot as plt
 
+
 def get_arm_workspace(
-    sim: RearrangeSim, agent_id: int, num_bins=5, geometry: str = "sphere", visualize=False
+    sim: RearrangeSim,
+    agent_id: int,
+    num_bins=5,
+    geometry: str = "box",
+    visualize=False,
+    subtract_base=True,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Get the workspace of the arm of the agent.
@@ -36,9 +42,7 @@ def get_arm_workspace(
     joint_positions = np.meshgrid(
         *[
             np.linspace(
-                joint_limits_lower[i],
-                joint_limits_uppper[i],
-                num_bins
+                joint_limits_lower[i], joint_limits_uppper[i], num_bins
             )
             for i in range(len(joint_limits_lower))
         ]
@@ -57,37 +61,26 @@ def get_arm_workspace(
         agent.arm_joint_pos = joint_position
         agent.fix_joint_values = joint_position
         end_effector_position = agent.ee_transform().translation
-        
+
         # Append the end effector position to the list
         end_effector_positions.append(end_effector_position)
 
     # Convert the end effector positions to a numpy array
     end_effector_positions = np.array(end_effector_positions)
+    
+    # get robot feet position 
+    base_pos = sim.agents_mgr[agent_id].articulated_agent.base_transformation.translation + \
+        sim.agents_mgr[agent_id].articulated_agent.params.base_offset
+    if subtract_base:
+        end_effector_positions -= base_pos
 
     # Visualize the end effector positions
     if visualize:
         for i, end_effector_position in enumerate(end_effector_positions):
             marker_name = f"end_effector_{i}"
-            sim.viz_ids[marker_name] = sim.visualize_position(end_effector_position, r=0.01)
-
-    # if visualize:
-        
-    #     # get current ee position
-    #     cur_base_pos = agent.base_pos
-    #     cur_ee_pos = agent.ee_transform().translation
-        
-    #     # Visualize the sampled end effector positions
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111, projection='3d')
-    #     ax.scatter(end_effector_positions[:, 0], end_effector_positions[:, 1], end_effector_positions[:, 2], c='r', marker='o', s=0.1)
-        
-    #     # Visualize the current base and end effector positions
-    #     ax.scatter(cur_base_pos[0], cur_base_pos[1], cur_base_pos[2], c='g', marker='o', s=10)
-    #     ax.scatter(cur_ee_pos[0], cur_ee_pos[1], cur_ee_pos[2], c='b', marker='o', s=10)
-    #     ax.set_xlabel('X')
-    #     ax.set_ylabel('Y')
-    #     ax.set_zlabel('Z')
-    #     plt.show()
+            sim.viz_ids[marker_name] = sim.visualize_position(
+                end_effector_position, r=0.01
+            )
 
     if geometry == "sphere":
         # Calculate the center of the sphere
@@ -105,5 +98,8 @@ def get_arm_workspace(
         # Calculate the minimum and maximum x, y, and z coordinates
         min_coords = np.min(end_effector_positions, axis=0)
         max_coords = np.max(end_effector_positions, axis=0)
-        
+
         return min_coords, max_coords
+
+    else: # pragma: no cover
+        raise ValueError("Invalid geometry")
