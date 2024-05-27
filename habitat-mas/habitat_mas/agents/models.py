@@ -1,3 +1,4 @@
+import json
 from .crab_core import Action
 from typing import List
 import openai
@@ -58,10 +59,11 @@ class OpenAIModel:
                 }
             )  # extend conversation with function response
 
-        if len(tool_calls) !=1 :
+        if len(tool_calls) != 1:
             raise RuntimeError("agent output more than one action per step.")
         call = tool_calls[0]
-        return (call.function.name, call.function.arguments)
+        parameters = json.loads(call.function.arguments)
+        return (call.function.name, parameters)
         # function_call_res = []
         # for call in tool_calls:
         #     action_name = call.function.name

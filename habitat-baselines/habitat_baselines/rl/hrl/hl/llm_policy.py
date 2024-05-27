@@ -25,17 +25,28 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         super().__init__(*args, **kwargs)
         self._all_actions = self._setup_actions()
         self._n_actions = len(self._all_actions)
-        environment_action_name_set = set([action._name for action in self._all_actions])
+        environment_action_name_set = set(
+            [action._name for action in self._all_actions]
+        )
 
-        llm_actions = [action for action in ACTION_POOL if action.name in environment_action_name_set]
+        llm_actions = [
+            action
+            for action in ACTION_POOL
+            if action.name in environment_action_name_set
+        ]
         # Initialize the LLM agent
-        self._llm_agent = self._init_llm_agent(llm_actions)
+        self._llm_agent = self._init_llm_agent(kwargs["agent_name"], llm_actions)
 
-    def _init_llm_agent(self, action_list):
+    def _init_llm_agent(self, agent_name, action_list):
         # Initialize the LLM agent here based on the config
         # This could load a pre-trained model, set up prompts, etc.
         # Return the initialized agent
-        return CrabAgent("test-agent", "pick up an apple", action_list)
+        action_list.append(send_request)
+        return CrabAgent(
+            agent_name,
+            'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
+            action_list,
+        )
 
     def _parse_function_call_args(self, llm_args: Dict) -> str:
         """
@@ -68,6 +79,11 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             # Query the LLM agent with the current observations
             # to get the next action and arguments
             llm_output = self._llm_agent.chat(observations[batch_idx])
+            if llm_output is None:
+                next_skill[batch_idx] = self._skill_name_to_idx["wait"]
+                skill_args_data[batch_idx] = ["1"]
+                continue
+
             action_name = llm_output["name"]
             action_args = self._parse_function_call_args(llm_output["arguments"])
 
