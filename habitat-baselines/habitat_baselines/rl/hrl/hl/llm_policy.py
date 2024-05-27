@@ -1,12 +1,20 @@
+# ruff: noqa
 from typing import Any, Dict, List, Tuple
 
 import torch
-
 from habitat.tasks.rearrange.multi_task.pddl_action import PddlAction
-from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
-from habitat_baselines.rl.ppo.policy import PolicyActionData
+from habitat_mas.agents.actions.arm_actions import *
+from habitat_mas.agents.actions.base_actions import *
+from habitat_mas.agents.crab_agent import CrabAgent
+
 # TODO: replace dummy_agent with llm_agent
 from habitat_mas.agents.dummy_agent import DummyAgent
+
+from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
+from habitat_baselines.rl.ppo.policy import PolicyActionData
+
+ACTION_POOL = [get_agents, send_request, nav_to_obj, nav_to_goal, pick, place]
+
 
 class LLMHighLevelPolicy(HighLevelPolicy):
     """
@@ -17,22 +25,35 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         super().__init__(*args, **kwargs)
         self._all_actions = self._setup_actions()
         self._n_actions = len(self._all_actions)
-        
-        # Initialize the LLM agent
-        self._llm_agent = self._init_llm_agent()
+        environment_action_name_set = set(
+            [action._name for action in self._all_actions]
+        )
 
-    def _init_llm_agent(self):
+        llm_actions = [
+            action
+            for action in ACTION_POOL
+            if action.name in environment_action_name_set
+        ]
+        # Initialize the LLM agent
+        self._llm_agent = self._init_llm_agent(kwargs["agent_name"], llm_actions)
+
+    def _init_llm_agent(self, agent_name, action_list):
         # Initialize the LLM agent here based on the config
         # This could load a pre-trained model, set up prompts, etc.
         # Return the initialized agent
-        return DummyAgent()
+        action_list.append(send_request)
+        return CrabAgent(
+            agent_name,
+            'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
+            action_list,
+        )
 
     def _parse_function_call_args(self, llm_args: Dict) -> str:
         """
         Parse the arguments of a function call from the LLM agent to the policy input argument format.
         """
         return llm_args
-        
+
     def get_next_skill(
         self,
         observations,
@@ -58,8 +79,13 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             # Query the LLM agent with the current observations
             # to get the next action and arguments
             llm_output = self._llm_agent.chat(observations[batch_idx])
-            action_name = llm_output['name'] 
-            action_args = self._parse_function_call_args(llm_output['arguments'])
+            if llm_output is None:
+                next_skill[batch_idx] = self._skill_name_to_idx["wait"]
+                skill_args_data[batch_idx] = ["1"]
+                continue
+
+            action_name = llm_output["name"]
+            action_args = self._parse_function_call_args(llm_output["arguments"])
 
             if action_name in self._skill_name_to_idx:
                 next_skill[batch_idx] = self._skill_name_to_idx[action_name]
@@ -70,7 +96,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
                 skill_args_data[batch_idx] = ["1"]
 
         return (
-            next_skill, 
+            next_skill,
             skill_args_data,
             immediate_end,
             PolicyActionData(),

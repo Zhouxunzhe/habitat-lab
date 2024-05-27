@@ -3,7 +3,7 @@ from typing import List, Dict, Tuple, Union
 import numpy as np
 from habitat import Env
 
-from crab import action
+from ..crab_core import action
 
 
 @action
