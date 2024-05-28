@@ -8,7 +8,7 @@ from habitat.tasks.rearrange.actions.oracle_nav_action import (
     OracleNavAction
 )
 
-from crab import action
+from ..crab_core import action
 
 # TODO: to connect with the habitat-lab/ habitat-mas agents. 
 
@@ -16,9 +16,6 @@ from crab import action
 def get_agents() -> List[str]:
     """
     Get the list of agents in the environment.
-    
-    Args:
-        None
     """
     pass
 
