@@ -1,0 +1,581 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<robot name="spot">
+  <link name="base">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="1.56 0.0 0.0"/>
+      <mass value="70.1294"/>
+      <inertia ixx="1.5" ixy="0.0" ixz="0.0" iyy="1.5" iyz="0.0" izz="0.5"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/base.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/base.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="fl.hip">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/fl.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/fl.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="fl.uleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/fl.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/fl.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="fl.lleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/fl.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/fl.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="fr.hip">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/fr.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/fr.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="fr.uleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/fr.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/fr.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="fr.lleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/fr.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/fr.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="hl.hip">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/hl.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/hl.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="hl.uleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/hl.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/hl.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="hl.lleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/hl.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/hl.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="hr.hip">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/hr.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/hr.hip.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="hr.uleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/hr.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/hr.uleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="hr.lleg">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/hr.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/hr.lleg.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_sh0">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_sh0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_sh0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_sh1">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_sh1.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_sh1.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_hr0">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_hr0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_hr0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_el0">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_el0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_el0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_el1">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_el1.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_el1.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_wr0">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_wr0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_wr0.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_wr1">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_wr1.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_wr1.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="arm0.link_fngr">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_fngr.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshesColored/arm0.link_fngr.glb"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="articulated_agent_arm_depth">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <link name="articulated_agent_arm_rgb">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <link name="articulated_agent_arm_panoptic">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <joint name="fl.hx" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.804862" upper="0.772428"/>
+    <parent link="base"/>
+    <child link="fl.hip"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.29785 0.055 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="fl.hy" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.8804" upper="2.26513"/>
+    <parent link="fl.hip"/>
+    <child link="fl.uleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.0 0.110945 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="fl.kn" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-2.80883" upper="-0.264082"/>
+    <parent link="fl.uleg"/>
+    <child link="fl.lleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.025 0.0 -0.3205" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="fr.hx" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.777519" upper="0.788929"/>
+    <parent link="base"/>
+    <child link="fr.hip"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.29785 -0.055 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="fr.hy" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.868926" upper="2.27521"/>
+    <parent link="fr.hip"/>
+    <child link="fr.uleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.0 -0.110945 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="fr.kn" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-2.80347" upper="-0.278219"/>
+    <parent link="fr.uleg"/>
+    <child link="fr.lleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.025 0.0 -0.3205" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="hl.hx" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.804268" upper="0.773025"/>
+    <parent link="base"/>
+    <child link="hl.hip"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="-0.29785 0.055 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="hl.hy" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.912476" upper="2.23797"/>
+    <parent link="hl.hip"/>
+    <child link="hl.uleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.0 0.110945 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="hl.kn" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-2.7618" upper="-0.232408"/>
+    <parent link="hl.uleg"/>
+    <child link="hl.lleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.025 0.0 -0.3205" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="hr.hx" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.792274" upper="0.781365"/>
+    <parent link="base"/>
+    <child link="hr.hip"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="-0.29785 -0.055 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="hr.hy" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-0.886536" upper="2.25781"/>
+    <parent link="hr.hip"/>
+    <child link="hr.uleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.0 -0.110945 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="hr.kn" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-2.80304" upper="-0.251421"/>
+    <parent link="hr.uleg"/>
+    <child link="hr.lleg"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.025 0.0 -0.3205" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.sh0" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-2.6179938779914944" upper="3.141592653589793"/>
+    <parent link="base"/>
+    <child link="arm0.link_sh0"/>
+    <axis xyz="0. 0. 1."/>
+    <origin xyz="0.292 0.0 0.188" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.sh1" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-3.141592653589793" upper="0.5235987755982988"/>
+    <parent link="arm0.link_sh0"/>
+    <child link="arm0.link_sh1"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.hr0" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-1000000.0" upper="1000000.0"/>
+    <parent link="arm0.link_sh1"/>
+    <child link="arm0.link_hr0"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.el0" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="0.0" upper="3.141592653589793"/>
+    <parent link="arm0.link_hr0"/>
+    <child link="arm0.link_el0"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.3385 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.el1" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-2.792526803190927" upper="2.792526803190927"/>
+    <parent link="arm0.link_el0"/>
+    <child link="arm0.link_el1"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.4033 0.0 0.075" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.wr0" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-1.8325957145940461" upper="1.8325957145940461"/>
+    <parent link="arm0.link_el1"/>
+    <child link="arm0.link_wr0"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.wr1" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-2.8797932657906435" upper="2.8797932657906435"/>
+    <parent link="arm0.link_wr0"/>
+    <child link="arm0.link_wr1"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="arm0.f1x" type="revolute">
+    <limit effort="1000.0" velocity="1000.0" lower="-1.57" upper="0.0"/>
+    <parent link="arm0.link_wr1"/>
+    <child link="arm0.link_fngr"/>
+    <axis xyz="0. 1. 0."/>
+    <origin xyz="0.11745 0.0 0.01482" rpy="0.0 0.0 0.0"/>
+  </joint>
+  <joint name="articulated_agent_arm_depth_joint" type="fixed">
+    <parent link="arm0.link_wr1"/>
+    <child link="articulated_agent_arm_depth"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="-7.256090395202364e-09 -0.01799999177455902 -0.16599999368190765" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="articulated_agent_arm_rgb_joint" type="fixed">
+    <parent link="arm0.link_wr1"/>
+    <child link="articulated_agent_arm_rgb"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.022999992594122887 -0.02999999187886715 -0.16599999368190765" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="articulated_agent_arm_panoptic_joint" type="fixed">
+    <parent link="arm0.link_wr1"/>
+    <child link="articulated_agent_arm_panoptic"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="-7.256090395202364e-09 -0.01799999177455902 -0.16599999368190765" rpy="0.0 -0.0 0.0"/>
+  </joint>
+</robot>
