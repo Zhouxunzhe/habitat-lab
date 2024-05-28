@@ -1,0 +1,225 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<robot name="dji_m100">
+  <link name="hab_m100_base_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <link name="m100_base_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="2.355"/>
+      <inertia ixx="0.0368" ixy="0.0" ixz="0.0" iyy="0.0368" iyz="0.0" izz="0.06792"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/dji_m100.dae" scale="0.5 0.5 0.5"/>
+      </geometry>
+      <material name="mat_0_0"/>
+      <origin xyz="0.0 0.0 0.0525" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="../meshes/dji_m100.dae" scale="0.5 0.5 0.5"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0525" rpy="0.0 -0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="led_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.001"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.0125 0.0125 0.025 "/>
+      </geometry>
+      <material name="mat_1_0"/>
+      <origin xyz="-0.05 0.0 0.05" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.0125 0.0125 0.0125"/>
+      </geometry>
+      <origin xyz="-0.05 0.0 0.05" rpy="0.0 -0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="veloydyne_base_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.01792" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.83"/>
+      <inertia ixx="0.00035" ixy="0.0" ixz="0.0" iyy="0.00035" iyz="0.0" izz="0.00046"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/VLP16_base_1.dae" scale="0.5 0.5 0.5"/>
+      </geometry>
+      <material name="mat_2_0"/>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/VLP16_base_2.dae" scale="0.5 0.5 0.5"/>
+      </geometry>
+      <material name="mat_2_1"/>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.0258" length="0.01792"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.01792" rpy="0.0 -0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="veloydyne">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.01"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/VLP16_scan.dae" scale="0.5 0.5 0.5"/>
+      </geometry>
+      <material name="mat_3_0"/>
+      <origin xyz="0.0 0.0 -0.01885" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="realsense_base_link">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <link name="realsense_camera">
+    <inertial>
+      <origin xyz="0.0 0.0 0.00625" rpy="0.0 -0.0 0.0"/>
+      <mass value="0.072"/>
+      <inertia ixx="1e-05" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="1e-05"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/realsense_d435.dae" scale="0.0005 0.0005 0.0005"/>
+      </geometry>
+      <material name="mat_5_0"/>
+      <origin xyz="0.0 0.0 0.00625" rpy="0.0 -0.0 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.0125 0.0445 0.0125"/>
+      </geometry>
+      <origin xyz="0.0 0.0 0.00625" rpy="0.0 -0.0 0.0"/>
+    </collision>
+  </link>
+  <link name="realsense_camera_parent">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <link name="realsense_depth_optical_frame">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+  <link name="head">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <joint name="hab_m100_joint" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="hab_m100_base_link"/>
+    <child link="m100_base_link"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="-1.5708 0.0 0.0"/>
+  </joint>
+  <joint name="led_joint" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="m100_base_link"/>
+    <child link="led_link"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="veloydyne_base_mount_joint" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="m100_base_link"/>
+    <child link="veloydyne_base_link"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.11" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="veloydyne_base_scan_joint" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="veloydyne_base_link"/>
+    <child link="veloydyne"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.01885" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="realsense_base_mount_joint" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="m100_base_link"/>
+    <child link="realsense_base_link"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0065 0.0 -0.01181" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="realsense_base_scan_joint" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="realsense_base_link"/>
+    <child link="realsense_camera"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.0325" rpy="0.0 0.2 0.0"/>
+  </joint>
+  <joint name="realsense_camera_to_camera_parent" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="realsense_camera"/>
+    <child link="realsense_camera_parent"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.01252 0.0075 0.00625" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="realsense_camera_parent_to_depth_optical_frame" type="fixed">
+    <dynamics damping="1.0" friction="0.0001"/>
+    <parent link="realsense_camera_parent"/>
+    <child link="realsense_depth_optical_frame"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="-1.5708 -0.0 -1.5708"/>
+  </joint>
+  <joint name="head_joint" type="fixed">
+    <parent link="hab_m100_base_link"/>
+    <child link="head"/>
+    <axis xyz="1. 0. 0."/>
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <material name="mat_0_0">
+    <color rgba="1. 1. 1. 1."/>
+  </material>
+  <material name="mat_1_0">
+    <color rgba="0. 1. 0. 1."/>
+  </material>
+  <material name="mat_2_0">
+    <color rgba="1. 1. 1. 1."/>
+  </material>
+  <material name="mat_2_1">
+    <color rgba="1. 1. 1. 1."/>
+  </material>
+  <material name="mat_3_0">
+    <color rgba="1. 1. 1. 1."/>
+  </material>
+  <material name="mat_5_0">
+    <color rgba="1. 1. 1. 1."/>
+  </material>
+</robot>

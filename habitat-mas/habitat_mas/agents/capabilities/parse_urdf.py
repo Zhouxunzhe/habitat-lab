@@ -12,7 +12,6 @@ from habitat.articulated_agents.mobile_manipulator import (
     ArticulatedAgentCameraParams,
     MobileManipulatorParams
 )
-from habitat.articulated_agents.articulated_agent_base import ArticulatedAgentBase
 from habitat.articulated_agents.robots.fetch_robot import FetchRobot
 from habitat.articulated_agents.robots.spot_robot import SpotRobot
 from habitat.articulated_agents.robots.stretch_robot import StretchRobot
@@ -50,7 +49,7 @@ def generate_robot_link_id2name():
         {"path": "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf", "class": SpotRobot},
         {"path": "data/robots/hab_stretch/urdf/hab_stretch.urdf", "class": StretchRobot},
         # NOTE: DJI Drone already has a camera in the URDF
-        # {"path": "data/robots/hab_dji_drone/robots/hab_dji_drone.urdf", "class": DJIDrone},
+        {"path": "data/robots/dji_drone/urdf/dji_m100_sensors_scaled.urdf", "class": DJIDrone},
     ]
     
     robot_link_id2name_map = {}
@@ -285,26 +284,30 @@ def generate_physics_summary(urdf_file_path:str, save_path=None):
 def generate_urdf_with_cameras():
     
     cur_dir = os.path.dirname(os.path.realpath(__file__))
-    
+    data_dir = os.path.join(cur_dir, "../../../../data")
+
     robot_urdfs = {
-        "FetchRobot": os.path.join(data_dir, "robots/hab_fetch/robots/hab_fetch.urdf"),
-        "SpotRobot": os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf"),
-        "StretchRobot": os.path.join(data_dir, "robots/hab_stretch/urdf/hab_stretch.urdf"),
-        # "DJIDrone": os.path.join(data_dir, "robots/hab_dji_drone/robots/hab_dji_drone.urdf"),
+        # "FetchRobot": os.path.join(data_dir, "robots/hab_fetch/robots/hab_fetch.urdf"),
+        # "SpotRobot": os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf"),
+        # "StretchRobot": os.path.join(data_dir, "robots/hab_stretch/urdf/hab_stretch.urdf"),
+        "DJIDrone": os.path.join(data_dir, "robots/dji_drone/urdf/dji_m100_sensors_scaled.urdf"),
     }
     
     robot_camera_params = {
-        "FetchRobot": fetch_camera_params["default"],
-        "SpotRobot": spot_camera_params["default"],
-        "StretchRobot": stretch_camera_params["default"],
+        # "FetchRobot": fetch_camera_params,
+        # "SpotRobot": spot_camera_params,
+        # "StretchRobot": stretch_camera_params,
+        "DJIDrone": dji_camera_params
     }
 
     for robot_name, urdf_file_path in robot_urdfs.items():
         urdf_file_name = os.path.basename(urdf_file_path).split(".")[0]
-        save_path = os.path.join(cur_dir, f"../../data/robot_urdf/{urdf_file_name}_with_cameras.urdf")
-        robot_class:ArticulatedAgentBase = eval(robot_name)
+        # robot_class:ArticulatedAgentBase = eval(robot_name)
         camera_params = robot_camera_params[robot_name]
-        save_urdf_with_cameras(urdf_file_path, camera_params, save_path, robot_name)
+        for camera_setup, camera_param in camera_params.items():
+            print(f"Generating urdf for camera setup {camera_setup} of {robot_name}")
+            save_path = os.path.join(cur_dir, f"../../data/robot_urdf/{urdf_file_name}_{camera_setup}.urdf")
+            save_urdf_with_cameras(urdf_file_path, camera_param, save_path, robot_name)
 
 
 if __name__ == "__main__":
@@ -317,7 +320,7 @@ if __name__ == "__main__":
     # print(robot_link_id2name_map)
     
     # Data generation: Add cameras to urdf file and save to new file
-    generate_urdf_with_cameras()
+    # generate_urdf_with_cameras()
 
     # urdf_file_path = os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf")
     # save_path = os.path.join(cur_dir, "../../data/robot_resume/hab_spot_arm.txt")
