@@ -1,0 +1,53 @@
+{
+  "robot_id": "SpotRobot_default",
+  "robot_type": "SpotRobot",
+  "mobility": {
+    "summary": "The robot has a base linked to four legs (front-left, front-right, hind-left, and hind-right), each with three revolute joints (hip, upper leg, and lower leg). This configuration gives the robot the ability to perform quadrupedal locomotion, which includes walking, climbing stairs, and navigating uneven terrain\u2014essential for cross-floor operations and home rearrangement tasks."
+  },
+  "perception": {
+    "summary": "The robot is equipped with multiple fixed cameras, specifically articulated_agent_arm_depth, articulated_agent_arm_rgb, and articulated_agent_arm_panoptic. These cameras provide depth sensing, color imaging, and comprehensive environmental understanding, essential for tasks that involve locating and identifying objects in complex and varied environments, including under tables and on high shelves.",
+    "cameras_info": {
+      "articulated_agent_arm_depth": {
+        "height": 0.5770000063180923,
+        "type": "articulated"
+      },
+      "articulated_agent_arm_rgb": {
+        "height": 0.5770000063180923,
+        "type": "articulated"
+      },
+      "articulated_agent_arm_panoptic": {
+        "height": 0.5770000063180923,
+        "type": "articulated"
+      },
+      "head_stereo_right": {
+        "height": 0.47999999841992547,
+        "type": "fixed"
+      },
+      "head_stereo_left": {
+        "height": 0.4800000016349558,
+        "type": "fixed"
+      }
+    }
+  },
+  "manipulation": {
+    "summary": "The robot has an arm with multiple revolute joints, starting from the base link through various segments including shoulder, elbow, wrist, and ending at the fingers. This articulated arm ensures high dexterity and reach, allowing the robot to grasp, lift, and manipulate objects in various positions. Coupled with its perceptive capabilities, it is well-suited for pick-and-place tasks, rearranging furniture, and interacting with objects in both high and low locations.",
+    "arm_workspace": {
+      "center": [
+        0.21883335709571838,
+        0.7876816987991333,
+        0.18432274460792542
+      ],
+      "radius": 0.977087,
+      "min_bound": [
+        -0.6372380256652832,
+        -0.03964763879776001,
+        -0.6838083267211914
+      ],
+      "max_bound": [
+        1.1124825477600098,
+        1.5562465190887451,
+        1.0395488739013672
+      ]
+    }
+  }
+}

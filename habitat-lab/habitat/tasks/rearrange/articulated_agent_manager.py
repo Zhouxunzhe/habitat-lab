@@ -216,6 +216,8 @@ class ArticulatedAgentManager:
                 agent_data._ik_helper = IkHelper(
                     agent_data.cfg.ik_arm_urdf,
                     agent_data.start_js,
+                    agent_data.cfg.arm_len,
+                    agent_data.cfg.pb_link_idx
                 )
 
     def update_agents(self):

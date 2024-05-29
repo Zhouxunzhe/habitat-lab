@@ -1,0 +1,37 @@
+{
+  "robot_id": "FetchRobot_arm_only",
+  "robot_type": "FetchRobot",
+  "mobility": {
+    "summary": "The robot has a differential drive system with two continuous joints for the left and right wheels, enabling it to move across flat surfaces. The torso lift joint is prismatic, allowing vertical movement for height adjustment during tasks. However, it does not have explicit capabilities for crossing floors, which could require external aids like ramps or elevators."
+  },
+  "perception": {
+    "summary": "The robot is equipped with a camera system mounted on a pan-tilt mechanism (head_pan_link and head_tilt_link), which can provide a wide range of view for visual perception. This includes RGB and depth cameras, facilitating object detection and environmental mapping. Additionally, the robot is equipped with a laser sensor (laser_link) which can be used for navigation and obstacle detection.",
+    "cameras_info": {
+      "articulated_agent_arm": {
+        "height": 0.7860100000000001,
+        "type": "articulated"
+      }
+    }
+  },
+  "manipulation": {
+    "summary": "The robot has a dexterous 7-DOF arm with multiple revolute and continuous joints, allowing it to reach and manipulate objects in various orientations. The gripper has prismatic joints for finger movement, capable of grasping objects of different sizes and shapes. The torso lift joint provides additional vertical reach, enabling the robot to access objects on high shelves or under tables, suitable for complex home arrangement tasks.",
+    "arm_workspace": {
+      "center": [
+        0.1473979502916336,
+        0.899940013885498,
+        0.13241101801395416
+      ],
+      "radius": 1.1041808,
+      "min_bound": [
+        -0.8757109642028809,
+        -0.03437383100390434,
+        -0.8868227005004883
+      ],
+      "max_bound": [
+        1.0899972915649414,
+        1.8497142791748047,
+        1.1006197929382324
+      ]
+    }
+  }
+}

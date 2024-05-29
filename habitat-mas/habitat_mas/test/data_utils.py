@@ -1,27 +1,13 @@
 import os
-import numpy as np
 import habitat_sim
-import magnum as mn
-from habitat.core.embodied_task import Measure
-from habitat.core.registry import registry
-from habitat.articulated_agents.robots import FetchRobot
-from habitat.config.default import get_agent_config
-from habitat.config.default_structured_configs import ThirdRGBSensorConfig, HeadRGBSensorConfig, HeadPanopticSensorConfig
-from habitat.config.default_structured_configs import SimulatorConfig, HabitatSimV0Config, AgentConfig
-from habitat.config.default import get_agent_config
-from habitat_sim.physics import JointMotorSettings, MotionType
-from habitat.utils.visualizations.utils import (
-    observations_to_image,
-    overlay_frame,
-)
+from habitat.config.default_structured_configs import ThirdRGBSensorConfig, HeadRGBSensorConfig
+from habitat.config.default_structured_configs import SimulatorConfig, AgentConfig
 from omegaconf import OmegaConf
 from habitat.config.default_structured_configs import TaskConfig, EnvironmentConfig, DatasetConfig, HabitatConfig
 from habitat.config.default_structured_configs import (   
     ArmActionConfig,
-    BaseVelocityActionConfig,
     BaseVelocityNonCylinderActionConfig,
-    OracleNavActionConfig, 
-    ActionConfig
+    OracleNavActionConfig
 )
 from habitat.tasks.rearrange.rearrange_sim import RearrangeSim
 from habitat.core.env import Env

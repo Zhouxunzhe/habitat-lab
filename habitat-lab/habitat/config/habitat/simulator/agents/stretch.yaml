@@ -6,6 +6,9 @@ defaults:
 radius: 0.3
 articulated_agent_type: "StretchRobot"
 articulated_agent_urdf: data/robots/hab_stretch/urdf/hab_stretch.urdf
+ik_arm_urdf: data/robots/hab_stretch/urdf/hab_stretch_onlyarm.urdf
+arm_len: 8
+pb_link_idx: 10
 sim_sensors:
   head_rgb_sensor:
     height: 640

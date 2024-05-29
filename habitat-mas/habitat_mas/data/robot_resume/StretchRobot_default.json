@@ -1,0 +1,37 @@
+{
+  "robot_id": "StretchRobot_default",
+  "robot_type": "StretchRobot",
+  "mobility": {
+    "summary": "The robot has a differential drive system consisting of two continuous joints controlling the right and left wheels, enabling movement and navigation. Additionally, it has a fixed caster link for stability. This setup allows for effective mobility across different floor surfaces, essential for operations like cross-floor object rearrangement."
+  },
+  "perception": {
+    "summary": "The robot is equipped with a comprehensive perception system. It has a camera mounted on a head that can pan and tilt, providing a full range of vision. The camera includes depth, infrared, and color sensors, along with accelerometer and gyroscope sensors for spatial awareness. Further, fixed aruco markers are present at various points on the robot for localization and mapping. A laser sensor is also included to assist with distance measurement and object recognition. This multi-modal sensor suite will facilitate cooperative perception for manipulation by allowing the robot to effectively search for and perceive objects to gather geometric information.",
+    "cameras_info": {
+      "head": {
+        "height": 1.9223901178495244,
+        "type": "articulated"
+      }
+    }
+  },
+  "manipulation": {
+    "summary": "The robot's manipulation capabilities are highly versatile, featuring a series of prismatic joints in the arm that allow it to extend and retract the segments progressively from link_arm_l4 to link_arm_l0. It concludes with a wrist mechanism capable of yaw, pitch, and roll movements, providing a wide range of orientations. The end-effector is a gripper with independently actuated fingers and fingertips for precise handling of objects. This detailed manipulation system is designed to interact with objects in various scenarios, such as picking and placing items from different heights, including high shelves and under tables, thereby supporting home arrangement tasks.",
+    "arm_workspace": {
+      "center": [
+        -2.411402463912964,
+        0.5447299480438232,
+        3.127298355102539
+      ],
+      "radius": 4.071119,
+      "min_bound": [
+        -4.981380939483643,
+        0.2309177815914154,
+        -0.0011563301086425781
+      ],
+      "max_bound": [
+        0.11624574661254883,
+        0.8904351592063904,
+        6.301602363586426
+      ]
+    }
+  }
+}
