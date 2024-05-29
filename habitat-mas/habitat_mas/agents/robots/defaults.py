@@ -25,6 +25,13 @@ robot_urdf_paths = {
     "DJIDrone": os.path.join(data_dir, "robots/dji_drone/urdf/dji_m100_sensors_scaled.urdf"),
 }
 
+# The URDF paths for the robot arms only.
+robot_arm_urdf_paths = {
+    "FetchRobot": os.path.join(data_dir, "robots/hab_fetch/robots/fetch_onlyarm.urdf"),
+    "SpotRobot": os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_onlyarm_dae.urdf"),
+    "StretchRobot": os.path.join(data_dir, "robots/hab_stretch/urdf/hab_stretch_onlyarm.urdf"),
+}
+
 # The offset of the robot base link to the feet.
 robot_base_offset_map = {
     "KinematicHumanoid": np.array([0, -0.9, 0]),
@@ -32,6 +39,28 @@ robot_base_offset_map = {
     "SpotRobot": np.array([0, -0.48, 0]),
     "StretchRobot": np.array([0, -0.5, 0]),
     "DJIDrone": np.array([0, -1.5, 0]),
+}
+
+# Pre-computed ego-centric arm workspace, w.r.t. base footprint link. TOO SLOW to compute in real-time.
+robot_arm_workspaces = {
+    "FetchRobot": {
+        "center": np.array([0.14739795, 0.89994, 0.13241102], dtype=np.float32),
+        "radius": 1.1041808,
+        "min_bound": np.array([-0.87571096, -0.03437383, -0.8868227], dtype=np.float32),
+        "max_bound": np.array([1.0899973, 1.8497143, 1.1006198], dtype=np.float32),
+    },
+    "SpotRobot": {
+        "center": np.array([0.21883336, 0.7876817, 0.18432274], dtype=np.float32),
+        "radius": 0.977087,
+        "min_bound": np.array([-0.637238, -0.03964764, -0.6838083], dtype=np.float32),
+        "max_bound": np.array([1.1124825, 1.5562465, 1.0395489], dtype=np.float32),
+    },
+    "StretchRobot": {
+        "center": np.array([-2.4114025, 0.54472995, 3.1272984], dtype=np.float32),
+        "radius": 4.071119,
+        "min_bound": np.array([-4.9813809e00, 2.3091778e-01, -1.1563301e-03], dtype=np.float32),
+        "max_bound": np.array([0.11624575, 0.89043516, 6.3016024], dtype=np.float32),
+    },
 }
 
 # The link id to name map of the robots.

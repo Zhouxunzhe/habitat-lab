@@ -329,9 +329,8 @@ def is_pb_installed():
 
 
 class IkHelper:
-    def __init__(self, only_arm_urdf, arm_start):
+    def __init__(self, only_arm_urdf, arm_start, arm_len, pb_link_idx):
         self._arm_start = arm_start
-        self._arm_len = 7
         self.pc_id = p.connect(p.DIRECT)
 
         self.robo_id = p.loadURDF(
@@ -342,9 +341,13 @@ class IkHelper:
             physicsClientId=self.pc_id,
         )
 
+        self._arm_len = arm_len
+        # Add this fix to skip the fixed joints in stretch robot arm
+        self._non_fixed_joints: List = self._get_non_fixed_joints()
+        self.pb_link_idx = pb_link_idx
+
         p.setGravity(0, 0, -9.81, physicsClientId=self.pc_id)
         JOINT_DAMPING = 0.5
-        self.pb_link_idx = 7
 
         for link_idx in range(15):
             p.changeDynamics(
@@ -361,6 +364,22 @@ class IkHelper:
                 maxJointVelocity=200,
                 physicsClientId=self.pc_id,
             )
+
+    def _get_non_fixed_joints(self):
+        # Create a list to store the non-fixed joint indices
+        nonFixedJoints = []
+        numJoints = p.getNumJoints(self.robo_id)
+        # Iterate through all the joints
+        for i in range(numJoints):
+            # Get information about the current joint
+            jointInfo = p.getJointInfo(self.robo_id, i)
+            
+            # Check if the joint type is not JOINT_FIXED
+            if jointInfo[2] != p.JOINT_FIXED:
+                # If not fixed, add the joint index to the list
+                nonFixedJoints.append(i)
+                
+        return nonFixedJoints
 
     def set_arm_state(self, joint_pos, joint_vel=None):
         if joint_vel is None:
@@ -388,7 +407,8 @@ class IkHelper:
     def get_joint_limits(self):
         lower = []
         upper = []
-        for joint_i in range(self._arm_len):
+        for i in range(self._arm_len):
+            joint_i = self._non_fixed_joints[i]
             ret = p.getJointInfo(
                 self.robo_id, joint_i, physicsClientId=self.pc_id
             )
@@ -409,7 +429,8 @@ class IkHelper:
             targ_ee,
             physicsClientId=self.pc_id,
         )
-        return js[: self._arm_len]
+        joint_indices = [self._non_fixed_joints[i] for i in range(self._arm_len)]
+        return [js[i] for i in joint_indices]
 
 
 class UsesArticulatedAgentInterface:

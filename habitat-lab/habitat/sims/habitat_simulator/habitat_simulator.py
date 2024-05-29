@@ -344,6 +344,8 @@ class HabitatSim(habitat_sim.Simulator, Simulator):
                 "joint_that_can_control",
                 "motion_data_path",
                 "ik_arm_urdf",
+                "arm_len",
+                "pb_link_idx",
                 "grasp_managers",
                 "max_climb",
                 "max_slope",

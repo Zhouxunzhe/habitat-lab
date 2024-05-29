@@ -1,0 +1,37 @@
+{
+  "robot_id": "FetchRobot_head_only",
+  "robot_type": "FetchRobot",
+  "mobility": {
+    "summary": "The robot has a drivetrain consisting of two continuous joints for the right and left wheels, enabling it to perform differential drive for mobility. This allows it to move across different floors and navigate through homes effectively."
+  },
+  "perception": {
+    "summary": "The robot is equipped with a head camera with RGB and depth sensing capabilities. The camera is mounted on a head with pan and tilt revolute joints, which allows the robot to adjust its field of view. Additionally, it has a laser link, which probably includes a laser range finder for obstacle detection and environment mapping.",
+    "cameras_info": {
+      "head": {
+        "height": 1.2000000476837158,
+        "type": "fixed"
+      }
+    }
+  },
+  "manipulation": {
+    "summary": "The robot features a torso that can lift via a prismatic joint, and an articulated arm with multiple revolute and continuous joints, allowing for complex manipulative tasks. The arm is capable of shoulder pan and lift, upper arm roll, elbow flex, forearm roll, wrist flex, and wrist roll movements. It is also equipped with a gripper with prismatic joints for finger movements, enabling it to grasp and manipulate objects of various sizes and shapes efficiently.",
+    "arm_workspace": {
+      "center": [
+        0.1473979502916336,
+        0.899940013885498,
+        0.13241101801395416
+      ],
+      "radius": 1.1041808,
+      "min_bound": [
+        -0.8757109642028809,
+        -0.03437383100390434,
+        -0.8868227005004883
+      ],
+      "max_bound": [
+        1.0899972915649414,
+        1.8497142791748047,
+        1.1006197929382324
+      ]
+    }
+  }
+}

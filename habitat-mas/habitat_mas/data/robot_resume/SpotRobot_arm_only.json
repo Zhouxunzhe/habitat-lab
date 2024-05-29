@@ -1,0 +1,45 @@
+{
+  "robot_id": "SpotRobot_arm_only",
+  "robot_type": "SpotRobot",
+  "mobility": {
+    "summary": "The robot, Spot, is equipped with four legs, each having three revolute joints (hip, upper leg, lower leg), giving it versatile and stable movement capabilities over various terrains. This configuration allows Spot to traverse complex environments, which is essential for tasks involving cross-floor object rearrangement and home arrangement."
+  },
+  "perception": {
+    "summary": "Spot is equipped with multiple fixed sensors located at the end-effector of its arm. Specifically, it has depth, RGB, and panoptic sensors. These sensors provide Spot with advanced perception capabilities, allowing it to search for, perceive, and gather geometric information about objects. This multi-modal perception system is crucial for accurately identifying and manipulating objects, especially those in abnormal positions.",
+    "cameras_info": {
+      "articulated_agent_arm_depth": {
+        "height": 0.5770000063180923,
+        "type": "articulated"
+      },
+      "articulated_agent_arm_rgb": {
+        "height": 0.5770000063180923,
+        "type": "articulated"
+      },
+      "articulated_agent_arm_panoptic": {
+        "height": 0.5770000063180923,
+        "type": "articulated"
+      }
+    }
+  },
+  "manipulation": {
+    "summary": "Spot has a highly articulated arm with seven revolute joints (link_sh0 to link_fngr), granting it a wide range of motion for manipulation tasks. The arm's extensive degrees of freedom allow Spot to perform complex maneuvers, such as picking and placing objects from different locations and heights, essential for home arrangements and object relocations across floors. Additionally, the sensors on the arm aid in cooperative perception and precise manipulation.",
+    "arm_workspace": {
+      "center": [
+        0.21883335709571838,
+        0.7876816987991333,
+        0.18432274460792542
+      ],
+      "radius": 0.977087,
+      "min_bound": [
+        -0.6372380256652832,
+        -0.03964763879776001,
+        -0.6838083267211914
+      ],
+      "max_bound": [
+        1.1124825477600098,
+        1.5562465190887451,
+        1.0395488739013672
+      ]
+    }
+  }
+}

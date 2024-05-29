@@ -1781,6 +1781,10 @@ class AgentConfig(HabitatBaseConfig):
     articulated_agent_urdf: Optional[str] = None
     articulated_agent_type: Optional[str] = None
     ik_arm_urdf: Optional[str] = None
+    # Length of arm joints that can be controlled
+    arm_len: int = 7
+    # Arm EE link index
+    pb_link_idx: int = 7
     # File to motion data, used to play pre-recorded motions
     motion_data_path: str = ""
 
