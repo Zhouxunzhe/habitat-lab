@@ -346,8 +346,28 @@ def get_arg_parser():
         help="The number of episodes to generate.",
     )
     parser.add_argument("--seed", type=int)
+    parser.add_argument(
+        "--type",
+        type=str,
+        default=None,
+        help="the use of the episode datasets.",
+    )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Relative path to robot resume.",
+    )
     return parser
 
+"""
+!python -m habitat.datasets.rearrange.run_episode_generator --run\
+--config /home/xunzhe/zhouxunzhe/habitat-lab/data/all_object_receptacle_dataset.yaml\
+--num-episodes 40\
+--out data/datasets/manipulation/manipulation_eval_fetch.json.gz\
+--type manipulation\
+--resume habitat-mas/habitat_mas/data/robot_resume/FetchRobot_default.json
+"""
 
 if __name__ == "__main__":
     parser = get_arg_parser()
@@ -386,11 +406,23 @@ if __name__ == "__main__":
             print_metadata_mediator(ep_gen)
         else:
             import time
+            import json
+
+            if args.resume is not None:
+                assert osp.exists(
+                    args.resume
+                ), f"Provided resume, '{args.resume}', does not exist."
 
             start_time = time.time()
+
+            with open(args.resume, 'r', encoding='utf-8') as file:
+                resume = json.load(file)
+            if resume is None:
+                raise ValueError(f"None input: {args.type}")
             dataset.episodes += ep_gen.generate_episodes(
-                args.num_episodes, args.verbose
+                args.num_episodes, args.verbose, args.type, resume
             )
+
             output_path = args.out
             if output_path is None:
                 # default
