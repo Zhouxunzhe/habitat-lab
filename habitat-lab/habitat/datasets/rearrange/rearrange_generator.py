@@ -451,7 +451,8 @@ class RearrangeEpisodeGenerator:
             self.dbv.debug_obs.append(self.dbv.get_observation())
 
     def generate_episodes(
-        self, num_episodes: int = 1, verbose: bool = False
+        self, num_episodes: int = 1, verbose: bool = False,
+        episode_type=None, resume=None
     ) -> List[RearrangeEpisode]:
         """
         Generate a fixed number of episodes.
@@ -464,6 +465,39 @@ class RearrangeEpisodeGenerator:
             try:
                 self._scene_sampler.set_cur_episode(len(generated_episodes))
                 new_episode = self.generate_single_episode()
+                rigid_objs = new_episode.rigid_objs
+                target_objs = new_episode.targets
+
+                cameras_info = resume['perception']['cameras_info']
+                arm_workspace = resume['manipulation']['arm_workspace']
+
+                # TODO: generate multiple objs and receptacles
+                if episode_type == 'perception':
+                    camera_heights = []
+                    for camera, properties in cameras_info.items():
+                        camera_heights.append(properties["height"])
+                    for obj in rigid_objs:
+                        transform = obj[1]
+                        scope = 0.3
+                        if (max(camera_heights) + scope < transform[1][3]
+                                or min(camera_heights) - scope > transform[1][3]):
+                            new_episode = None
+                elif episode_type == 'manipulation':
+                    obj_heights = []
+                    for obj in rigid_objs:
+                        obj_heights.append(obj[1][1][3])
+                    if (arm_workspace['max_bound'][1] < max(obj_heights)
+                            or arm_workspace['min_bound'][1] > min(obj_heights)):
+                        new_episode = None
+                    obj_heights = []
+                    for obj, pos in target_objs.items():
+                        obj_heights.append(pos[1][3])
+                    if (arm_workspace['max_bound'][1] < max(obj_heights)
+                            or arm_workspace['min_bound'][1] > min(obj_heights)):
+                        new_episode = None
+                else:
+                    raise ValueError(f"Unknown type: {episode_type}")
+
             except Exception:
                 new_episode = None
                 logger.error("Generation failed with exception...")
@@ -477,7 +511,7 @@ class RearrangeEpisodeGenerator:
             pbar.close()
 
         logger.info(
-            f"Generated {num_episodes} episodes in {num_episodes+failed_episodes} tries."
+            f"Generated {num_episodes} episodes in {num_episodes + failed_episodes} tries."
         )
 
         return generated_episodes
@@ -495,8 +529,10 @@ class RearrangeEpisodeGenerator:
 
         self._reset_samplers()
         self.episode_data: Dict[str, Dict[str, Any]] = {
-            "sampled_objects": {},  # object sampler name -> sampled object instances
-            "sampled_targets": {},  # target sampler name -> (object, target state)
+            "sampled_objects": {},
+            # object sampler name -> sampled object instances
+            "sampled_targets": {},
+            # target sampler name -> (object, target state)
         }
 
         ep_scene_handle = self.generate_scene()
@@ -589,7 +625,8 @@ class RearrangeEpisodeGenerator:
                     self.sim, [new_receptacle], nav_island
                 )  # type: ignore
                 if len(new_receptacle) != 0:  # type: ignore
-                    new_target_receptacles.append(new_receptacle[0])  # type: ignore
+                    new_target_receptacles.append(
+                        new_receptacle[0])  # type: ignore
 
             target_receptacles[obj_sampler_name].extend(new_target_receptacles)
             all_target_receptacles.extend(new_target_receptacles)
@@ -625,7 +662,8 @@ class RearrangeEpisodeGenerator:
                     self.sim, [new_receptacle], nav_island
                 )  # type: ignore
                 if len(new_receptacle) != 0:  # type: ignore
-                    new_goal_receptacles.append(new_receptacle[0])  # type: ignore
+                    new_goal_receptacles.append(
+                        new_receptacle[0])  # type: ignore
             assert (
                 len(new_goal_receptacles) == num_targets
             ), "Unable to sample goal Receptacles for all requested targets."
@@ -677,8 +715,8 @@ class RearrangeEpisodeGenerator:
                 [
                     obj.handle
                     for obj in new_objects[
-                        : len(target_receptacles[sampler_name])
-                    ]
+                               : len(target_receptacles[sampler_name])
+                               ]
                 ]
             )
             for obj, rec in zip(new_objects, receptacles):
@@ -993,7 +1031,7 @@ class RearrangeEpisodeGenerator:
                 settle_db_obs.append(self.dbv.get_observation())
 
         logger.info(
-            f"   ...done with placement stability analysis in {time.time()-settle_start_time} seconds."
+            f"   ...done with placement stability analysis in {time.time() - settle_start_time} seconds."
         )
         # check stability of placements
         logger.info(
@@ -1028,7 +1066,7 @@ class RearrangeEpisodeGenerator:
                         ],
                     ).save(self.dbv.output_path, prefix="unstable_")
         logger.info(
-            f" : unstable={len(unstable_placements)}|{len(self.ep_sampled_objects)} ({len(unstable_placements)/len(self.ep_sampled_objects)*100}%) : {unstable_placements}."
+            f" : unstable={len(unstable_placements)}|{len(self.ep_sampled_objects)} ({len(unstable_placements) / len(self.ep_sampled_objects) * 100}%) : {unstable_placements}."
         )
         logger.info(
             f" : Maximum displacement from settling = {max_settle_displacement}"
