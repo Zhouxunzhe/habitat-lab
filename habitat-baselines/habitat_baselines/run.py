@@ -61,6 +61,12 @@ def execute_exp(config: "DictConfig", run_type: str) -> None:
     elif run_type == "eval":
         trainer.eval()
 
+"""
+!python -u -m habitat_baselines.run\
+ --config-name=social_rearrange/zxz_llm_spot_drone.yaml\
+habitat_baselines.evaluate=True\
+habitat_baselines.num_environments=1
+"""
 
 if __name__ == "__main__":
     register_hydra_plugin(HabitatBaselinesConfigPlugin)

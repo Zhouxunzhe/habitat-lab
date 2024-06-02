@@ -3,7 +3,7 @@
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
+import json
 import os
 import os.path as osp
 import time
@@ -399,6 +399,27 @@ class RearrangeSim(HabitatSim):
     def num_articulated_agents(self):
         return len(self.agents_mgr)
 
+    # TODO(YCC): add a write-to-json function to store robot setups
+    def write_to_json(self, episode_id, agent_info) -> None:
+
+        file_path = "data/robots/json/test.json"
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        data = {}
+        try:
+            with open(file_path, "r") as f:
+                data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+
+        if episode_id not in data:
+            data[episode_id] = {"agents": [agent_info]}
+        else:
+            data[episode_id]["agents"].append(agent_info)
+
+        with open(file_path, "w") as f:
+            json.dump(data, f, indent=4)
+        logger.info(f"One robot setup has been write to {file_path}")
+
     def set_articulated_agent_base_to_random_point(
         self,
         max_attempts: int = 50,
@@ -415,6 +436,8 @@ class RearrangeSim(HabitatSim):
         articulated_agent = self.get_agent_data(agent_idx).articulated_agent
 
         for attempt_i in range(max_attempts):
+
+            # TODO(YCC): set up the robot pos and rot based on config
             start_pos = self.pathfinder.get_random_navigable_point(
                 island_index=self._largest_indoor_island_idx
             )
@@ -439,6 +462,43 @@ class RearrangeSim(HabitatSim):
             rearrange_logger.warning(
                 f"Could not find a collision free start for {self.ep_info.episode_id}"
             )
+
+        # TODO(YCC): collect the robot setup
+        episode_id = self.ep_info.episode_id
+        sim_config = self.habitat_config
+        agent_types = {
+            0: sim_config.agents.agent_0.articulated_agent_type,
+            1: sim_config.agents.agent_1.articulated_agent_type,
+        }
+        urdf_types = {
+            0: sim_config.agents.agent_0.articulated_agent_urdf,
+            1: sim_config.agents.agent_1.articulated_agent_urdf,
+        }
+        type_config = {}
+        if ('arm_only' in urdf_types[0]) or ('armonly' in urdf_types[0]) or (
+            'only_arm' in urdf_types[0]) or ('onlyarm' in urdf_types[0]):
+            type_config[0] = agent_types[0] + '_arm_only'
+        elif ('head_only' in urdf_types[0]) or ('headonly' in urdf_types[0]):
+            type_config[0] = agent_types[0] + '_head_only'
+        else:
+            type_config[0] = agent_types[0] + '_default'
+
+        if ('arm_only' in urdf_types[1]) or ('armonly' in urdf_types[1]) or (
+            'only_arm' in urdf_types[1]) or ('onlyarm' in urdf_types[1]):
+            type_config[1] = agent_types[1] + '_arm_only'
+        elif ('head_only' in urdf_types[1]) or ('headonly' in urdf_types[1]):
+            type_config[1] = agent_types[1] + '_head_only'
+        else:
+            type_config[1] = agent_types[1] + '_default'
+
+        agent_info = {
+            "agent_idx": agent_idx,
+            "agent_type": type_config[agent_idx],
+            "start_pos": start_pos.tolist(),
+            "start_rot": start_rot,
+        }
+        self.write_to_json(episode_id, agent_info)
+
         return start_pos, start_rot
 
     def _setup_targets(self, ep_info):
