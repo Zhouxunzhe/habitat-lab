@@ -1982,6 +1982,7 @@ class DatasetConfig(HabitatBaseConfig):
     )
     # TODO(YCC): load robot config
     mode: str = "perception"
+    randomize_agent_start: int = 1
     robot_config: str = (
         "data/robots/json/{mode}.json"
     )

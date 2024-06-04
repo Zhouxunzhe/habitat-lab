@@ -167,5 +167,6 @@ habitat:
   dataset:
     data_path: data/datasets/manipulation/manipulation_eval.json.gz
     # new
+    randomize_agent_start: 0
     robot_config: data/robots/json/manipulation.json
     mode: manipulation

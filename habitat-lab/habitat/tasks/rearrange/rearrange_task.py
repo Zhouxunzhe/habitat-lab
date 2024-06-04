@@ -219,24 +219,28 @@ class RearrangeTask(NavigationTask):
                     return np.all(distances > self._min_distance_start_agents)
 
                 filter_agent_position = _filter_agent_position
-            # (
-            #     articulated_agent_pos,
-            #     articulated_agent_rot,
-            # ) = self._sim.set_articulated_agent_base_to_random_point(
-            #     agent_idx=agent_idx, filter_func=filter_agent_position
-            # )
-            episode_id = self._sim.ep_info.episode_id
-            agents = self._robot_config[episode_id]['agents']
-            for agent in agents:
-                if agent['agent_idx'] == agent_idx:
-                    (
-                        articulated_agent_pos,
-                        articulated_agent_rot,
-                    ) = (
-                        np.array(agent['start_pos']),
-                        agent['start_rot']
-                    )
-                    break
+            
+            if self._dataset.config.randomize_agent_start:
+            
+                (
+                    articulated_agent_pos,
+                    articulated_agent_rot,
+                ) = self._sim.set_articulated_agent_base_to_random_point(
+                    agent_idx=agent_idx, filter_func=filter_agent_position
+                )
+            else:
+                episode_id = self._sim.ep_info.episode_id
+                agents = self._robot_config[episode_id]['agents']
+                for agent in agents:
+                    if agent['agent_idx'] == agent_idx:
+                        (
+                            articulated_agent_pos,
+                            articulated_agent_rot,
+                        ) = (
+                            np.array(agent['start_pos']),
+                            agent['start_rot']
+                        )
+                        break
             self._cache_articulated_agent_start(
                 (articulated_agent_pos, articulated_agent_rot), agent_idx
             )
