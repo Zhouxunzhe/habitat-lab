@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import json
 import copy
 import os.path as osp
 from collections import OrderedDict
@@ -109,6 +110,13 @@ class RearrangeTask(NavigationTask):
         self._count_obj_collisions = self._config.count_obj_collisions
 
         data_path = dataset.config.data_path.format(split=dataset.config.split)
+
+        # TODO(YCC): robot config path
+        robot_config_path = dataset.config.robot_config.format(mode=dataset.config.mode)
+        with open(robot_config_path, "r") as robot_config_file:
+            robot_config = json.load(robot_config_file)
+        self._robot_config = robot_config
+
         fname = data_path.split("/")[-1].split(".")[0]
         cache_path = osp.join(
             osp.dirname(data_path),
@@ -211,12 +219,28 @@ class RearrangeTask(NavigationTask):
                     return np.all(distances > self._min_distance_start_agents)
 
                 filter_agent_position = _filter_agent_position
-            (
-                articulated_agent_pos,
-                articulated_agent_rot,
-            ) = self._sim.set_articulated_agent_base_to_random_point(
-                agent_idx=agent_idx, filter_func=filter_agent_position
-            )
+            
+            if self._dataset.config.randomize_agent_start:
+            
+                (
+                    articulated_agent_pos,
+                    articulated_agent_rot,
+                ) = self._sim.set_articulated_agent_base_to_random_point(
+                    agent_idx=agent_idx, filter_func=filter_agent_position
+                )
+            else:
+                episode_id = self._sim.ep_info.episode_id
+                agents = self._robot_config[episode_id]['agents']
+                for agent in agents:
+                    if agent['agent_idx'] == agent_idx:
+                        (
+                            articulated_agent_pos,
+                            articulated_agent_rot,
+                        ) = (
+                            np.array(agent['start_pos']),
+                            agent['start_rot']
+                        )
+                        break
             self._cache_articulated_agent_start(
                 (articulated_agent_pos, articulated_agent_rot), agent_idx
             )

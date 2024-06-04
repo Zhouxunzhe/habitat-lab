@@ -420,6 +420,7 @@ class RearrangeSim(HabitatSim):
             json.dump(data, f, indent=4)
         logger.info(f"One robot setup has been write to {file_path}")
 
+
     def set_articulated_agent_base_to_random_point(
         self,
         max_attempts: int = 50,
@@ -475,16 +476,14 @@ class RearrangeSim(HabitatSim):
             1: sim_config.agents.agent_1.articulated_agent_urdf,
         }
         type_config = {}
-        if ('arm_only' in urdf_types[0]) or ('armonly' in urdf_types[0]) or (
-            'only_arm' in urdf_types[0]) or ('onlyarm' in urdf_types[0]):
+        if ('arm_only' in urdf_types[0]) or ('armonly' in urdf_types[0]) or ('only_arm' in urdf_types[0]) or ('onlyarm' in urdf_types[0]):
             type_config[0] = agent_types[0] + '_arm_only'
         elif ('head_only' in urdf_types[0]) or ('headonly' in urdf_types[0]):
             type_config[0] = agent_types[0] + '_head_only'
         else:
             type_config[0] = agent_types[0] + '_default'
 
-        if ('arm_only' in urdf_types[1]) or ('armonly' in urdf_types[1]) or (
-            'only_arm' in urdf_types[1]) or ('onlyarm' in urdf_types[1]):
+        if ('arm_only' in urdf_types[1]) or ('armonly' in urdf_types[1]) or ('only_arm' in urdf_types[1]) or ('onlyarm' in urdf_types[1]):
             type_config[1] = agent_types[1] + '_arm_only'
         elif ('head_only' in urdf_types[1]) or ('headonly' in urdf_types[1]):
             type_config[1] = agent_types[1] + '_head_only'
@@ -497,6 +496,7 @@ class RearrangeSim(HabitatSim):
             "start_pos": start_pos.tolist(),
             "start_rot": start_rot,
         }
+
         self.write_to_json(episode_id, agent_info)
 
         return start_pos, start_rot
