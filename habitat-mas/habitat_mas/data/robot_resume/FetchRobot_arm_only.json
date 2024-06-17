@@ -2,19 +2,19 @@
   "robot_id": "FetchRobot_arm_only",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The robot has a differential drive system with two continuous joints for the left and right wheels, enabling it to move across flat surfaces. The torso lift joint is prismatic, allowing vertical movement for height adjustment during tasks. However, it does not have explicit capabilities for crossing floors, which could require external aids like ramps or elevators."
+    "summary": "The Fetch robot possesses significant mobility capabilities facilitated by two continuous joints connected to its base_link, controlling the right and left wheels. This setup allows it to move in various directions and navigate through environments. Additionally, its mobility permits it to engage in tasks involving cross-floor object rearrangement, such as moving objects from one floor to another."
   },
   "perception": {
-    "summary": "The robot is equipped with a camera system mounted on a pan-tilt mechanism (head_pan_link and head_tilt_link), which can provide a wide range of view for visual perception. This includes RGB and depth cameras, facilitating object detection and environmental mapping. Additionally, the robot is equipped with a laser sensor (laser_link) which can be used for navigation and obstacle detection.",
+    "summary": "Fetch is equipped with a head camera that includes RGB and depth sensors mounted on a series of revolute joints (head_pan_link and head_tilt_link), which allow it to pan and tilt to gain a comprehensive view of its surroundings. This setup enhances its ability to perform cooperative perception tasks, as it can search for and perceive objects to gather geometric information necessary for manipulation. It also possesses a laser sensor mounted on a fixed link (laser_link), providing additional environmental sensing capabilities.",
     "cameras_info": {
-      "articulated_agent_arm": {
+      "articulated_agent_arm_camera": {
         "height": 0.7860100000000001,
         "type": "articulated"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot has a dexterous 7-DOF arm with multiple revolute and continuous joints, allowing it to reach and manipulate objects in various orientations. The gripper has prismatic joints for finger movement, capable of grasping objects of different sizes and shapes. The torso lift joint provides additional vertical reach, enabling the robot to access objects on high shelves or under tables, suitable for complex home arrangement tasks.",
+    "summary": "Fetch has a highly articulated manipulator arm that includes several revolute and continuous joints, such as shoulder_pan_link, shoulder_lift_link, upperarm_roll_link, elbow_flex_link, forearm_roll_link, wrist_flex_link, and wrist_roll_link. The manipulator terminates in a gripper with prismatic joints for both gripper fingers, allowing precise object grasping. This configuration enables Fetch to perform complex manipulation tasks, including picking and placing objects from a high shelf or under a table, essential for home arrangement and object rearrangement tasks.",
     "arm_workspace": {
       "center": [
         0.1473979502916336,

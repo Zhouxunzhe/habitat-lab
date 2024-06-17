@@ -399,14 +399,7 @@
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
     </collision>
   </link>
-  <link name="head_stereo_right">
-    <inertial>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
-      <mass value="1.0"/>
-      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-    </inertial>
-  </link>
-  <link name="head_stereo_left">
+  <link name="head_camera">
     <inertial>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
       <mass value="1.0"/>
@@ -553,16 +546,10 @@
     <axis xyz="0. 1. 0."/>
     <origin xyz="0.11745 0.0 0.01482" rpy="0.0 0.0 0.0"/>
   </joint>
-  <joint name="head_stereo_right_joint" type="fixed">
+  <joint name="head_joint" type="fixed">
     <parent link="base"/>
-    <child link="head_stereo_right"/>
+    <child link="head_camera"/>
     <axis xyz="1. 0. 0."/>
-    <origin xyz="0.41648226976394653 -0.036147892475128174 -1.580074515672436e-09" rpy="0.0 -0.0 0.0"/>
-  </joint>
-  <joint name="head_stereo_left_joint" type="fixed">
-    <parent link="base"/>
-    <child link="head_stereo_left"/>
-    <axis xyz="1. 0. 0."/>
-    <origin xyz="0.41648226976394653 0.03740343078970909 1.634955837381824e-09" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.41648226976394653 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
 </robot>

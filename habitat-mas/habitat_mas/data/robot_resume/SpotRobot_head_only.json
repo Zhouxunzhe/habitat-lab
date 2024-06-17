@@ -2,23 +2,19 @@
   "robot_id": "SpotRobot_head_only",
   "robot_type": "SpotRobot",
   "mobility": {
-    "summary": "Spot is a quadrupedal robot with four legs, each consisting of three revolute joints. This allows for a high degree of flexibility and maneuverability, enabling it to traverse diverse terrains and navigate complex environments, which is essential for cross-floor operations and home arrangements."
+    "summary": "The robot has four limbs, each with three revolute joints (hip, upper leg, lower leg). These joints indicate that the robot is quadruped and capable of walking, climbing stairs, and navigating various terrains. This mobility allows the robot to move between floors and maneuver in different environments, which is crucial for the cross-floor object rearrangement and home arrangement tasks."
   },
   "perception": {
-    "summary": "Spot is equipped with stereo vision sensors located on its head (head_stereo_right and head_stereo_left), which provides depth perception capabilities. This is crucial for cooperative perception and manipulation tasks, allowing the robot to search for objects, understand geometric information, and assist in precise manipulation activities.",
+    "summary": "The robot is equipped with a head_camera mounted on a fixed joint. This camera likely provides visual feedback for the robot to perceive its environment, detect objects, and gather geometric information. This perception capability is essential for tasks that require cooperative perception for manipulation, such as searching for objects and assessing their positions in the environment.",
     "cameras_info": {
-      "head_stereo_right": {
-        "height": 0.47999999841992547,
-        "type": "fixed"
-      },
-      "head_stereo_left": {
-        "height": 0.4800000016349558,
+      "head_camera": {
+        "height": 0.48,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "Spot has an articulated arm with six revolute joints (from arm0.link_sh0 to arm0.link_fngr), giving it a significant range of motion and dexterity. This makes it capable of performing complex manipulation tasks, such as picking and placing objects, and rearranging furniture, even from high shelves or under tables.",
+    "summary": "The robot has a sophisticated arm equipped with multiple revolute joints (sh0, sh1, hr0, el0, el1, wr0, wr1) terminating in a finger (fngr). This arm structure gives the robot a high degree of freedom and dexterity to perform complex manipulation tasks, like picking and placing objects in different locations. The manipulation capability is essential for rearranging objects, especially those in abnormal positions like on high shelves or under tables.",
     "arm_workspace": {
       "center": [
         0.21883335709571838,

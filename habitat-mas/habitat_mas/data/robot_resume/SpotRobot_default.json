@@ -2,35 +2,23 @@
   "robot_id": "SpotRobot_default",
   "robot_type": "SpotRobot",
   "mobility": {
-    "summary": "The robot has a base linked to four legs (front-left, front-right, hind-left, and hind-right), each with three revolute joints (hip, upper leg, and lower leg). This configuration gives the robot the ability to perform quadrupedal locomotion, which includes walking, climbing stairs, and navigating uneven terrain\u2014essential for cross-floor operations and home rearrangement tasks."
+    "summary": "The robot has a quadrupedal design consisting of four legs (front-left, front-right, hind-left, hind-right), each with three revolute joints (hip, upper leg, lower leg). This design allows it to navigate various terrains and maintain stability on uneven surfaces, enabling it to move around efficiently for tasks including cross-floor operations."
   },
   "perception": {
-    "summary": "The robot is equipped with multiple fixed cameras, specifically articulated_agent_arm_depth, articulated_agent_arm_rgb, and articulated_agent_arm_panoptic. These cameras provide depth sensing, color imaging, and comprehensive environmental understanding, essential for tasks that involve locating and identifying objects in complex and varied environments, including under tables and on high shelves.",
+    "summary": "The robot is equipped with a fixed head camera and a camera on the arm (articulated agent arm camera) providing it with the ability to gather visual information. This capability is crucial for identifying objects and obtaining geometric information needed for manipulation tasks.",
     "cameras_info": {
-      "articulated_agent_arm_depth": {
+      "articulated_agent_arm_camera": {
         "height": 0.5770000063180923,
         "type": "articulated"
       },
-      "articulated_agent_arm_rgb": {
-        "height": 0.5770000063180923,
-        "type": "articulated"
-      },
-      "articulated_agent_arm_panoptic": {
-        "height": 0.5770000063180923,
-        "type": "articulated"
-      },
-      "head_stereo_right": {
-        "height": 0.47999999841992547,
-        "type": "fixed"
-      },
-      "head_stereo_left": {
-        "height": 0.4800000016349558,
+      "head_camera": {
+        "height": 0.48,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot has an arm with multiple revolute joints, starting from the base link through various segments including shoulder, elbow, wrist, and ending at the fingers. This articulated arm ensures high dexterity and reach, allowing the robot to grasp, lift, and manipulate objects in various positions. Coupled with its perceptive capabilities, it is well-suited for pick-and-place tasks, rearranging furniture, and interacting with objects in both high and low locations.",
+    "summary": "The robot is equipped with a multi-jointed arm featuring seven revolute joints and an additional gripper joint (arm0.link_fngr). This allows for precise and flexible manipulation of objects. Coupled with its perceptive capabilities, the robot can pick and place objects, including those in hard-to-reach areas like high shelves or under tables, fulfilling tasks such as cross-floor object rearrangement and home arrangement.",
     "arm_workspace": {
       "center": [
         0.21883335709571838,

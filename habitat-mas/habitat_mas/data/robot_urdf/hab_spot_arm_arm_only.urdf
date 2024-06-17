@@ -399,21 +399,7 @@
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
     </collision>
   </link>
-  <link name="articulated_agent_arm_depth">
-    <inertial>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
-      <mass value="1.0"/>
-      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-    </inertial>
-  </link>
-  <link name="articulated_agent_arm_rgb">
-    <inertial>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
-      <mass value="1.0"/>
-      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-    </inertial>
-  </link>
-  <link name="articulated_agent_arm_panoptic">
+  <link name="articulated_agent_arm_camera">
     <inertial>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
       <mass value="1.0"/>
@@ -560,21 +546,9 @@
     <axis xyz="0. 1. 0."/>
     <origin xyz="0.11745 0.0 0.01482" rpy="0.0 0.0 0.0"/>
   </joint>
-  <joint name="articulated_agent_arm_depth_joint" type="fixed">
+  <joint name="articulated_agent_arm_joint" type="fixed">
     <parent link="arm0.link_wr1"/>
-    <child link="articulated_agent_arm_depth"/>
-    <axis xyz="1. 0. 0."/>
-    <origin xyz="-7.256090395202364e-09 -0.01799999177455902 -0.16599999368190765" rpy="0.0 -0.0 0.0"/>
-  </joint>
-  <joint name="articulated_agent_arm_rgb_joint" type="fixed">
-    <parent link="arm0.link_wr1"/>
-    <child link="articulated_agent_arm_rgb"/>
-    <axis xyz="1. 0. 0."/>
-    <origin xyz="0.022999992594122887 -0.02999999187886715 -0.16599999368190765" rpy="0.0 -0.0 0.0"/>
-  </joint>
-  <joint name="articulated_agent_arm_panoptic_joint" type="fixed">
-    <parent link="arm0.link_wr1"/>
-    <child link="articulated_agent_arm_panoptic"/>
+    <child link="articulated_agent_arm_camera"/>
     <axis xyz="1. 0. 0."/>
     <origin xyz="-7.256090395202364e-09 -0.01799999177455902 -0.16599999368190765" rpy="0.0 -0.0 0.0"/>
   </joint>

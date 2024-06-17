@@ -214,115 +214,41 @@ fetch_camera_params = {
 # The camera setups of the Spot robots.
 spot_camera_params = {
     "default": {
-        "articulated_agent_arm_depth": ArticulatedAgentCameraParams(
+        "articulated_agent_arm": ArticulatedAgentCameraParams(
             cam_offset_pos=mn.Vector3(0.166, 0.0, 0.018),
             cam_orientation=mn.Vector3(0, -1.571, 0.0),
             attached_link_id=6,
             relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
         ),
-        "articulated_agent_arm_rgb": ArticulatedAgentCameraParams(
-            cam_offset_pos=mn.Vector3(0.166, 0.023, 0.03),
-            cam_orientation=mn.Vector3(0, -1.571, 0.0),
-            attached_link_id=6,
-            relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        ),
-        "articulated_agent_arm_panoptic": ArticulatedAgentCameraParams(
-            cam_offset_pos=mn.Vector3(0.166, 0.0, 0.018),
-            cam_orientation=mn.Vector3(0, -1.571, 0.0),
-            attached_link_id=6,
-            relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        ),
-        "head_stereo_right": ArticulatedAgentCameraParams(
-            cam_offset_pos=mn.Vector3(
-                0.4164822634134684, 0.0, 0.03614789234067159
-            ),
-            cam_orientation=mn.Vector3(0.0290787, -0.940569, -0.38998877),
-            attached_link_id=-1,
-        ),
-        "head_stereo_left": ArticulatedAgentCameraParams(
-            cam_offset_pos=mn.Vector3(
-                0.4164822634134684, 0.0, -0.03740343144695029
-            ),
-            cam_orientation=mn.Vector3(-3.1125141, -0.940569, 2.751605),
-            attached_link_id=-1,
-        ),
+        "head": ArticulatedAgentCameraParams(
+                    cam_offset_pos=mn.Vector3(
+                        0.4164822634134684, 0.0, 0.0
+                    ),
+                    cam_look_at_pos=mn.Vector3(1.0, 0.0, 0.0),
+                    attached_link_id=-1,
+        ),   
         "third": ArticulatedAgentCameraParams(
             cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
             cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
             attached_link_id=-1,
         ),
-        # "articulated_agent_jaw_depth": ArticulatedAgentCameraParams(
-        #     cam_offset_pos=mn.Vector3(0.166, 0.0, -0.107),
-        #     cam_orientation=mn.Vector3(0, -1.571, 0.0),
-        #     attached_link_id=6,
-        #     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        # ),
-        # "articulated_agent_jaw_rgb": ArticulatedAgentCameraParams(
-        #     cam_offset_pos=mn.Vector3(0.166, 0.0, -0.107),
-        #     cam_orientation=mn.Vector3(0, -1.571, 0.0),
-        #     attached_link_id=6,
-        #     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        # ),
-        # "articulated_agent_jaw_panoptic": ArticulatedAgentCameraParams(
-        #     cam_offset_pos=mn.Vector3(0.166, 0.0, -0.107),
-        #     cam_orientation=mn.Vector3(0, -1.571, 0.0),
-        #     attached_link_id=6,
-        #     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        # ),
     },
     "head_only": {
-        "head_stereo_right": ArticulatedAgentCameraParams(
+        "head": ArticulatedAgentCameraParams(
             cam_offset_pos=mn.Vector3(
-                0.4164822634134684, 0.0, 0.03614789234067159
+                0.4164822634134684, 0.0, 0.0
             ),
-            cam_orientation=mn.Vector3(0.0290787, -0.940569, -0.38998877),
+            cam_look_at_pos=mn.Vector3(1.0, 0.0, 0.0),
             attached_link_id=-1,
-        ),
-        "head_stereo_left": ArticulatedAgentCameraParams(
-            cam_offset_pos=mn.Vector3(
-                0.4164822634134684, 0.0, -0.03740343144695029
-            ),
-            cam_orientation=mn.Vector3(-3.1125141, -0.940569, 2.751605),
-            attached_link_id=-1,
-        ),
+        ),  
     },
     "arm_only": {
-        "articulated_agent_arm_depth": ArticulatedAgentCameraParams(
+        "articulated_agent_arm": ArticulatedAgentCameraParams(
             cam_offset_pos=mn.Vector3(0.166, 0.0, 0.018),
             cam_orientation=mn.Vector3(0, -1.571, 0.0),
             attached_link_id=6,
             relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
         ),
-        "articulated_agent_arm_rgb": ArticulatedAgentCameraParams(
-            cam_offset_pos=mn.Vector3(0.166, 0.023, 0.03),
-            cam_orientation=mn.Vector3(0, -1.571, 0.0),
-            attached_link_id=6,
-            relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        ),
-        "articulated_agent_arm_panoptic": ArticulatedAgentCameraParams(
-            cam_offset_pos=mn.Vector3(0.166, 0.0, 0.018),
-            cam_orientation=mn.Vector3(0, -1.571, 0.0),
-            attached_link_id=6,
-            relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        ),
-        # "articulated_agent_jaw_depth": ArticulatedAgentCameraParams(
-        #     cam_offset_pos=mn.Vector3(0.166, 0.0, -0.107),
-        #     cam_orientation=mn.Vector3(0, -1.571, 0.0),
-        #     attached_link_id=6,
-        #     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        # ),
-        # "articulated_agent_jaw_rgb": ArticulatedAgentCameraParams(
-        #     cam_offset_pos=mn.Vector3(0.166, 0.0, -0.107),
-        #     cam_orientation=mn.Vector3(0, -1.571, 0.0),
-        #     attached_link_id=6,
-        #     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        # ),
-        # "articulated_agent_jaw_panoptic": ArticulatedAgentCameraParams(
-        #     cam_offset_pos=mn.Vector3(0.166, 0.0, -0.107),
-        #     cam_orientation=mn.Vector3(0, -1.571, 0.0),
-        #     attached_link_id=6,
-        #     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
-        # ),
     },
 }
 

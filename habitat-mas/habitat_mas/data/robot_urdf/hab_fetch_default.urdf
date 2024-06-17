@@ -448,14 +448,14 @@
       <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
     </inertial>
   </link>
-  <link name="articulated_agent_arm">
+  <link name="articulated_agent_arm_camera">
     <inertial>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
     </inertial>
   </link>
-  <link name="head">
+  <link name="head_camera">
     <inertial>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
       <mass value="1.0"/>
@@ -638,13 +638,13 @@
   </joint>
   <joint name="articulated_agent_arm_joint" type="fixed">
     <parent link="gripper_link"/>
-    <child link="articulated_agent_arm"/>
+    <child link="articulated_agent_arm_camera"/>
     <axis xyz="1. 0. 0."/>
     <origin xyz="-0.10000000149011612 4.371139006309477e-09 1.9106855710438234e-16" rpy="0.0 -0.0 0.0"/>
   </joint>
   <joint name="head_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="head"/>
+    <child link="head_camera"/>
     <axis xyz="1. 0. 0."/>
     <origin xyz="0.25 -5.245366807571372e-08 1.2000000476837158" rpy="0.0 -0.0 0.0"/>
   </joint>

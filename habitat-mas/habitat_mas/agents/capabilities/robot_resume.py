@@ -156,7 +156,8 @@ def generate_full_robot_resumes():
             
             urdf_path = os.path.join(habitat_mas_data_dir, "robot_urdf", f"{org_urdf_file_name}_{camera_setup}.urdf")
             robot_resume = RobotResume.from_urdf(f"{robot_name}_{camera_setup}", urdf_path, robot_name)
-            camera_info = get_cameras_height_and_type(urdf_path, list(camera_param.keys()), robot_name)
+            camera_links = [f"{camera_name}_camera" for camera_name in camera_param.keys()]
+            camera_info = get_cameras_height_and_type(urdf_path, camera_links, robot_name)
             robot_resume.perception["cameras_info"] = camera_info
             print(f"Camera info for {robot_name}_{camera_setup}: {camera_info}")
             
