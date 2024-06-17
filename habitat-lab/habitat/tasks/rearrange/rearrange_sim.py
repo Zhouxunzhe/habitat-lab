@@ -464,31 +464,53 @@ class RearrangeSim(HabitatSim):
                 f"Could not find a collision free start for {self.ep_info.episode_id}"
             )
 
-        # TODO(YCC): collect the robot setup
+        # TODO(YCC): collect the robot setup   
         episode_id = self.ep_info.episode_id
         sim_config = self.habitat_config
-        agent_types = {
-            0: sim_config.agents.agent_0.articulated_agent_type,
-            1: sim_config.agents.agent_1.articulated_agent_type,
-        }
-        urdf_types = {
-            0: sim_config.agents.agent_0.articulated_agent_urdf,
-            1: sim_config.agents.agent_1.articulated_agent_urdf,
-        }
+        
+        agent_types, urdf_types = {}, {}
+        for idx in range(len(self.agents_mgr)):
+            agent_key = f"agent_{idx}"
+            if hasattr(self.habitat_config.agents, agent_key):
+                agent_config = sim_config.agents[agent_key]
+                agent_types[idx] = agent_config.articulated_agent_type
+                urdf_types[idx] = agent_config.articulated_agent_urdf
+            else:
+                agent_types[idx] = None
+                urdf_types[idx] = None
+                
+        # agent_types = {
+        #     0: sim_config.agents.agent_0.articulated_agent_type,
+        #     1: sim_config.agents.agent_1.articulated_agent_type,
+        # }
+        # urdf_types = {
+        #     0: sim_config.agents.agent_0.articulated_agent_urdf,
+        #     1: sim_config.agents.agent_1.articulated_agent_urdf,
+        # }
         type_config = {}
-        if ('arm_only' in urdf_types[0]) or ('armonly' in urdf_types[0]) or ('only_arm' in urdf_types[0]) or ('onlyarm' in urdf_types[0]):
-            type_config[0] = agent_types[0] + '_arm_only'
-        elif ('head_only' in urdf_types[0]) or ('headonly' in urdf_types[0]):
-            type_config[0] = agent_types[0] + '_head_only'
-        else:
-            type_config[0] = agent_types[0] + '_default'
+        
+        for idx, urdf_path in urdf_types.items():
+            if urdf_path:
+                if ("arm_only" in urdf_path) or ("armonly" in urdf_path) or ("only_arm" in urdf_path) or ("onlyarm" in urdf_path):
+                    type_config[idx] = agent_types[idx] + "_arm_only"
+                elif ("head_only" in urdf_path) or ("headonly" in urdf_path):
+                    type_config[idx] = agent_types[idx] + "_head_only"
+                else:
+                    type_config[idx] = agent_types[idx] + "_default"
+        
+        # if ('arm_only' in urdf_types[0]) or ('armonly' in urdf_types[0]) or ('only_arm' in urdf_types[0]) or ('onlyarm' in urdf_types[0]):
+        #     type_config[0] = agent_types[0] + '_arm_only'
+        # elif ('head_only' in urdf_types[0]) or ('headonly' in urdf_types[0]):
+        #     type_config[0] = agent_types[0] + '_head_only'
+        # else:
+        #     type_config[0] = agent_types[0] + '_default'
 
-        if ('arm_only' in urdf_types[1]) or ('armonly' in urdf_types[1]) or ('only_arm' in urdf_types[1]) or ('onlyarm' in urdf_types[1]):
-            type_config[1] = agent_types[1] + '_arm_only'
-        elif ('head_only' in urdf_types[1]) or ('headonly' in urdf_types[1]):
-            type_config[1] = agent_types[1] + '_head_only'
-        else:
-            type_config[1] = agent_types[1] + '_default'
+        # if ('arm_only' in urdf_types[1]) or ('armonly' in urdf_types[1]) or ('only_arm' in urdf_types[1]) or ('onlyarm' in urdf_types[1]):
+        #     type_config[1] = agent_types[1] + '_arm_only'
+        # elif ('head_only' in urdf_types[1]) or ('headonly' in urdf_types[1]):
+        #     type_config[1] = agent_types[1] + '_head_only'
+        # else:
+        #     type_config[1] = agent_types[1] + '_default'
 
         agent_info = {
             "agent_idx": agent_idx,
@@ -496,8 +518,10 @@ class RearrangeSim(HabitatSim):
             "start_pos": start_pos.tolist(),
             "start_rot": start_rot,
         }
-
-        self.write_to_json(episode_id, agent_info)
+        
+        w2j = self.habitat_config.w2j
+        if w2j:
+            self.write_to_json(episode_id, agent_info)
 
         return start_pos, start_rot
 

@@ -2013,6 +2013,7 @@ class DatasetConfig(HabitatBaseConfig):
     robot_config: str = (
         "data/robots/json/{mode}.json"
     )
+    w2j: bool = False
 
 
 @dataclass
