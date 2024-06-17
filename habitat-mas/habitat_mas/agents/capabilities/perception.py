@@ -23,7 +23,8 @@ def get_camera_tf_to_base(urdf: URDF, camera_link: Link) -> np.ndarray:
     )
     return link_tf
 
-def get_cameras_height_and_type(urdf_path: str, camera_links:List[str], robot_name:str, skip_link=["third"]) -> dict:
+def get_cameras_height_and_type(urdf_path: str, camera_links:List[str], robot_name:str, 
+                                skip_link=["third_camera"]) -> dict:
     """
     Get the height and type (fixed, articulated) of the cameras in the URDF file.
     First decide the type of the camera by checking if all parent links are fixed.
@@ -67,11 +68,11 @@ def get_cameras_height_and_type(urdf_path: str, camera_links:List[str], robot_na
 
 if __name__ == "__main__":
     cur_dir = os.path.dirname(__file__)
-    urdf_path = os.path.join(cur_dir, "../../data/robot_urdf/hab_spot_arm_with_cameras.urdf")
+    urdf_path = os.path.join(cur_dir, "../../data/robot_urdf/hab_spot_arm_default.urdf")
     # camera_params = spot_camera_params["head_only"]
     camera_params = spot_camera_params["default"]
-    camera_links = list(camera_params.keys())
+    camera_links = [f"{camera_name}_camera" for camera_name in camera_params.keys()]
     robot_name = "SpotRobot"
     cameras_info = get_cameras_height_and_type(urdf_path, camera_links, robot_name)
     print(cameras_info)
-    # output: {'head_stereo_right': {'height': 0.48, 'type': 'fixed'}, 'head_stereo_left': {'height': 0.48, 'type': 'fixed'}}
+    # output: {'articulated_agent_arm_camera': {'height': 0.5770000063180923, 'type': 'articulated'}, 'head_camera': {'height': 0.48, 'type': 'fixed'}}

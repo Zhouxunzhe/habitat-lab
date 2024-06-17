@@ -105,7 +105,7 @@ def parse_urdf(file_path):
     return robot
 
 def add_cameras_to_urdf(urdf: URDF, camera_params: Dict[str, ArticulatedAgentCameraParams], 
-                        robot_name:str, skip_link=["third"]):
+                        robot_name:str, skip_link=["third"], link_suffix="_camera"):
     """
     Add camera to the URDF
     
@@ -121,7 +121,7 @@ def add_cameras_to_urdf(urdf: URDF, camera_params: Dict[str, ArticulatedAgentCam
         if camera_name in skip_link:
             continue
         camera_link = Link(
-            name=camera_name,
+            name=f"{camera_name}{link_suffix}",
             inertial=None,
             visuals=[],
             collisions=[],
@@ -152,7 +152,7 @@ def add_cameras_to_urdf(urdf: URDF, camera_params: Dict[str, ArticulatedAgentCam
         camera_joint = Joint(
             name=f"{camera_name}_joint",
             parent=camera_attached_link,
-            child=camera_name,
+            child=f"{camera_name}{link_suffix}",
             joint_type="fixed",
             origin=origin,
             # axis=orientation
@@ -236,10 +236,13 @@ def query_llm_with_urdf(urdf: URDF, model_name="gpt-4o", task_text=default_tasks
         if node == urdf.base_link.name:
             root_node = node
     urdf_text = generate_tree_text_with_edge_types(urdf_nx_graph, root_node)
-    
+    # TODO: modify the prompt so the LLM attends to the cameras in urdf
     system_prompt = """
 You are a robot urdf structure reasoner. You will be given a robot's urdf tree-structured text, and you need to provide a summary of the robot's physics capabilities.
 Please pay attention to the task and summarize the mobility, perception, and manipulation capabilities of the robot that are relevant to the task.
+For the mobility capability, you should consider the robot's base type, the moving capability on/in the ground type or the air. 
+For the perception capability, you should consider the robot's sensors, especially the cameras, their types and positions.
+For the manipulation capability, you should consider the robot's end effectors and the joints that allow the robot to manipulate objects.
 The response should be a JSON object with each capability as a dictionary, containing a summary field:
 {
     "mobility": {"summary": ...},
@@ -287,16 +290,16 @@ def generate_urdf_with_cameras():
     data_dir = os.path.join(cur_dir, "../../../../data")
 
     robot_urdfs = {
-        # "FetchRobot": os.path.join(data_dir, "robots/hab_fetch/robots/hab_fetch.urdf"),
-        # "SpotRobot": os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf"),
-        # "StretchRobot": os.path.join(data_dir, "robots/hab_stretch/urdf/hab_stretch.urdf"),
+        "FetchRobot": os.path.join(data_dir, "robots/hab_fetch/robots/hab_fetch.urdf"),
+        "SpotRobot": os.path.join(data_dir, "robots/hab_spot_arm/urdf/hab_spot_arm.urdf"),
+        "StretchRobot": os.path.join(data_dir, "robots/hab_stretch/urdf/hab_stretch.urdf"),
         "DJIDrone": os.path.join(data_dir, "robots/dji_drone/urdf/dji_m100_sensors_scaled.urdf"),
     }
     
     robot_camera_params = {
-        # "FetchRobot": fetch_camera_params,
-        # "SpotRobot": spot_camera_params,
-        # "StretchRobot": stretch_camera_params,
+        "FetchRobot": fetch_camera_params,
+        "SpotRobot": spot_camera_params,
+        "StretchRobot": stretch_camera_params,
         "DJIDrone": dji_camera_params
     }
 

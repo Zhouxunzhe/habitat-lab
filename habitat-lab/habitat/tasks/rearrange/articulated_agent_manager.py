@@ -73,6 +73,7 @@ class ArticulatedAgentManager:
         self._all_agent_data = []
         self._is_pb_installed = is_pb_installed()
         self.agent_names = cfg.agents
+        self.agents_order = cfg.agents_order
 
         for agent_name in cfg.agents_order:
             agent_cfg = cfg.agents[agent_name]

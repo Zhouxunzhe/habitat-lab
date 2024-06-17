@@ -1688,6 +1688,13 @@ class HeadDepthSensorConfig(HabitatSimDepthSensorConfig):
 
 
 @dataclass
+class HeadSemanticSeonsorConfig(HabitatSimSemanticSensorConfig):
+    uuid: str = "head_semantic"
+    width: int = 256
+    height: int = 256
+
+
+@dataclass
 class HeadStereoLeftDepthSensorConfig(HabitatSimDepthSensorConfig):
     uuid: str = "head_stereo_left_depth"
     width: int = 256
@@ -1735,6 +1742,12 @@ class ArmDepthSensorConfig(HabitatSimDepthSensorConfig):
     width: int = 256
     height: int = 256
 
+@dataclass
+class ArmSemanticSensorConfig(HabitatSimSemanticSensorConfig):
+    uuid: str = "articulated_agent_arm_semantic"
+    width: int = 256
+    height: int = 256
+
 
 @dataclass
 class JawRGBSensorConfig(HabitatSimRGBSensorConfig):
@@ -1751,6 +1764,13 @@ class JawDepthSensorConfig(HabitatSimDepthSensorConfig):
 
 
 @dataclass
+class JawSemanticSensorConfig(HabitatSimSemanticSensorConfig):
+    uuid: str = "articulated_agent_jaw_semantic"
+    width: int = 256
+    height: int = 256
+
+
+@dataclass
 class ThirdRGBSensorConfig(HabitatSimRGBSensorConfig):
     uuid: str = "third_rgb"
     width: int = 512
@@ -1761,6 +1781,13 @@ class ThirdRGBSensorConfig(HabitatSimRGBSensorConfig):
 class ThirdDepthSensorConfig(HabitatSimDepthSensorConfig):
     uuid: str = "third_depth"  # TODO: third_rgb on the main branch
     #  check if it won't cause any errors
+
+
+@dataclass
+class ThirdSemanticSensorConfig(HabitatSimSemanticSensorConfig):
+    uuid: str = "third_semantic"
+    width: int = 512
+    height: int = 512
 
 
 @dataclass
@@ -2231,6 +2258,12 @@ cs.store(
 
 cs.store(
     group="habitat/simulator/sim_sensors",
+    name="arm_semantic_sensor",
+    node=ArmSemanticSensorConfig,
+)
+
+cs.store(
+    group="habitat/simulator/sim_sensors",
     name="jaw_depth_sensor",
     node=JawDepthSensorConfig,
 )
@@ -2243,8 +2276,8 @@ cs.store(
 
 cs.store(
     group="habitat/simulator/sim_sensors",
-    name="head_depth_sensor",
-    node=HeadDepthSensorConfig,
+    name="jaw_semantic_sensor",
+    node=JawSemanticSensorConfig,
 )
 
 cs.store(
@@ -2259,11 +2292,21 @@ cs.store(
     node=HeadStereoLeftDepthSensorConfig,
 )
 
-
 cs.store(
     group="habitat/simulator/sim_sensors",
     name="head_rgb_sensor",
     node=HeadRGBSensorConfig,
+)
+
+cs.store(
+    group="habitat/simulator/sim_sensors",
+    name="head_depth_sensor",
+    node=HeadDepthSensorConfig,
+)
+cs.store(
+    group="habitat/simulator/sim_sensors",
+    name="head_semantic_sensor",
+    node=HeadSemanticSeonsorConfig,
 )
 
 cs.store(
@@ -2296,6 +2339,11 @@ cs.store(
     node=ThirdRGBSensorConfig,
 )
 
+cs.store(
+    group="habitat/simulator/sim_sensors",
+    name="third_semantic_sensor",
+    node=ThirdSemanticSensorConfig,
+)
 
 # Task Sensors
 cs.store(

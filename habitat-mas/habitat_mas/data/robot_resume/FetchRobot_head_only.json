@@ -2,19 +2,19 @@
   "robot_id": "FetchRobot_head_only",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The robot has a drivetrain consisting of two continuous joints for the right and left wheels, enabling it to perform differential drive for mobility. This allows it to move across different floors and navigate through homes effectively."
+    "summary": "The robot has differential drive mobility with two continuous joints controlling two wheels (r_wheel_link and l_wheel_link) attached to the base_link. This allows the robot to move forward, backward, and rotate in place. However, there is no indication of stair-climbing capability, which may limit cross-floor tasks unless an elevator or similar device is used for transport between floors."
   },
   "perception": {
-    "summary": "The robot is equipped with a head camera with RGB and depth sensing capabilities. The camera is mounted on a head with pan and tilt revolute joints, which allows the robot to adjust its field of view. Additionally, it has a laser link, which probably includes a laser range finder for obstacle detection and environment mapping.",
+    "summary": "Perception capabilities are primarily provided by a head camera system with both RGB and depth sensing (head_camera_rgb_frame and head_camera_depth_frame). The camera is mounted on a head that can pan and tilt, allowing for dynamic visual scanning of the environment. This visual capability is essential for detecting and localizing objects for manipulation tasks and cooperative perception.",
     "cameras_info": {
-      "head": {
+      "head_camera": {
         "height": 1.2000000476837158,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot features a torso that can lift via a prismatic joint, and an articulated arm with multiple revolute and continuous joints, allowing for complex manipulative tasks. The arm is capable of shoulder pan and lift, upper arm roll, elbow flex, forearm roll, wrist flex, and wrist roll movements. It is also equipped with a gripper with prismatic joints for finger movements, enabling it to grasp and manipulate objects of various sizes and shapes efficiently.",
+    "summary": "The robot features a dexterous single arm manipulator that includes several joints: shoulder pan and lift, upper arm roll, elbow flex, forearm roll, wrist flex and roll, and a gripper. The gripper itself has two prismatic joints for the fingers, allowing for grasping and picking up objects of various sizes and shapes. The arm's range of motion enables it to reach objects on high shelves and under tables, fulfilling requirements for home arrangement tasks and object rearrangement.",
     "arm_workspace": {
       "center": [
         0.1473979502916336,

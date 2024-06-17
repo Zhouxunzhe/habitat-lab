@@ -2,23 +2,23 @@
   "robot_id": "FetchRobot_default",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The robot has a mobile base equipped with two continuous joints for the left and right wheels, allowing it to move and navigate across different floors. This base provides the robot with the capability to traverse various environments, making it suitable for tasks that involve cross-floor movement."
+    "summary": "The robot has a mobile base with two continuous joints corresponding to left and right wheel links, allowing it to move in a differential drive manner. This enables the robot to navigate across different floors and environments for tasks such as cross-floor object rearrangement and home arrangement."
   },
   "perception": {
-    "summary": "The robot is equipped with a head that can pan and tilt, providing a wide range of vision. It has a head camera with RGB and depth sensing capabilities, which are crucial for perceiving the environment and recognizing objects. Additionally, the fixed laser link suggests the presence of a laser scanner that can help in mapping and navigation.",
+    "summary": "The robot is equipped with a head-mounted camera system that includes RGB and depth cameras, providing it with detailed visual and spatial information about the environment and objects. This camera setup supports tasks requiring cooperative perception and geometric information collection for effective manipulation.",
     "cameras_info": {
-      "articulated_agent_arm": {
+      "articulated_agent_arm_camera": {
         "height": 0.7860100000000001,
         "type": "articulated"
       },
-      "head": {
+      "head_camera": {
         "height": 1.2000000476837158,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot features a highly articulated arm with multiple joints, including prismatic and revolute joints, allowing for complex movements. It has a gripper with prismatic joints for the fingers, enabling it to pick and place objects, which is essential for tasks such as object rearrangement and home organization. The torso can lift, giving it the ability to reach objects placed at varying heights, such as high shelves and under tables.",
+    "summary": "The robot has a sophisticated arm with multiple degrees of freedom, including prismatic and revolute joints (shoulder, elbow, wrist, gripper). This allows for complex manipulation tasks such as picking and placing objects, rearranging furniture, and handling objects in challenging positions like high shelves and under tables. The gripper with prismatic joints on both fingers further enhances precise object handling capabilities.",
     "arm_workspace": {
       "center": [
         0.1473979502916336,
