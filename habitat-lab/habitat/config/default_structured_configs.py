@@ -1929,6 +1929,9 @@ class SimulatorConfig(HabitatBaseConfig):
     object_ids_start: int = 100
     # Configuration for rendering
     renderer: RendererConfig = RendererConfig()
+    
+    #TODO(ycc): write to json config
+    w2j: bool = False
 
 
 @dataclass
