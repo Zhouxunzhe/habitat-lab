@@ -1372,3 +1372,55 @@ class ArmDepthBBoxSensor(UsesArticulatedAgentInterface, Sensor):
             bbox[rmin:rmax, cmin:cmax] = 1.0
 
         return np.float32(bbox)
+
+@registry.register_sensor
+class DetectedObjectsSensor(UsesArticulatedAgentInterface, Sensor):
+    """ Sensor to detect all objects ids in the semantic sensors """
+    cls_uuid: str = "detected_objects"
+    
+    def __init__(self, sim, config, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+        self.pixel_threshold = config.pixel_threshold
+
+    def _get_uuid(self, *args, **kwargs):
+        return DetectedObjectsSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.SEMANTIC
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        # The observation space is flexible, should not be used as gym input
+        return spaces.Box(low=0, high=np.iinfo(np.int64).max, shape=(), dtype=np.int64)
+
+    # This method assumes the existence of a method to get the semantic sensor's data
+    def get_observation(self, observations, *args, **kwargs):
+        """ Get the detected objects from the semantic sensor data """
+        
+        observation_keys = list(observations.keys())
+        
+        # Retrieve the semantic sensor data
+        if self.agent_id is None:
+            target_keys = [key for key in observation_keys if "semantic" in key]
+        else:
+            target_keys = [
+                key for key in observation_keys 
+                if f"agent_{self.agent_id}" in key and "semantic" in key
+            ]
+        
+        sensor_detected_objects = {}
+        
+        for key in target_keys:
+            semantic_sensor_data = observations[key]
+            
+            # Count the occurrence of each object ID in the semantic sensor data
+            unique, counts = np.unique(semantic_sensor_data, return_counts=True)
+            objects_count = dict(zip(unique, counts))
+            
+            # Filter objects based on the size threshold
+            sensor_detected_objects[key] = [obj_id for obj_id, count in objects_count.items() if count > self.pixel_threshold]
+        
+        # Concatenate all detected objects from all sensors
+        detected_objects = np.unique(np.concatenate(list(sensor_detected_objects.values())))
+        
+        return detected_objects
