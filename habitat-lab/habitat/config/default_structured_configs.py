@@ -754,6 +754,13 @@ class HasFinishedArmActionSensorConfig(LabSensorConfig):
     type: str = "HasFinishedArmActionSensor"
 
 @dataclass
+class DetectedObjectsSensorConfig(LabSensorConfig):
+    type: str = "DetectedObjectsSensor"
+    pixel_threshold: int = 10
+    
+
+
+@dataclass
 class OtherAgentGpsConfig(LabSensorConfig):
     type: str = "OtherAgentGps"
 
@@ -2526,6 +2533,18 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="has_finished_humanoid_pick",
     node=HasFinishedHumanoidPickSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.has_finished_arm_action",
+    group="habitat/task/lab_sensors",
+    name="has_finished_arm_action",
+    node=HasFinishedArmActionSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.detected_objects_sensor",
+    group="habitat/task/lab_sensors",
+    name="detected_objects_sensor",
+    node=DetectedObjectsSensorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.other_agent_gps",
