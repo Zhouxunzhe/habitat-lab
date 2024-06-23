@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 import open3d as o3d
-from scene_graph.utils import project_points_to_grid_xz
+from habitat_mas.scene_graph.utils import project_points_to_grid_xz
 
 
 class ObjectNode:
@@ -14,6 +14,8 @@ class ObjectNode:
         size,
         class_name=None,
         label=None,
+        full_name=None,
+        description=None,
         parent_region=None,
         vertices=None,
         colors=None,
@@ -29,6 +31,8 @@ class ObjectNode:
         # optinal attributes
         self.class_name = class_name
         self.label = label
+        self.full_name = full_name
+        self.description = description
 
         # edge to parent region node
         self.parent_region = parent_region
@@ -75,10 +79,12 @@ class ObjectLayer:
         self,
         center,
         rotation,
-        size,
+        size=None,
         id=None,
         class_name=None,
         label=None,
+        full_name=None,
+        description=None,
         vertices=None,
         colors=None,
         normals=None,
@@ -96,7 +102,7 @@ class ObjectLayer:
 
         self.obj_ids.append(id)
         obj_node = ObjectNode(
-            id, center, rotation, size, class_name=class_name, label=label
+            id, center, rotation, size, class_name=class_name, label=label, full_name=full_name, description=description
         )
 
         if vertices is not None:

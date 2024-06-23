@@ -4,8 +4,7 @@ import numpy as np
 import open3d as o3d
 import quaternion as qt
 import networkx as nx
-# TODO: refactor out gibson-specific utils and generall dataset utils
-from dataset.gibson import getOBB, read_house_file
+
 from habitat_sim.utils.common import quat_from_two_vectors, quat_to_coeffs
 from matplotlib import pyplot as plt
 from scipy.spatial.transform import Rotation as R
@@ -146,8 +145,10 @@ def generate_region_adjacency_description(reion_layer):
 
     return description
 
-def generate_region_description(region_layer, region_id):
-
+def generate_region_objects_description(region_layer, region_id):
+    """
+    Generate description of objects in each region
+    """
     region = region_layer.region_dict[region_id]
     region_full_name = region.class_name + str(region_id)
     description = "Region {} contains the following objects:\n".format(region_full_name)
@@ -157,14 +158,37 @@ def generate_region_description(region_layer, region_id):
         
     return description
 
+def generate_objects_description(object_layer):
+    """
+    Generate description of objects, used when region layer is empty 
+    """
+    description = "There are {} objects in the scene.\n".format(len(object_layer.obj_ids))
+    for obj_id in object_layer.obj_ids:
+        obj = object_layer.obj_dict[obj_id]
+        obj_name = obj.full_name
+        if obj.full_name is None:
+            obj_name = obj.class_name + "_" + str(obj_id)
+        description += f"{obj_name} is at position {obj.center}.\n"
+    
+    return description
+
 def generate_agents_description(agent_layer, region_layer, nav_mesh):
     agent_description = ""
     
-    agents_region_ids = agent_layer.get_agents_region_ids(nav_mesh)
-    for agent_id, region_id in agents_region_ids.items():
-        agent_name = agent_layer.agent_dict[agent_id].agent_name + "_" + str(agent_id)
-        region_name = region_layer.region_dict[region_id].class_name + "_" + str(region_id)
-        agent_description += f"{agent_name} is in {region_name}.\n"
+    if len(region_layer) == 0 or nav_mesh is None:
+        #  when no region layer, just list the agent positions
+        agent_description = "There are {} agents in the scene.\n".format(len(agent_layer.agent_ids))
+        for agent_id in agent_layer.agent_ids:
+            agent = agent_layer.agent_dict[agent_id]
+            agent_name = agent.agent_name + "_" + str(agent_id)
+            agent_description += f"{agent_name} is at position {agent.position}.\n"
+            
+    else:
+        agents_region_ids = agent_layer.get_agents_region_ids(nav_mesh)
+        for agent_id, region_id in agents_region_ids.items():
+            agent_name = agent_layer.agent_dict[agent_id].agent_name + "_" + str(agent_id)
+            region_name = region_layer.region_dict[region_id].class_name + "_" + str(region_id)
+            agent_description += f"{agent_name} is in {region_name}.\n"
     
     return agent_description
 

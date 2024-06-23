@@ -11,12 +11,12 @@ from habitat_sim import Simulator, scene
 import networkx as nx
 
 # local import
-from scene_graph.config import SceneGraphHabitatConfig
-from scene_graph.region_layer import RegionLayer, RegionNode
-from scene_graph.object_layer import ObjectLayer, ObjectNode
-from scene_graph.agent_layer import AgentLayer, AgentNode
-from perception.grid_map import GridMap
-from perception.nav_mesh import NavMesh
+from habitat_mas.scene_graph.config import SceneGraphHabitatConfig
+from habitat_mas.scene_graph.region_layer import RegionLayer, RegionNode
+from habitat_mas.scene_graph.object_layer import ObjectLayer, ObjectNode
+from habitat_mas.scene_graph.agent_layer import AgentLayer, AgentNode
+from habitat_mas.perception.grid_map import GridMap
+from habitat_mas.perception.nav_mesh import NavMesh
 
 """
 ########################## Update log ###################################

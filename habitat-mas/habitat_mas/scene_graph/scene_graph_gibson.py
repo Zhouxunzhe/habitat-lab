@@ -9,13 +9,11 @@ import pickle
 import open3d as o3d
 import copy 
 from scipy import stats
-from scipy.ndimage.morphology import binary_dilation
-import quaternion as qt
 from habitat_sim import Simulator
 
-from utils.constants import coco_categories, coco_label_mapping
+from habitat_mas.utils.constants import coco_categories, coco_label_mapping
 from .scene_graph_base import SceneGraphBase
-from perception.grid_map import GridMap
+from habitat_mas.perception.grid_map import GridMap
 
 
 class SceneGraphGibson(SceneGraphBase):

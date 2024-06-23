@@ -10,21 +10,19 @@ import open3d as o3d
 import copy 
 import plotly.graph_objects as go
 from scipy import stats
-from scipy.ndimage.morphology import binary_dilation
-import quaternion as qt
 from habitat_sim import Simulator
 from habitat_sim.agent import AgentState
 
-from utils.constants import coco_categories, coco_label_mapping
-from scene_graph.scene_graph_base import SceneGraphBase
-from scene_graph.utils import (
+from habitat_mas.utils.constants import coco_categories, coco_label_mapping
+from habitat_mas.scene_graph.scene_graph_base import SceneGraphBase
+from habitat_mas.scene_graph.utils import (
     visualize_scene_graph,
     generate_region_adjacency_description,
-    generate_region_description,
+    generate_region_objects_description,
     generate_agents_description
 )
-from perception.grid_map import GridMap
-from perception.nav_mesh import NavMesh
+from habitat_mas.perception.grid_map import GridMap
+from habitat_mas.perception.nav_mesh import NavMesh
 class SceneGraphMP3D(SceneGraphBase):
 
     def __init__(self, **kwargs) -> None:
@@ -204,7 +202,7 @@ if __name__ == "__main__":
 
     # Generate scene descriptions
     region_scene_graph_description = generate_region_adjacency_description(sg.region_layer)
-    region_description = generate_region_description(sg.region_layer, region_id=0)
+    region_description = generate_region_objects_description(sg.region_layer, region_id=0)
     agent_description = generate_agents_description(sg.agent_layer, sg.region_layer, sg.nav_mesh)
         
     print(region_scene_graph_description)

@@ -2,8 +2,8 @@ import copy
 from typing import List, Dict, Tuple
 import numpy as np
 import open3d as o3d
-from scene_graph.utils import project_points_to_grid_xz
-from perception.nav_mesh import NavMesh
+from habitat_mas.scene_graph.utils import project_points_to_grid_xz
+from habitat_mas.perception.nav_mesh import NavMesh
 
 class AgentNode:
     def __init__(
@@ -44,9 +44,9 @@ class AgentNode:
             triangle_mesh.vertices = o3d.utility.Vector3dVector(navmesh.vertices)
             triangle_mesh.triangles = o3d.utility.Vector3iVector(navmesh.triangles)
             triangle_mesh.vertex_colors = o3d.utility.Vector3dVector(np.array([0.5, 0.5, 0.5]) * np.ones_like(navmesh.vertices))
-            triangle_mesh.vertex_colors[navmesh.triangles[triangle_id]] = [0, 0, 1]
+            for i in navmesh.triangles[triangle_id]:
+                triangle_mesh.vertex_colors[i] = [0, 0, 1]
              
-            
             o3d.visualization.draw_geometries([navmesh.mesh, agent_pos])
         
         return region_id
@@ -64,13 +64,13 @@ class AgentLayer:
     def add_agent(
         self,
         agent_id,
+        agent_name,
         position,
         orientation,
-        bbox,
         description="",
     ):
 
-        agent = AgentNode(agent_id, position, orientation, bbox, description)
+        agent = AgentNode(agent_id, agent_name, position, orientation, description)
         self.agent_ids.append(agent_id)
         self.agent_dict[agent_id]= agent
 
