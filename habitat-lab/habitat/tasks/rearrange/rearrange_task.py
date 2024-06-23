@@ -28,6 +28,7 @@ from habitat.tasks.rearrange.utils import (
     rearrange_collision,
     rearrange_logger,
 )
+from habitat_mas.tasks.habitat_mas_sensors import get_text_context
 
 
 @registry.register_task(name="RearrangeEmptyTask-v0")
@@ -411,6 +412,11 @@ class RearrangeTask(NavigationTask):
 
     def get_n_targets(self) -> int:
         return self.n_objs
+
+    def get_task_text_context(self) -> dict:
+        current_episode_idx = self._sim.ep_info.episode_id
+        robot_config = self._robot_config[current_episode_idx]["agents"]
+        return get_text_context(self._sim, robot_config)
 
     @property
     def should_end(self) -> bool:
