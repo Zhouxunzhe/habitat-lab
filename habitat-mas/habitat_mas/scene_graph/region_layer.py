@@ -4,8 +4,8 @@ import numpy as np
 
 # from utils.open3d_utils import
 # local import
-from scene_graph.object_layer import ObjectNode
-from scene_graph.utils import project_points_to_grid_xz
+from habitat_mas.scene_graph.object_layer import ObjectNode
+from habitat_mas.scene_graph.utils import project_points_to_grid_xz
 from scipy.spatial import cKDTree
 import networkx as nx
 

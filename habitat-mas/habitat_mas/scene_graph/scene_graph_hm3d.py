@@ -9,17 +9,15 @@ import pickle
 import open3d as o3d
 import copy 
 from scipy import stats
-from scipy.ndimage.morphology import binary_dilation
-import quaternion as qt
 from habitat_sim import Simulator
 
-from utils.constants import coco_categories, coco_label_mapping
-from scene_graph.scene_graph_base import SceneGraphBase
-from scene_graph.utils import (
+from habitat_mas.utils.constants import coco_categories, coco_label_mapping
+from habitat_mas.scene_graph.scene_graph_base import SceneGraphBase
+from habitat_mas.scene_graph.utils import (
     aggregate_bboxes
 )
-from perception.grid_map import GridMap
-from perception.nav_mesh import NavMesh
+from habitat_mas.perception.grid_map import GridMap
+from habitat_mas.perception.nav_mesh import NavMesh
 
 class SceneGraphHM3D(SceneGraphBase):
 
