@@ -35,3 +35,9 @@ def _try_register_rearrange_task():
     import habitat.tasks.rearrange.sub_tasks.place_task
     import habitat.tasks.rearrange.sub_tasks.reach_sensors
     import habitat.tasks.rearrange.sub_tasks.reach_task
+
+    # Try register habitat-mas sensors and measures
+    try:
+        import habitat_mas.tasks.habitat_mas_sensors 
+    except ImportError as e:
+        print(f"Habitat-mas task import error: {e}")

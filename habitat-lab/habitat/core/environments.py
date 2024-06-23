@@ -38,7 +38,7 @@ def get_env_class(env_name: str) -> Type[habitat.RLEnv]:
     """
     return habitat.registry.get_env(env_name)
 
-
+@habitat.registry.register_env(name="RLTaskEnv")
 class RLTaskEnv(habitat.RLEnv):
     def __init__(
         self, config: "DictConfig", dataset: Optional[Dataset] = None
@@ -94,6 +94,16 @@ class RLTaskEnv(habitat.RLEnv):
 
     def get_info(self, observations):
         return self._env.get_metrics()
+
+    def get_task_text_context(self) -> dict:
+        """
+        Get the text context of the task.
+        """
+        assert hasattr(self._env.task, "get_task_text_context"), (
+            "The task does not have a get_task_text_context method. "
+            "Please implement this method in the task class."
+        )
+        return self._env.task.get_task_text_context()
 
 
 @habitat.registry.register_env(name="GymRegistryEnv")
