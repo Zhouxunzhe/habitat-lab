@@ -758,7 +758,15 @@ class DetectedObjectsSensorConfig(LabSensorConfig):
     type: str = "DetectedObjectsSensor"
     pixel_threshold: int = 10
     
+# habitat-mas sensors
+@dataclass
+class HSSDSceneDescriptionSensorConfig(LabSensorConfig):
+    type: str = "HSSDSceneDescriptionSensor"
 
+@dataclass
+class RobotResumeSensorConfig(LabSensorConfig):
+    type: str = "RobotResumeSensor"
+    robot_resume_dir: str = "robot_resume"
 
 @dataclass
 class OtherAgentGpsConfig(LabSensorConfig):
@@ -2549,6 +2557,20 @@ cs.store(
     name="detected_objects_sensor",
     node=DetectedObjectsSensorConfig,
 )
+# habitat-mas sensors
+cs.store(
+    package="habitat.task.lab_sensors.hssd_scene_description",
+    group="habitat/task/lab_sensors",
+    name="hssd_scene_description",
+    node=HSSDSceneDescriptionSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.robot_resume",
+    group="habitat/task/lab_sensors",
+    name="robot_resume",
+    node=RobotResumeSensorConfig,
+)
+
 cs.store(
     package="habitat.task.lab_sensors.other_agent_gps",
     group="habitat/task/lab_sensors",
