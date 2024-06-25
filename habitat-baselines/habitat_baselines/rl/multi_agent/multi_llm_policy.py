@@ -47,6 +47,7 @@ class MultiLLMPolicy(MultiPolicy):
         prev_actions,
         masks,
         deterministic=False,
+        envs_text_context=[{}],
         **kwargs,
     ):
 
@@ -61,21 +62,43 @@ class MultiLLMPolicy(MultiPolicy):
             split_index_dict["index_len_prev_actions"], -1
         )
         agent_masks = masks.split([1, 1], -1)
-        robot_resume = kwargs.get("robot_resume", None)
-        scene_description = kwargs.get("scene_description", None)
-        
+        n_envs = prev_actions.shape[0]
         
         # Stage 1: If all prev_actions are zero, which means it is the first step of the episode, then we need to do group discussion
-        if not prev_actions.any():
-            #TODO: Add group discussion here
-            pass
+        # Given: Robot resume + Scene description + task instruction
+        # Output: (Subtask decomposition) + task assignment
+        envs_task_assignments = []
+        for i in range(n_envs):
+            env_prev_actions = prev_actions[i]
+            env_text_context = envs_text_context[i]
+            # if no previous actions, then it is the first step of the episode
+            if not env_prev_actions.any():
+                robot_resume = env_text_context["robot_resume"]
+                scene_description = env_text_context["scene_description"]
+                #TODO: Add group discussion here
+                # task_assignments = group_discussion(robot_resume, scene_description)
+                # {
+                #     "agent_0": "Look for the object xx in the environment",
+                #     "agent_1": "Navigate to object xxx, and pick up it, placing it at receptacle yyy",
+                #     ...
+                # }
+                envs_task_assignments.append({})
+                pass
             
+
         # Stage 2: Individual policy actions
         agent_actions = []
         for agent_i, policy in enumerate(self._active_policies):
+            # collect assigned tasks for agent_i across all envs
+            agent_i_handle = f"agent_{agent_i}"
+            agent_task_assignments = [task_assignment[agent_i]
+                                      if agent_i_handle in task_assignment else ""
+                                      for task_assignment in envs_task_assignments]
+            
             agent_obs = self._update_obs_with_agent_prefix_fn(
                 observations, agent_i
             )
+            
             agent_actions.append(
                 policy.act(
                     agent_obs,
@@ -83,6 +106,8 @@ class MultiLLMPolicy(MultiPolicy):
                     agent_prev_actions[agent_i],
                     agent_masks[agent_i],
                     deterministic,
+                    envs_text_context=envs_text_context,
+                    agent_task_assignments=agent_task_assignments # pass the task planning result to the policy
                 )
             )
         policy_info = _merge_list_dict(
