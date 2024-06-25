@@ -313,6 +313,7 @@ class HierarchicalPolicy(nn.Module, Policy):
             log_info,
             self._cur_call_high_level,
             deterministic,
+            **kwargs,
         )
         did_choose_new_skill = self._cur_call_high_level.clone()
         if hl_info.rnn_hidden_states is not None and self._has_hl_hidden_state:
@@ -438,6 +439,7 @@ class HierarchicalPolicy(nn.Module, Policy):
         log_info,
         should_choose_new_skill: torch.BoolTensor,
         deterministic: bool,
+        **kwargs,
     ) -> Tuple[torch.BoolTensor, PolicyActionData]:
         """
         Will potentially update the set of running skills according to the HL
@@ -470,6 +472,7 @@ class HierarchicalPolicy(nn.Module, Policy):
                 should_choose_new_skill,
                 deterministic,
                 log_info,
+                **kwargs,
             )
             new_skills = new_skills.numpy()
 

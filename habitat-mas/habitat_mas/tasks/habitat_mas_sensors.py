@@ -79,14 +79,16 @@ class RobotResumeSensor(Sensor):
         """
         Retrieve the resumes for all agents as a single string.
         """
-
+            
         robot_resumes = {}
         for agent_config in robot_configs:
-            agent_handle = agent_config["agent_type"]
-            robot_resume_file = os.path.join(self.robot_resume_dir, f"{agent_handle}.json")
+            # agent_handle = agent_config["agent_type"]
+            agent_handle = f"agent_{agent_config['agent_idx']}"
+            agent_type = agent_config["agent_type"]
+            robot_resume_file = os.path.join(self.robot_resume_dir, f"{agent_type}.json")
             if os.path.exists(robot_resume_file):
                 with open(robot_resume_file, "r") as f:
-                    robot_resume = json.load(f)
+                    robot_resume = json.load(f, parse_float=lambda x: round(float(x), 2))
                     robot_resumes[agent_handle] = robot_resume
         
         # convert dict to json string

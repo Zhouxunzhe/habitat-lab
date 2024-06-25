@@ -102,6 +102,7 @@ class HighLevelPolicy(nn.Module):
         plan_masks: torch.Tensor,
         deterministic: bool,
         log_info: List[Dict[str, Any]],
+        **kwargs,
     ) -> Tuple[torch.Tensor, List[Any], torch.BoolTensor, PolicyActionData]:
         """
         Get the next skill to be executed.

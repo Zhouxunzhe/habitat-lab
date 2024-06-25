@@ -25,6 +25,8 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         super().__init__(*args, **kwargs)
         self._all_actions = self._setup_actions()
         self._n_actions = len(self._all_actions)
+        self._active_envs = torch.zeros(self._num_envs, dtype=torch.bool)
+        
         environment_action_name_set = set(
             [action._name for action in self._all_actions]
         )
@@ -42,17 +44,28 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         # This could load a pre-trained model, set up prompts, etc.
         # Return the initialized agent
         action_list.append(send_request)
-        return CrabAgent(
-            agent_name,
-            'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
-            action_list,
-        )
+        return DummyAgent(agent_name=agent_name, action_list=action_list)
+
+        # return CrabAgent(
+        #     agent_name,
+        #     'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
+        #     action_list,
+        # )
 
     def _parse_function_call_args(self, llm_args: Dict) -> str:
         """
         Parse the arguments of a function call from the LLM agent to the policy input argument format.
         """
         return llm_args
+
+    def apply_mask(self, mask):
+        """
+        Apply the given mask to the agent in parallel envs.
+
+        Args:
+            mask: Binary mask of shape (num_envs, ) to be applied to the agents.
+        """
+        self._active_envs = mask
 
     def get_next_skill(
         self,
@@ -63,10 +76,15 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         plan_masks,
         deterministic,
         log_info,
+        **kwargs,
     ) -> Tuple[torch.Tensor, List[Any], torch.BoolTensor, PolicyActionData]:
         """
         Get the next skill to execute from the LLM agent.
         """
+        # TODO: use these text context to query the LLM agent with function call
+        envs_text_context = kwargs.get("envs_text_context", None)
+        agent_task_assignments = kwargs.get("agent_task_assignments", None)
+        
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
         skill_args_data = [None for _ in range(batch_size)]

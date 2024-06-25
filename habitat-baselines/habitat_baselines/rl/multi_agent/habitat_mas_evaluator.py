@@ -161,8 +161,8 @@ class HabitatMASEvaluator(Evaluator):
                     prev_actions,
                     not_done_masks,
                     deterministic=False,
+                    envs_text_context=envs_text_context,
                     **space_lengths,
-                    **envs_text_context,
                 )
                 if action_data.should_inserts is None:
                     test_recurrent_hidden_states = (
