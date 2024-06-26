@@ -57,6 +57,8 @@ Besides, you should:
 - download a drone urdf to insert into the environment. You can download the urdf from [here](https://drive.google.com/file/d/1WO4yUQaZRvlYcDY-A0ukNjOWmVg2nWEd/view?usp=sharing). Please place this dji_drone folder in data/robots folder that can be found by habitat project.
 - download the spot animation data from [here](https://drive.google.com/file/d/1E_mW3PEWwgYbt3rzSJcA4DbsI-WTQUmF/view?usp=sharing), and place it into the data/robots/spot_data folder. 
 - download the modified spot robot model from [here](https://drive.google.com/file/d/10idYOK2CAKgwWu9g2M4WgyuZBRSdYER1/view?usp=sharing). You should decompress it and place it into the data/robots folder.
+- download the robot configuration data from [here](https://drive.google.com/drive/folders/1ZxxpeqwBBbaTPjdgfss5LUsCkUgue12O?usp=drive_link), and place it into the data/robots folder.
+- download the perception and manipulation episodes data from [here](https://drive.google.com/drive/folders/1EKuXVMyKA5FuCNveV86QE6VvT6Whhiy7?usp=drive_link), and place them into the data/datasets folder.
 
 The folder should look like this:
 ```
@@ -75,6 +77,17 @@ habitat-lab
 │       ├── hab_stretch
 │       ├── spot_data
 │           ├── spot_walking_trajectory.csv
+│       ├── json
+│           ├── manipulation.json
+│           ├── perception.json
+│       ...
+│   ├── datasets
+│       ├── manipulation
+│           ├── manipulation_eval_fetch.json.gz
+│           ...
+│       ├── perception
+│           ├── perception_eval_drone.json.gz
+│           ...
 ...
 ```
 
