@@ -76,7 +76,7 @@ habitat:
         end_on_collide: True
         collide_penalty: 0.5
     task_spec_base_path: benchmark/multi_agent/
-    task_spec: pddl/zxz_spot_drone_nav
+    task_spec: pddl/zxz_spot_drone_rearrange_perception
     pddl_domain_def: fp
     actions:
       # agent_0_arm_action:
