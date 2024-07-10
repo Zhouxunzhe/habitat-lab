@@ -455,7 +455,19 @@ class OracleNavActionConfig(ActionConfig):
     # The start and end frames of the leg animation data
     use_range: Optional[List[int]] = field(default_factory=lambda: [107, 863])
 
-
+    # Parameters for navmesh recomputing for different bases
+    # The base type of the agent
+    base_type: str = "unknown"
+    # The radius of the agent in meters 
+    agent_radius: float = 0.25
+    # The height of the agent in meters
+    agent_height: float = 1.0
+    # The max climb of the agent
+    agent_max_climb: float = 0.02
+    # The maximum slope that is considered walkable in degrees
+    agent_max_slope: float = 5.0
+    
+    
 @dataclass
 class SelectBaseOrArmActionConfig(ActionConfig):
     r"""

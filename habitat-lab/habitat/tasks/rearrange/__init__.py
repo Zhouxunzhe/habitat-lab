@@ -15,6 +15,7 @@ def _try_register_rearrange_task():
     import habitat.tasks.rearrange.actions.oracle_nav_action
     import habitat.tasks.rearrange.actions.pddl_actions
     import habitat.tasks.rearrange.actions.drone_actions
+    import habitat.tasks.rearrange.actions.habitat_mas_actions
     import habitat.tasks.rearrange.actions.oracle_arm_action
     import habitat.tasks.rearrange.multi_agent_sensors
     import habitat.tasks.rearrange.multi_task.pddl_sensors
