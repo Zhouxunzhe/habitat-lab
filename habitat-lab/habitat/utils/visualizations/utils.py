@@ -212,20 +212,29 @@ def tile_images(render_obs_images: List[np.ndarray]) -> np.ndarray:
     return final_im
 
 
-def observations_to_image(observation: Dict, info: Dict) -> np.ndarray:
+def observations_to_image(observation: Dict, info: Dict, index=0) -> np.ndarray:
     r"""Generate image of single frame from observation and info
     returned from a single environment step().
 
     Args:
         observation: observation returned from an environment step().
         info: info returned from an environment step().
+        index: index of the frame being rendered.
 
     Returns:
         generated image of a single frame.
     """
     render_obs_images: List[np.ndarray] = []
+    # TODO(ZXZ): for frames storage
+    robot_names = {
+        'agent_0': 'SpotRobot',
+        'agent_1': 'DJIDrone',
+        'agent_2': 'FetchRobot',
+        'agent_3': 'StretchRobot',
+    }
     for sensor_name in observation:
         if len(observation[sensor_name].shape) > 1:
+            image_name = 'frame_' + str(index) + '_' + robot_names[sensor_name[:7]] + sensor_name[7:]
             obs_k = observation[sensor_name]
             if not isinstance(obs_k, np.ndarray):
                 obs_k = obs_k.cpu().numpy()
@@ -235,6 +244,11 @@ def observations_to_image(observation: Dict, info: Dict) -> np.ndarray:
             if obs_k.shape[2] == 1:
                 obs_k = np.concatenate([obs_k for _ in range(3)], axis=2)
             render_obs_images.append(obs_k)
+            import matplotlib.pyplot as plt
+            plt.imshow(obs_k)
+            # plt.colorbar()
+            plt.axis('off')
+            plt.savefig('video_dir/image_dir/'+image_name+'.png', bbox_inches='tight', pad_inches=0)
 
     assert (
         len(render_obs_images) > 0

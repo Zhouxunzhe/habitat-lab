@@ -89,7 +89,7 @@ class HabitatEvaluator(Evaluator):
             rgb_frames: List[List[np.ndarray]] = [
                 [
                     observations_to_image(
-                        {k: v[env_idx] for k, v in batch.items()}, {}
+                        {k: v[env_idx] for k, v in batch.items()}, {}, index=0
                     )
                 ]
                 for env_idx in range(config.habitat_baselines.num_environments)
@@ -224,7 +224,7 @@ class HabitatEvaluator(Evaluator):
                 if len(config.habitat_baselines.eval.video_option) > 0:
                     # TODO move normalization / channel changing out of the policy and undo it here
                     frame = observations_to_image(
-                        {k: v[i] for k, v in batch.items()}, disp_info
+                        {k: v[i] for k, v in batch.items()}, disp_info, index=len(rgb_frames[0])
                     )
                     if not not_done_masks[i].any().item():
                         # The last frame corresponds to the first frame of the next episode
