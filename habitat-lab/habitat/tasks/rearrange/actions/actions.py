@@ -9,6 +9,7 @@ import os
 from typing import Optional, cast
 
 import magnum as mn
+from magnum import Vector3
 import numpy as np
 from gym import spaces
 
@@ -451,6 +452,13 @@ class BaseVelAction(ArticulatedAgentAction):
         self._lin_speed = self._config.lin_speed
         self._ang_speed = self._config.ang_speed
         self._allow_back = self._config.allow_back
+        
+        # External path finder, used in oracle_nav_action
+        # TODO: refactor the basevel action so it has option to create its own path finder
+        if "pathfinder" in kwargs:
+            self.pathfinder = kwargs["pathfinder"]
+        else:
+            self.pathfinder = self._sim.pathfinder
 
     @property
     def action_space(self):
@@ -476,6 +484,21 @@ class BaseVelAction(ArticulatedAgentAction):
         self.cur_articulated_agent.sim_obj.joint_velocities = set_dat["vel"]
         self.cur_articulated_agent.sim_obj.joint_forces = set_dat["pos"]
 
+    def step_filter(self, start_pos: Vector3, end_pos: Vector3) -> Vector3:
+        r"""Computes a valid navigable end point given a target translation on the NavMesh.
+        Uses the configured sliding flag.
+
+        :param start_pos: The valid initial position of a translation.
+        :param end_pos: The target end position of a translation.
+        """
+        if self.pathfinder.is_loaded:
+            if self._allow_dyn_slide:
+                end_pos = self.pathfinder.try_step(start_pos, end_pos)
+            else:
+                end_pos = self.pathfinder.try_step_no_sliding(start_pos, end_pos)
+
+        return end_pos
+
     def update_base(self):
         ctrl_freq = self._sim.ctrl_freq
 
@@ -489,7 +512,7 @@ class BaseVelAction(ArticulatedAgentAction):
         target_rigid_state = self.base_vel_ctrl.integrate_transform(
             1 / ctrl_freq, rigid_state
         )
-        end_pos = self._sim.step_filter(
+        end_pos = self.step_filter(
             rigid_state.translation, target_rigid_state.translation
         )
 
@@ -584,6 +607,13 @@ class BaseVelNonCylinderAction(ArticulatedAgentAction):
             self._play_length_data = len(self._leg_data)
             self._play_i_perframe = self._config.get("play_i_perframe")
 
+        # External path finder, used in oracle_nav_action
+        # TODO: refactor the basevel action so it has option to create its own path finder
+        if "pathfinder" in kwargs:
+            self.pathfinder = kwargs["pathfinder"]
+        else:
+            self.pathfinder = self._sim.pathfinder
+
     @property
     def action_space(self):
         lim = 20
@@ -605,7 +635,7 @@ class BaseVelNonCylinderAction(ArticulatedAgentAction):
                     )
                 }
             )
-
+        
     def _load_animation(self):
         """
         The function loads the leg animation data from a csv file.
@@ -650,7 +680,7 @@ class BaseVelNonCylinderAction(ArticulatedAgentAction):
         # For step filter of offset positions
         end_pos = []
         for i in range(num_check_cylinder):
-            pos = self._sim.step_filter(cur_pos[i], goal_pos[i])
+            pos = self.step_filter(cur_pos[i], goal_pos[i])
             # Sanitize the height
             pos[1] = 0.0
             cur_pos[i][1] = 0.0
@@ -679,6 +709,21 @@ class BaseVelNonCylinderAction(ArticulatedAgentAction):
             return True, trans
         else:
             return False, target_trans
+
+    def step_filter(self, start_pos: Vector3, end_pos: Vector3) -> Vector3:
+        r"""Computes a valid navigable end point given a target translation on the NavMesh.
+        Uses the configured sliding flag.
+
+        :param start_pos: The valid initial position of a translation.
+        :param end_pos: The target end position of a translation.
+        """
+        if self.pathfinder.is_loaded:
+            if self._allow_dyn_slide:
+                end_pos = self.pathfinder.try_step(start_pos, end_pos)
+            else:
+                end_pos = self.pathfinder.try_step_no_sliding(start_pos, end_pos)
+
+        return end_pos
 
     def update_base(self, if_rotation):
         """

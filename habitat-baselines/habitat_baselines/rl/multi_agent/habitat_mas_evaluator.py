@@ -132,7 +132,7 @@ class HabitatMASEvaluator(Evaluator):
         assert (
             number_of_eval_episodes > 0
         ), "You must specify a number of evaluation episodes with test_episode_count"
-
+        envs_text_context = {}
         pbar = tqdm.tqdm(total=number_of_eval_episodes * evals_per_ep)
         agent.eval()
         while (
@@ -143,7 +143,6 @@ class HabitatMASEvaluator(Evaluator):
 
             # If all prev_actions are zero, meaning this is the start of an episode
             # Then collect the context of the episode
-            envs_text_context = {}
             if not prev_actions.any():
                 envs_text_context = envs.call(["get_task_text_context"] * envs.num_envs)
             
