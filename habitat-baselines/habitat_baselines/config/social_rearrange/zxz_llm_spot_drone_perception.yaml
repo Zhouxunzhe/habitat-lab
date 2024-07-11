@@ -41,9 +41,12 @@ habitat_baselines:
   evaluator:
     _target_: habitat_baselines.rl.multi_agent.habitat_mas_evaluator.HabitatMASEvaluator
 
+  image_dir: "video_dir/image_dir/"
+
   eval:
     should_load_ckpt: False
     video_option: ["disk"]
+    image_option: ["disk"]
 
   rl:
     agent:

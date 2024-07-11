@@ -182,9 +182,7 @@ class MultiPolicy(Policy):
         agent_prev_actions = prev_actions.split(
             split_index_dict["index_len_prev_actions"], -1
         )
-        # TODO(ZXZ): modify here for four agents
-        # agent_masks = masks.split([1, 1], -1)
-        agent_masks = masks.split([1, 1, 1, 1], -1)
+        agent_masks = masks.split([1] * n_agents, -1)
         agent_actions = []
         for agent_i, policy in enumerate(self._active_policies):
             agent_obs = self._update_obs_with_agent_prefix_fn(
