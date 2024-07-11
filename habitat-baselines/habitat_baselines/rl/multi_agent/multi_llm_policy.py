@@ -61,9 +61,9 @@ class MultiLLMPolicy(MultiPolicy):
         agent_prev_actions = prev_actions.split(
             split_index_dict["index_len_prev_actions"], -1
         )
-        agent_masks = masks.split([1, 1], -1)
+        agent_masks = masks.split([1] * n_agents, -1)
         n_envs = prev_actions.shape[0]
-        
+
         # Stage 1: If all prev_actions are zero, which means it is the first step of the episode, then we need to do group discussion
         # Given: Robot resume + Scene description + task instruction
         # Output: (Subtask decomposition) + task assignment
@@ -84,7 +84,7 @@ class MultiLLMPolicy(MultiPolicy):
                 # }
                 envs_task_assignments.append({})
                 pass
-            
+
 
         # Stage 2: Individual policy actions
         agent_actions = []
@@ -94,11 +94,11 @@ class MultiLLMPolicy(MultiPolicy):
             agent_task_assignments = [task_assignment[agent_i]
                                       if agent_i_handle in task_assignment else ""
                                       for task_assignment in envs_task_assignments]
-            
+
             agent_obs = self._update_obs_with_agent_prefix_fn(
                 observations, agent_i
             )
-            
+
             agent_actions.append(
                 policy.act(
                     agent_obs,
