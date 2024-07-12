@@ -254,7 +254,7 @@ class HabitatMASEvaluator(Evaluator):
                         # but the info is correct. So we use a black frame
                         final_frame = observations_to_image(
                             {k: v[i] * 0.0 for k, v in batch.items()},
-                            disp_info,
+                            disp_info, config, len(rgb_frames[0]),
                         )
                         final_frame = overlay_frame(final_frame, disp_info)
                         rgb_frames[i].append(final_frame)

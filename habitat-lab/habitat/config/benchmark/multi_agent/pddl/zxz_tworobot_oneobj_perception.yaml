@@ -18,11 +18,11 @@ stage_goals:
   stage_1:
     expr_type: AND
     sub_exprs:
-      - detected_object(any_targets|0, robot_1)
+      - robot_at(any_targets|0, robot_1)
   stage_2:
     expr_type: AND
     sub_exprs:
-      - detected_object(any_targets|0, robot_0)
+      - robot_at(any_targets|0, robot_0)
 
 solution:
   - nav_to_goal(any_targets|0, robot_1)

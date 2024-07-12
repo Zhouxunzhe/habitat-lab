@@ -25,7 +25,7 @@ def test_observations_to_image():
             "agent_angle": [np.random.random()],
         },
     }
-    image = observations_to_image(observations, info)
+    image = observations_to_image(observations, info, {}, 0)
     assert image.shape == (
         200,
         1000,
@@ -51,7 +51,7 @@ def test_different_dim_observations_to_image():
             "agent_angle": [np.random.random()],
         },
     }
-    image = observations_to_image(observations, info)
+    image = observations_to_image(observations, info, {}, 0)
     assert image.shape == (
         512,
         1570,
