@@ -235,7 +235,7 @@ def observations_to_image(observation: Dict, info: Dict,
     for agent in config.habitat.simulator.agents:
         robot_names[agent] = (config.habitat.simulator.agents[agent].
                               articulated_agent_type)
-    image_option = config.habitat_baselines.eval.video_option
+    image_option = config.habitat_baselines.eval.image_option
     image_dir = config.habitat_baselines.image_dir
 
     for sensor_name in observation:

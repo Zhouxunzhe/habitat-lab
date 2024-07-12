@@ -472,7 +472,7 @@ def play_env(env, args, config):
     obs = env.reset()
 
     if not args.no_render:
-        draw_obs = observations_to_image(obs, {})
+        draw_obs = observations_to_image(obs, {}, config, 0,)
         pygame.init()
         screen = pygame.display.set_mode(
             [draw_obs.shape[1], draw_obs.shape[0]]
@@ -598,7 +598,7 @@ def play_env(env, args, config):
             use_ob[:, : cam.shape[1]] = cam[:, :, :3]
 
         else:
-            use_ob = observations_to_image(obs, info)
+            use_ob = observations_to_image(obs, info, config, 0)
             if not args.skip_render_text:
                 use_ob = overlay_frame(use_ob, info)
 

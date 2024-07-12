@@ -17,30 +17,30 @@ class DummyAgent:
         Mimic a chatbot always sending the oraclenav action.
         """
 
-        robot = random.choice(["robot_0", "robot_1", "robot_2", "robot_3"])
+        index = random.choice(["0", "1"])
 
         return random.choice([
-            {
-                "name": "nav_to_obj",
-                "arguments": {
-                    "target_obj": "any_targets|0",
-                    robot: robot,
-                }
-            },
             # {
-            #     "name": "nav_to_goal",
+            #     "name": "nav_to_obj",
             #     "arguments": {
             #         "target_obj": "any_targets|0",
-            #         robot: robot,
+            #         "robot_"+index: "robot_"+index,
             #     }
             # },
-            # {
-            #     "name": "pick",
-            #     "arguments": {
-            #         "any_targets|0": "any_targets|0",
-            #         robot: robot,
-            #     }
-            # },
+            {
+                "name": "nav_to_goal",
+                "arguments": {
+                    "target_obj": "any_targets|"+index,
+                    "robot_"+index: "robot_"+index,
+                }
+            },
+            {
+                "name": "pick",
+                "arguments": {
+                    "any_targets|"+index: "any_targets|"+index,
+                    "robot_"+index: "robot_"+index,
+                }
+            },
             # {
             #     "name": "place",
             #     "arguments": {

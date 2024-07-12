@@ -29,7 +29,7 @@ def test_get_arm_workspace():
         obs['third_rgb'] = obs['third_rgb'][:, :, :3]
         obs['head_rgb'] = obs['head_rgb'][:, :, :3]
         info = env.get_metrics()
-        render_obs = observations_to_image(obs, info)
+        render_obs = observations_to_image(obs, info, {}, 0)
         plt.figure()
         plt.imshow(render_obs)
 
