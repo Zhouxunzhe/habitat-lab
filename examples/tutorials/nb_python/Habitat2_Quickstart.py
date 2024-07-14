@@ -150,7 +150,7 @@ with habitat.Env(
         observations = env.step(env.action_space.sample())  # noqa: F841
         info = env.get_metrics()
 
-        render_obs = observations_to_image(observations, info)
+        render_obs = observations_to_image(observations, info, {}, 0)
         render_obs = overlay_frame(render_obs, info)
 
         video_writer.append_data(render_obs)
@@ -506,7 +506,7 @@ with habitat.Env(
         observations = env.step(action)  # noqa: F841
         info = env.get_metrics()
 
-        render_obs = observations_to_image(observations, info)
+        render_obs = observations_to_image(observations, info, {}, 0)
         render_obs = overlay_frame(render_obs, info)
 
         video_writer.append_data(render_obs)

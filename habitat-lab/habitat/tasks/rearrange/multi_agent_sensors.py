@@ -38,10 +38,10 @@ class DidAgentsCollide(Measure):
             articulated_agent.sim_obj.object_id
             for articulated_agent in sim.agents_mgr.articulated_agents_iter
         ]
-        if len(agent_ids) != 2:
-            raise ValueError(
-                f"Sensor only supports 2 agents. Got {agent_ids=}"
-            )
+        # if len(agent_ids) != 2:
+        #     raise ValueError(
+        #         f"Sensor only supports 2 agents. Got {agent_ids=}"
+        #     )
 
         for cp in contact_points:
             if coll_name_matches(cp, agent_ids[0]) and coll_name_matches(

@@ -328,13 +328,13 @@ class HabGymWrapper(gym.Wrapper):
     def render(self, mode: str = "human", **kwargs):
         last_infos = self.env.get_info(observations=None)
         if mode == "rgb_array":
-            frame = observations_to_image(self._last_obs, last_infos)
+            frame = observations_to_image(self._last_obs, last_infos, {}, 0)
         elif mode == "human":
             if pygame is None:
                 raise ValueError(
                     "Render mode human not supported without pygame."
                 )
-            frame = observations_to_image(self._last_obs, last_infos)
+            frame = observations_to_image(self._last_obs, last_infos, {}, 0)
             if self._screen is None:
                 pygame.init()
                 self._screen = pygame.display.set_mode(

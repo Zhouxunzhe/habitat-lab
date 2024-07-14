@@ -6,11 +6,12 @@
 
 import os
 import textwrap
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 import imageio
 import numpy as np
 import tqdm
+import matplotlib.pyplot as plt
 
 from habitat.core.logging import logger
 from habitat.core.utils import try_cv2_import
@@ -212,18 +213,31 @@ def tile_images(render_obs_images: List[np.ndarray]) -> np.ndarray:
     return final_im
 
 
-def observations_to_image(observation: Dict, info: Dict) -> np.ndarray:
+def observations_to_image(observation: Dict, info: Dict,
+                          config: Any, frame_id: int) -> np.ndarray:
     r"""Generate image of single frame from observation and info
     returned from a single environment step().
 
     Args:
         observation: observation returned from an environment step().
         info: info returned from an environment step().
+        config: habitat configuration.
+        frame_id: index of the frame being rendered.
 
     Returns:
         generated image of a single frame.
     """
     render_obs_images: List[np.ndarray] = []
+    # TODO(ZXZ): for frames storage
+    robot_names: Dict[
+        Any, Any
+    ] = {}
+    for agent in config.habitat.simulator.agents:
+        robot_names[agent] = (config.habitat.simulator.agents[agent].
+                              articulated_agent_type)
+    image_option = config.habitat_baselines.eval.image_option
+    image_dir = config.habitat_baselines.image_dir
+
     for sensor_name in observation:
         if len(observation[sensor_name].shape) > 1:
             obs_k = observation[sensor_name]
@@ -235,6 +249,15 @@ def observations_to_image(observation: Dict, info: Dict) -> np.ndarray:
             if obs_k.shape[2] == 1:
                 obs_k = np.concatenate([obs_k for _ in range(3)], axis=2)
             render_obs_images.append(obs_k)
+
+            if "disk" in image_option:
+                assert image_dir is not None
+                image_name = ('frame_' + str(frame_id) + '_' +
+                              robot_names[sensor_name[:7]] + sensor_name[7:])
+                plt.imshow(obs_k)
+                plt.axis('off')
+                plt.savefig(image_dir + image_name + '.png',
+                            bbox_inches='tight', pad_inches=0)
 
     assert (
         len(render_obs_images) > 0
