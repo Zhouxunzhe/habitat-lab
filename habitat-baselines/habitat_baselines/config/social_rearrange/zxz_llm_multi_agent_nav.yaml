@@ -1,17 +1,25 @@
 # @package _global_
 
 defaults:
-  - /benchmark/multi_agent: zxz_spot_drone_perception
+  - /benchmark/multi_agent: zxz_multi_agent_nav
   - /habitat_baselines: habitat_baselines_rl_config_base
   - /habitat/simulator/sim_sensors@habitat_baselines.eval.extra_sim_sensors.third_rgb_sensor: third_rgb_sensor
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_0.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_1.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
+  - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_2.obs_transforms.add_virtual_keys:
+    - add_virtual_keys_base
+  - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_3.obs_transforms.add_virtual_keys:
+    - add_virtual_keys_base
   - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_llm
   - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_2: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_3: hl_llm
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_drone_multi_agent
+  - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_2.hierarchical_policy.defined_skills: oracle_skills_multi_agent
+  - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_3.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat/task/lab_sensors:
     # For the oracle navigation
     - has_finished_oracle_nav
@@ -46,14 +54,14 @@ habitat_baselines:
   eval:
     should_load_ckpt: False
     video_option: ["disk"]
-    image_option: []
+    image_option: ["disk"]
 
   rl:
     agent:
       type: "MultiAgentAccessMgr"
-      num_agent_types: 2
-      num_active_agents_per_type: [1, 1]
-      num_pool_agents_per_type: [1, 1]
+      num_agent_types: 4
+      num_active_agents_per_type: [1, 1, 1, 1]
+      num_pool_agents_per_type: [1, 1, 1, 1]
       agent_sample_interval: 20
       force_partner_sample_idx: -1
       use_llm_agent: True
@@ -103,7 +111,6 @@ habitat_baselines:
       agent_1:
         hierarchical_policy:
           high_level_policy:
-
             termination_obs_name: "agents_within_threshold"
             add_arm_rest: False
             policy_input_keys:
@@ -128,6 +135,90 @@ habitat_baselines:
               action_name: "base_velocity"
               obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
               max_skill_steps: 1500
+      agent_2:
+        hierarchical_policy:
+          high_level_policy:
+            termination_obs_name: "agents_within_threshold"
+            add_arm_rest: False
+            policy_input_keys:
+              - "articulated_agent_arm_rgb"
+              - "articulated_agent_arm_depth"
+              - "is_holding"
+              - "obj_start_gps_compass"
+              - "obj_goal_gps_compass"
+              - "other_agent_gps"
+              - "obj_start_sensor"
+              - "obj_goal_sensor"
+              - "all_predicates"
+            allowed_actions:
+              - wait
+              - nav_to_goal
+              - nav_to_obj
+              - nav_to_goal_dog
+              - pick
+              - place
+              - nav_to_receptacle_by_name
+          # Override to use the oracle navigation skill (which will actually execute navigation).
+          defined_skills:
+            nav_to_obj:
+              skill_name: "OracleNavPolicy"
+              # action_name: "base_velocity_non_cylinder"
+              action_name: "base_velocity"
+              obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
+              max_skill_steps: 1500
+            pick:
+              skill_name: "OraclePickPolicy"
+              action_name: "arm_action"
+              obs_skill_inputs: ["is_holding"]
+              max_skill_steps: 100
+
+          ignore_skills:
+            - open_cab
+            - open_fridge
+            - close_cab
+            - close_fridge
+      agent_3:
+        hierarchical_policy:
+          high_level_policy:
+            termination_obs_name: "agents_within_threshold"
+            add_arm_rest: False
+            policy_input_keys:
+              - "articulated_agent_arm_rgb"
+              - "articulated_agent_arm_depth"
+              - "is_holding"
+              - "obj_start_gps_compass"
+              - "obj_goal_gps_compass"
+              - "other_agent_gps"
+              - "obj_start_sensor"
+              - "obj_goal_sensor"
+              - "all_predicates"
+            allowed_actions:
+              - wait
+              - nav_to_goal
+              - nav_to_obj
+              - nav_to_goal_dog
+              - pick
+              - place
+              - nav_to_receptacle_by_name
+          # Override to use the oracle navigation skill (which will actually execute navigation).
+          defined_skills:
+            nav_to_obj:
+              skill_name: "OracleNavPolicy"
+              # action_name: "base_velocity_non_cylinder"
+              action_name: "base_velocity"
+              obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
+              max_skill_steps: 1500
+            pick:
+              skill_name: "OraclePickPolicy"
+              action_name: "arm_action"
+              obs_skill_inputs: ["is_holding"]
+              max_skill_steps: 100
+
+          ignore_skills:
+            - open_cab
+            - open_fridge
+            - close_cab
+            - close_fridge
     ppo:
       # ppo params
       clip_param: 0.2

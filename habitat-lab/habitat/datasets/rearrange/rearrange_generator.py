@@ -471,30 +471,31 @@ class RearrangeEpisodeGenerator:
                 cameras_info = resume['perception']['cameras_info']
                 arm_workspace = resume['manipulation']['arm_workspace']
 
-                # TODO: generate multiple objs and receptacles
+                # TODO(ZXZ): modify episode generation algorithm
                 if episode_type == 'perception':
+                    # beyond SPOT robot's reach
                     camera_heights = []
-                    for camera, properties in cameras_info.items():
+                    for camera_name, properties in cameras_info.items():
                         camera_heights.append(properties["height"])
                     for obj in rigid_objs:
                         transform = obj[1]
-                        scope = 0.3
-                        if (max(camera_heights) + scope < transform[1][3]
-                                or min(camera_heights) - scope > transform[1][3]):
+                        scope = 0.2
+                        # if SPOT can detect or DRONE can't, then drop the episode
+                        if (transform[1][3] < 0.577000006318092 + scope or
+                                transform[1][3] > 1.5 + scope):
                             new_episode = None
                 elif episode_type == 'manipulation':
-                    obj_heights = []
-                    for obj in rigid_objs:
-                        obj_heights.append(obj[1][1][3])
-                    if (arm_workspace['max_bound'][1] < max(obj_heights)
-                            or arm_workspace['min_bound'][1] > min(obj_heights)):
-                        new_episode = None
-                    obj_heights = []
-                    for obj, pos in target_objs.items():
-                        obj_heights.append(pos[1][3])
-                    if (arm_workspace['max_bound'][1] < max(obj_heights)
-                            or arm_workspace['min_bound'][1] > min(obj_heights)):
-                        new_episode = None
+                    # beyond STRETCH robot's reach
+                    # if STRETCH can pick and FETCH can't, then drop the episode
+                    for rigid_obj in rigid_objs:
+                        if (rigid_obj[1][1][3] < 0.89043515920639 or
+                                rigid_obj[1][1][3] > 1.8497142791748):
+                            new_episode = None
+                    # if STRETCH can place and FETCH can't, then drop the episode
+                    # for obj, pos in target_objs.items():
+                    #     if (pos[1][3] < 0.89043515920639 or
+                    #             pos[1][3] > 1.8497142791748):
+                    #         new_episode = None
                 else:
                     raise ValueError(f"Unknown type: {episode_type}")
 
@@ -503,6 +504,7 @@ class RearrangeEpisodeGenerator:
                 logger.error("Generation failed with exception...")
             if new_episode is None:
                 failed_episodes += 1
+                logger.error("Episode is None due to drop...")
                 continue
             generated_episodes.append(new_episode)
             if verbose:

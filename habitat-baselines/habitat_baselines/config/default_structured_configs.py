@@ -48,6 +48,10 @@ class EvalConfig(HabitatBaselinesBaseConfig):
         # available options are "disk" and "tensorboard"
         default_factory=list
     )
+    image_option: List[str] = field(
+        # available options are "disk" and "tensorboard"
+        default_factory=list
+    )
     extra_sim_sensors: Dict[str, SimulatorSensorConfig] = field(
         default_factory=dict
     )
@@ -453,6 +457,7 @@ class HabitatBaselinesConfig(HabitatBaselinesBaseConfig):
     tensorboard_dir: str = "tb"
     writer_type: str = "tb"
     video_dir: str = "video_dir"
+    image_dir: str = "video_dir/image_dir/"
     video_fps: int = 10
     test_episode_count: int = -1
     # path to ckpt or path to ckpts dir

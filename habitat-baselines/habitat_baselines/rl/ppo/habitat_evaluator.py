@@ -84,12 +84,15 @@ class HabitatEvaluator(Evaluator):
         ] = {}  # dict of dicts that stores stats per episode
         ep_eval_count: Dict[Any, int] = defaultdict(lambda: 0)
 
+        if len(config.habitat_baselines.eval.image_option) > 0:
+            os.makedirs(config.habitat_baselines.image_dir, exist_ok=True)
+
         if len(config.habitat_baselines.eval.video_option) > 0:
             # Add the first frame of the episode to the video.
             rgb_frames: List[List[np.ndarray]] = [
                 [
                     observations_to_image(
-                        {k: v[env_idx] for k, v in batch.items()}, {}
+                        {k: v[env_idx] for k, v in batch.items()}, {}, config, 0,
                     )
                 ]
                 for env_idx in range(config.habitat_baselines.num_environments)
@@ -224,14 +227,15 @@ class HabitatEvaluator(Evaluator):
                 if len(config.habitat_baselines.eval.video_option) > 0:
                     # TODO move normalization / channel changing out of the policy and undo it here
                     frame = observations_to_image(
-                        {k: v[i] for k, v in batch.items()}, disp_info
+                        {k: v[i] for k, v in batch.items()}, disp_info,
+                        config, len(rgb_frames[0]),
                     )
                     if not not_done_masks[i].any().item():
                         # The last frame corresponds to the first frame of the next episode
                         # but the info is correct. So we use a black frame
                         final_frame = observations_to_image(
                             {k: v[i] * 0.0 for k, v in batch.items()},
-                            disp_info,
+                            disp_info, config, len(rgb_frames[0]),
                         )
                         final_frame = overlay_frame(final_frame, disp_info)
                         rgb_frames[i].append(final_frame)
