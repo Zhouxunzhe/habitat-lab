@@ -394,6 +394,7 @@ class IkHelper:
             )
 
     def calc_fk(self, js):
+        js = np.array(js)
         self.set_arm_state(js, np.zeros(js.shape))
         ls = p.getLinkState(
             self.robo_id,
@@ -431,6 +432,16 @@ class IkHelper:
         )
         joint_indices = [self._non_fixed_joints[i] for i in range(self._arm_len)]
         return [js[i] for i in joint_indices]
+
+    def is_reachable(self, targ_ee, thresh=0.05):
+        """
+        :param targ_ee: 3D target position in the robot BASE coordinate frame
+        """
+        js = self.calc_ik(targ_ee)
+        if js is None:
+            return False
+        ee = self.calc_fk(js)
+        return np.linalg.norm(ee - targ_ee) < thresh
 
 
 class UsesArticulatedAgentInterface:

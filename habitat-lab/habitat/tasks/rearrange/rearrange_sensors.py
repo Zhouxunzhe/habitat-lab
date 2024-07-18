@@ -6,9 +6,13 @@
 
 
 from collections import defaultdict, deque
-
+from typing import Dict, List, Tuple
+import magnum as mn
+import cv2
 import numpy as np
 from gym import spaces
+import open3d as o3d
+import habitat_sim
 
 from habitat.articulated_agents.humanoids import KinematicHumanoid
 from habitat.core.embodied_task import Measure
@@ -26,7 +30,6 @@ from habitat.tasks.rearrange.utils import (
     rearrange_logger,
 )
 from habitat.tasks.utils import cartesian_to_polar
-
 
 class MultiObjSensor(PointGoalSensor):
     """
@@ -1424,3 +1427,235 @@ class DetectedObjectsSensor(UsesArticulatedAgentInterface, Sensor):
         detected_objects = np.unique(np.concatenate(list(sensor_detected_objects.values())))
         
         return detected_objects
+    
+    
+@registry.register_sensor
+class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
+    """ Sensor to visualize the reachable workspace of an articulated arm """
+    cls_uuid: str = "arm_workspace_rgb"
+
+    def __init__(self, sim, config, *args, **kwargs):
+        self._sim = sim
+        # self.agent_idx = config.agent_idx
+        self.pixel_threshold = config.pixel_threshold
+        self.height = config.height
+        self.width = config.width
+        self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
+        self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
+        self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
+        
+        super().__init__(config=config)
+                
+        self._debug_tf = config.get("debug_tf", False)
+        if self._debug_tf:
+            self.pcl_o3d_list = []
+            self._debug_save_counter = 0
+            
+    def _get_uuid(self, *args, **kwargs):
+        # return f"agent_{self.agent_idx}_{ArmWorkspaceRGBSensor.cls_uuid}"
+        return ArmWorkspaceRGBSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.COLOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        return spaces.Box(low=0, high=255, shape=(self.height, self.width, 3), dtype=np.uint8)
+
+    def _get_camera_info(self, camera_name)-> Dict:
+        """get camera info from habitat simulator config
+        Assume the depth and color sensor are aligned and have the same intrinsic parameters
+        Args:
+            sim (haibtat_sim.Simulator): simulator config class
+            camera_name: name of the camera sensor
+        """
+        sensor_configs = self._sim.get_agent_data(self.agent_id).cfg.sim_sensors
+        sensor_key = f"{camera_name}_sensor"
+        height = sensor_configs[sensor_key].height
+        width = sensor_configs[sensor_key].width
+        hfov = np.deg2rad(float(sensor_configs[sensor_key].hfov))
+        
+        max_depth = sensor_configs[sensor_key].max_depth
+        min_depth = sensor_configs[sensor_key].min_depth
+        normalize_depth = sensor_configs[sensor_key].normalize_depth
+    
+        cx = width / 2.0 
+        cy = height / 2.0 
+        f = (width / 2.0) / np.tan(hfov / 2.0)
+
+        return {
+            "width": width,
+            "height": height,
+            "K": [f, 0, cx, 0, f, cy, 0, 0, 1],
+            "max_depth": max_depth,
+            "min_depth": min_depth,
+            "normalize_depth": normalize_depth
+        }
+
+    def _get_camera_extrinsic(self, camera_name)-> np.ndarray:
+        """get camera extrinsic from habitat simulator config
+        Assume the depth and color sensor are aligned and have the same extrinsic parameters
+        Args:
+            sim (haibtat_sim.Simulator): simulator config class
+            camera_name: name of the camera sensor
+        """
+        # remove the _depth or _rgb suffix to get the camera key
+        camera_key = camera_name.replace("_depth", "")
+        cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
+        cam_info = cur_articulated_agent.params.cameras[camera_key]
+        # Get the camera's attached link
+        link_trans = cur_articulated_agent.sim_obj.get_link_scene_node(
+            cam_info.attached_link_id
+        ).transformation
+        # Get the camera offset transformation
+        offset_trans = mn.Matrix4.translation(cam_info.cam_offset_pos)
+        cam_trans = link_trans @ offset_trans @ cam_info.relative_transform
+        return cam_trans
+
+    def _rgbd_to_point_cloud(self, rgb_image, depth_image, camera_info, cam_trans)-> o3d.geometry.PointCloud:
+        """
+        Convert aligned RGB and depth images to a point cloud using Open3D.
+
+        Args:
+            rgb_image (np.ndarray): Aligned RGB image.
+            depth_image (np.ndarray): Aligned depth image.
+            camera_info (Dict): Camera intrinsic parameters.
+            cam_trans (np.ndarray): Camera extrinsic parameters.
+
+        Returns:
+            o3d.geometry.PointCloud: Generated point cloud.
+        """
+        # Convert images to Open3D format
+        # rgb_o3d = o3d.geometry.Image(rgb_image)
+        # depth_o3d = o3d.geometry.Image(depth_image)
+        rgb_image_contiguous = np.ascontiguousarray(rgb_image)
+        rgb_o3d = o3d.geometry.Image(rgb_image_contiguous)
+        depth_image_contiguous = np.ascontiguousarray(depth_image)
+        depth_o3d = o3d.geometry.Image(depth_image_contiguous)
+
+        # Create RGBD image
+        rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+            rgb_o3d, depth_o3d, depth_scale=1.0, depth_trunc=10.0, convert_rgb_to_intensity=False, 
+        )
+
+        # Create camera intrinsic object
+        intrinsic = o3d.camera.PinholeCameraIntrinsic(
+            camera_info["width"],
+            camera_info["height"],
+            camera_info["K"][0],
+            camera_info["K"][4],
+            camera_info["K"][2],
+            camera_info["K"][5],
+        )
+
+        # Generate point cloud
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
+            rgbd_image, intrinsic, extrinsic=cam_trans,
+        )
+        
+        return pcd
+
+    def _project_points_to_image(self, points_3d, camera_info, cam_trans):
+        """
+        Projects 3D points to 2D image pixel coordinates.
+
+        Args:
+            points_3d (np.ndarray): Nx3 array of 3D points.
+            camera_info (dict): Dictionary containing camera intrinsics with keys 'fx', 'fy', 'cx', 'cy'.
+            cam_trans (np.ndarray): 4x4 camera transformation matrix.
+
+        Returns:
+            np.ndarray: Nx2 array of 2D pixel coordinates.
+        """
+        # Extract camera intrinsics
+        fx = camera_info['K'][0]
+        fy = camera_info['K'][4]
+        cx = camera_info['K'][2]
+        cy = camera_info['K'][5]
+
+        # Transform 3D points using the camera transformation matrix
+        points_3d_hom = np.hstack((points_3d, np.ones((points_3d.shape[0], 1))))
+        cam_trans = np.asarray(cam_trans)
+        points_3d_transformed = cam_trans @ points_3d_hom.T
+
+        # Project the transformed 3D points onto the 2D image plane
+        x = points_3d_transformed[0, :]
+        y = points_3d_transformed[1, :]
+        z = points_3d_transformed[2, :]
+
+        u = (x * fx / z) + cx
+        v = (y * fy / z) + cy
+
+        # Stack u and v to get Nx2 array of 2D pixel coordinates
+        pixel_coords = np.vstack((u, v)).T
+
+        return pixel_coords
+
+    def get_observation(self, observations, *args, **kwargs):
+        """ Get the RGB image with reachable and unreachable points marked """
+        
+        if self.agent_id is not None:
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+        else:
+            depth_obs = observations[self.depth_sensor_name]
+            rgb_obs = observations[self.rgb_sensor_name]
+            depth_camera_name = self.depth_sensor_name
+
+        # make rgb_obs and depth_obs contiguous
+        # if not isinstance(rgb_obs, np.ndarray):
+        #     rgb_obs.cpu().numpy()
+        # if not isinstance(depth_obs, np.ndarray):
+        #     depth_obs.cpu().numpy()
+        rgb_obs = np.ascontiguousarray(rgb_obs)
+        depth_obs = np.ascontiguousarray(depth_obs)
+
+        # Reproject depth pixels to 3D points
+        pcl_o3d = self._rgbd_to_point_cloud(
+            rgb_obs, 
+            depth_obs, 
+            self._get_camera_info(depth_camera_name), 
+            self._get_camera_extrinsic(depth_camera_name)
+        )
+        # points_xyz = np.asarray(pcl_o3d.points)
+        # downsample the point cloud
+        down_sampled_points_xyz = np.asarray(
+            pcl_o3d.voxel_down_sample(voxel_size=self.down_sample_voxel_size).points
+        )
+
+        # Check reachability and color points
+        colors = []
+        ik_helper = self._sim.get_agent_data(self.agent_id).ik_helper
+        for point in down_sampled_points_xyz:
+            reachable = ik_helper.is_reachable(point)
+            # Green if reachable, red if not
+            colors.append([0, 255, 0] if reachable else [255, 0, 0])
+            
+        # Project the points to the image and color the pixels with circles 
+        pixel_coords = self._project_points_to_image(
+            down_sampled_points_xyz, 
+            self._get_camera_info(depth_camera_name), 
+            self._get_camera_extrinsic(depth_camera_name)
+        )
+        for pixel_coord, color in zip(pixel_coords, colors):
+            x, y = pixel_coord.astype(int)
+            cv2.circle(rgb_obs, (x, y), 2, color, -1)
+
+
+        if self._debug_tf:
+            # save accumulated point cloud and clear list 
+            self.pcl_o3d_list.append(pcl_o3d)
+            if len(self.pcl_o3d_list) > 5:
+                # merge point clouds
+                pcl_o3d = o3d.geometry.PointCloud()
+                for pcl in self.pcl_o3d_list:
+                    pcl_o3d += pcl
+                
+                # save point cloud and clear list
+                o3d.io.write_point_cloud("debug_pcl_{}.ply".format(self._debug_save_counter), pcl_o3d)
+                self.pcl_o3d_list = []
+                self._debug_save_counter += 1
+
+    
+        return rgb_obs
+        

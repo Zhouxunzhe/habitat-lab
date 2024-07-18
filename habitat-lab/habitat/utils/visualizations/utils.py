@@ -214,7 +214,7 @@ def tile_images(render_obs_images: List[np.ndarray]) -> np.ndarray:
 
 
 def observations_to_image(observation: Dict, info: Dict,
-                          config: Any, frame_id: int) -> np.ndarray:
+                          config: Any, frame_id: int, episode_id=0) -> np.ndarray:
     r"""Generate image of single frame from observation and info
     returned from a single environment step().
 
@@ -223,6 +223,7 @@ def observations_to_image(observation: Dict, info: Dict,
         info: info returned from an environment step().
         config: habitat configuration.
         frame_id: index of the frame being rendered.
+        episode_id: (Optional) index of the episode being rendered.
 
     Returns:
         generated image of a single frame.
@@ -236,6 +237,7 @@ def observations_to_image(observation: Dict, info: Dict,
         robot_names[agent] = (config.habitat.simulator.agents[agent].
                               articulated_agent_type)
     image_option = config.habitat_baselines.eval.image_option
+    image_filter_list = config.habitat_baselines.eval.get("image_filter_list", ["head_rgb", "arm_workspace_rgb"])
     image_dir = config.habitat_baselines.image_dir
 
     for sensor_name in observation:
@@ -250,13 +252,22 @@ def observations_to_image(observation: Dict, info: Dict,
                 obs_k = np.concatenate([obs_k for _ in range(3)], axis=2)
             render_obs_images.append(obs_k)
 
-            if "disk" in image_option:
+            def hit_key_list(name, key_list):
+                for k in key_list:
+                    if k in name:
+                        return True
+                return False
+
+            if "disk" in image_option and hit_key_list(sensor_name, image_filter_list):
                 assert image_dir is not None
+                image_ep_dir = os.path.join(image_dir, f"episode_{episode_id}")
+                if not os.path.exists(image_ep_dir):
+                    os.makedirs(image_ep_dir)
                 image_name = ('frame_' + str(frame_id) + '_' +
                               robot_names[sensor_name[:7]] + sensor_name[7:])
                 plt.imshow(obs_k)
                 plt.axis('off')
-                plt.savefig(image_dir + image_name + '.png',
+                plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
                             bbox_inches='tight', pad_inches=0)
 
     assert (
