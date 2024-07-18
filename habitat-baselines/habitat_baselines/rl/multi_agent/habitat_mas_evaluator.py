@@ -248,13 +248,16 @@ class HabitatMASEvaluator(Evaluator):
                     frame = observations_to_image(
                         {k: v[i] for k, v in batch.items()}, disp_info,
                         config, len(rgb_frames[0]),
+                        episode_id=current_episodes_info[i].episode_id,
                     )
                     if not not_done_masks[i].any().item():
                         # The last frame corresponds to the first frame of the next episode
                         # but the info is correct. So we use a black frame
                         final_frame = observations_to_image(
                             {k: v[i] * 0.0 for k, v in batch.items()},
-                            disp_info, config, len(rgb_frames[0]),
+                            disp_info, config, 
+                            frame_id=len(rgb_frames[0]),
+                            episode_id=current_episodes_info[i].episode_id,
                         )
                         final_frame = overlay_frame(final_frame, disp_info)
                         rgb_frames[i].append(final_frame)

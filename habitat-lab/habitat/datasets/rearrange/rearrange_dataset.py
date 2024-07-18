@@ -80,7 +80,7 @@ class RearrangeDatasetV0(PointNavDatasetV1):
 
         for i, episode in enumerate(deserialized["episodes"]):
             rearrangement_episode = RearrangeEpisode(**episode)
-            rearrangement_episode.episode_id = str(i)
+            # rearrangement_episode.episode_id = str(i)
 
             self.episodes.append(rearrangement_episode)
 
@@ -200,5 +200,5 @@ class RearrangeDatasetV0(PointNavDatasetV1):
             ep["markers"] = new_markers
 
             rearrangement_episode = RearrangeEpisode(**ep)
-            rearrangement_episode.episode_id = str(i)
+            # rearrangement_episode.episode_id = str(i)
             self.episodes.append(rearrangement_episode)

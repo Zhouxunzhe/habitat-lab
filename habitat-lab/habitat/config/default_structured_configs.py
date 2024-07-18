@@ -770,6 +770,16 @@ class DetectedObjectsSensorConfig(LabSensorConfig):
     type: str = "DetectedObjectsSensor"
     pixel_threshold: int = 10
     
+@dataclass
+class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
+    type: str = "ArmWorkspaceRGBSensor"
+    agent_idx: int = 0
+    pixel_threshold: int = 10
+    height: int = 480
+    width: int = 640
+    rgb_sensor_name: str = "head_rgb"
+    depth_sensor_name: str = "head_depth"
+    
 # habitat-mas sensors
 @dataclass
 class HSSDSceneDescriptionSensorConfig(LabSensorConfig):
@@ -1626,7 +1636,7 @@ class SimulatorCameraSensorConfig(SimulatorSensorConfig):
 class SimulatorDepthSensorConfig(SimulatorSensorConfig):
     min_depth: float = 0.0
     max_depth: float = 10.0
-    normalize_depth: bool = True
+    normalize_depth: bool = False
 
 
 @dataclass
@@ -1639,7 +1649,7 @@ class HabitatSimDepthSensorConfig(SimulatorCameraSensorConfig):
     type: str = "HabitatSimDepthSensor"
     min_depth: float = 0.0
     max_depth: float = 10.0
-    normalize_depth: bool = True
+    normalize_depth: bool = False
 
 
 @dataclass
@@ -1977,7 +1987,7 @@ class PyrobotDepthSensorConfig(PyrobotVisualSensorConfig):
     type: str = "PyRobotDepthSensor"
     min_depth: float = 0.0
     max_depth: float = 5.0
-    normalize_depth: bool = True
+    normalize_depth: bool = False
     center_crop: bool = False
 
 
@@ -2569,6 +2579,13 @@ cs.store(
     name="detected_objects_sensor",
     node=DetectedObjectsSensorConfig,
 )
+cs.store(
+    package="habitat.task.lab_sensors.arm_workspace_rgb_sensor",
+    group="habitat/task/lab_sensors",
+    name="arm_workspace_rgb_sensor",
+    node=ArmWorkspaceRGBSensorConfig
+)
+
 # habitat-mas sensors
 cs.store(
     package="habitat.task.lab_sensors.hssd_scene_description",
