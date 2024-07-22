@@ -88,7 +88,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         modified_settings.agent_height = config.agent_height
         modified_settings.agent_max_climb = config.agent_max_climb
         modified_settings.agent_max_slope = config.agent_max_slope
-        modified_settings.include_static_objects = False
+        modified_settings.include_static_objects = True
         # Create a new pathfinder with slightly stricter radius to provide nav buffer from collision
         modified_settings.agent_radius += 0.05
         assert self._sim.recompute_navmesh(
