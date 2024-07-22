@@ -43,11 +43,13 @@ defaults:
     - localization_sensor
     - other_agent_gps
     - detected_objects_sensor
+    # - arm_workspace_rgb_sensor
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
   - _self_
 
 habitat:
+  # seed: 42
   task:
     lab_sensors:
       agent_0_agents_within_threshold:
@@ -82,24 +84,24 @@ habitat:
         lin_speed: 40.0
         ang_speed: 20.0
 
-      agent_0_oracle_nav_action:
-        type: OracleNavAction
-        motion_control: base_velocity_non_cylinder
-        lin_speed: 10.0
-        ang_speed: 10.0
-        spawn_max_dist_to_obj: -1.0
-        # For noncylinder navmesh action
-        # If we allow the agent to do sliding
-        allow_dyn_slide: True
-        # navmesh_offset: [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
-        navmesh_offset: []
-        # If we allow the robot to move laterally
-        enable_lateral_move: False
-        # There is a collision if the difference between the clamped NavMesh position and target position
-        # is more than collision_threshold for any point.
-        collision_threshold: 0.1
-        dist_thresh: 0.3
-        turn_thresh: 0.5
+      # agent_0_oracle_nav_action:
+      #   type: OracleNavAction
+      #   motion_control: base_velocity_non_cylinder
+      #   lin_speed: 10.0
+      #   ang_speed: 10.0
+      #   spawn_max_dist_to_obj: -1.0
+      #   # For noncylinder navmesh action
+      #   # If we allow the agent to do sliding
+      #   allow_dyn_slide: True
+      #   # navmesh_offset: [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
+      #   navmesh_offset: []
+      #   # If we allow the robot to move laterally
+      #   enable_lateral_move: False
+      #   # There is a collision if the difference between the clamped NavMesh position and target position
+      #   # is more than collision_threshold for any point.
+      #   collision_threshold: 0.1
+      #   dist_thresh: 0.3
+      #   turn_thresh: 0.5
 
       agent_1_base_velocity:
         lin_speed: 40.0
@@ -109,6 +111,8 @@ habitat:
 
   environment:
     max_episode_steps: 750
+    # iterator_options:
+    #   shuffle: True
   simulator:
     type: RearrangeSim-v0
     seed: 100
