@@ -65,7 +65,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         self.skill_done = False
         self._targets = {}
         self.config = config
-        self.pathfinder = self._create_pathfinder(config)
+        self.pathfinder = None
 
     def _create_pathfinder(self, config):
         """
@@ -227,6 +227,10 @@ class OracleNavDiffBaseAction(OracleNavAction):
         return path.points
 
     def step(self, *args, **kwargs):
+        # if pathfinder is not created, create it 
+        if not self.pathfinder:
+            self.pathfinder = self._create_pathfinder(self.config)
+        
         self.skill_done = False
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
@@ -425,7 +429,7 @@ class OracleNavCoordinateAction(BaseVelAction, BaseVelNonCylinderAction, Humanoi
             + base_offset
         )
 
-        filtered_query_pos = self.step_filter(
+        filtered_query_pos = self._sim.step_filter(
             prev_query_pos, target_query_pos
         )
         fixup = filtered_query_pos - target_query_pos
