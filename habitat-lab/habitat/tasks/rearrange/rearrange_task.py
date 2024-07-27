@@ -222,13 +222,27 @@ class RearrangeTask(NavigationTask):
                 filter_agent_position = _filter_agent_position
             
             if self._dataset.config.randomize_agent_start:
-            
                 (
-                    articulated_agent_pos,
-                    articulated_agent_rot,
-                ) = self._sim.set_articulated_agent_base_to_random_point(
-                    agent_idx=agent_idx, filter_func=filter_agent_position
-                )
+                        articulated_agent_pos,
+                        articulated_agent_rot,
+                    ) = self._sim.set_articulated_agent_base_to_random_point(
+                        agent_idx=agent_idx, filter_func=filter_agent_position
+                    )
+                # TODO(YCC): making sure not to initialize the robot on the stairs
+                on_stair = True
+                for _ in range(10):
+                    (
+                        articulated_agent_pos,
+                        articulated_agent_rot,
+                    ) = self._sim.set_articulated_agent_base_to_random_point(
+                        agent_idx=agent_idx, filter_func=filter_agent_position
+                    )
+                    # TODO(YCC): height limit
+                    if articulated_agent_pos[1] < 0.5:
+                        on_stair = False
+                        break
+                if on_stair:
+                    raise ValueError("The robot is still sampled on the stair after 10 tries.")
             else:
                 episode_id = self._sim.ep_info.episode_id
                 agents = self._robot_config[episode_id]['agents']

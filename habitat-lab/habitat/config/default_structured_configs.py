@@ -477,6 +477,13 @@ class SelectBaseOrArmActionConfig(ActionConfig):
     type: str = "SelectBaseOrArmAction"
 
 
+@dataclass
+class GrabOrReleaseActionConfig(ActionConfig):
+    type: str = "GrabOrReleaseAction"
+    crosshair_pos: Optional[List[int]] = field(default_factory=lambda: [128, 128])
+    grab_distance: float = 2.0
+    visual_sensor: str = "rgb"
+
 # -----------------------------------------------------------------------------
 # # EQA actions
 # -----------------------------------------------------------------------------
@@ -771,6 +778,22 @@ class DetectedObjectsSensorConfig(LabSensorConfig):
     pixel_threshold: int = 10
     
 @dataclass
+class GrippedObjectSensorConfig(LabSensorConfig):
+    type: str = "GrippedObjectSensor"
+
+@dataclass
+class ObjectPositionConfig(LabSensorConfig):
+    type: str = "ObjectPosition"
+    goal_format: str = "POLAR"
+    dimensionality: int = 2
+
+@dataclass
+class ObjectGoalConfig(LabSensorConfig):
+    type: str = "ObjectGoal"
+    goal_format: str = "POLAR"
+    dimensionality: int = 2
+
+@dataclass
 class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     type: str = "ArmWorkspaceRGBSensor"
     agent_idx: int = 0
@@ -983,6 +1006,14 @@ class ObjectToGoalDistanceMeasurementConfig(MeasurementConfig):
     """
     type: str = "ObjectToGoalDistance"
 
+# TODO(YCC): remember to differentiate between ObjectToGoalDistance and ObjectToGoalDist
+@dataclass
+class ObjectToGoalDistMeasurementConfig(MeasurementConfig):
+    type: str = "ObjectToGoalDist"
+
+@dataclass
+class AgentToObjectDistanceMeasurementConfig(MeasurementConfig):
+    type: str = "AgentToObjectDistance"
 
 @dataclass
 class EndEffectorToObjectDistanceMeasurementConfig(MeasurementConfig):
@@ -2232,6 +2263,12 @@ cs.store(
     node=OracleNavActionConfig,
 )
 cs.store(
+    package="habitat.task.actions.grab_release",
+    group="habitat/task/actions",
+    name="grab_release",
+    node=GrabOrReleaseActionConfig,
+)
+cs.store(
     package="habitat.task.actions.pddl_apply_action",
     group="habitat/task/actions",
     name="pddl_apply_action",
@@ -2580,6 +2617,24 @@ cs.store(
     node=DetectedObjectsSensorConfig,
 )
 cs.store(
+    package="habitat.task.lab_sensors.gripped_object_id",
+    group="habitat/task/lab_sensors",
+    name="gripped_object_id",
+    node=GrippedObjectSensorConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.object_position",
+    group="habitat/task/lab_sensors",
+    name="object_position",
+    node=ObjectPositionConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.object_goal",
+    group="habitat/task/lab_sensors",
+    name="object_goal",
+    node=ObjectGoalConfig
+)
+cs.store(
     package="habitat.task.lab_sensors.arm_workspace_rgb_sensor",
     group="habitat/task/lab_sensors",
     name="arm_workspace_rgb_sensor",
@@ -2770,6 +2825,18 @@ cs.store(
     group="habitat/task/measurements",
     name="object_to_goal_distance",
     node=ObjectToGoalDistanceMeasurementConfig,
+)
+cs.store(
+    package="habitat.task.measurements.object_to_goal_dist",
+    group="habitat/task/measurements",
+    name="object_to_goal_dist",
+    node=ObjectToGoalDistMeasurementConfig,
+)
+cs.store(
+    package="habitat.task.measurements.agent_to_object_distance",
+    group="habitat/task/measurements",
+    name="agent_to_object_distance",
+    node=AgentToObjectDistanceMeasurementConfig,
 )
 cs.store(
     package="habitat.task.measurements.obj_at_goal",

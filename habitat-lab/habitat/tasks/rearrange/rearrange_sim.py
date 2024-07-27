@@ -479,14 +479,6 @@ class RearrangeSim(HabitatSim):
                 agent_types[idx] = None
                 urdf_types[idx] = None
                 
-        # agent_types = {
-        #     0: sim_config.agents.agent_0.articulated_agent_type,
-        #     1: sim_config.agents.agent_1.articulated_agent_type,
-        # }
-        # urdf_types = {
-        #     0: sim_config.agents.agent_0.articulated_agent_urdf,
-        #     1: sim_config.agents.agent_1.articulated_agent_urdf,
-        # }
         type_config = {}
         
         for idx, urdf_path in urdf_types.items():
@@ -497,20 +489,6 @@ class RearrangeSim(HabitatSim):
                     type_config[idx] = agent_types[idx] + "_head_only"
                 else:
                     type_config[idx] = agent_types[idx] + "_default"
-        
-        # if ('arm_only' in urdf_types[0]) or ('armonly' in urdf_types[0]) or ('only_arm' in urdf_types[0]) or ('onlyarm' in urdf_types[0]):
-        #     type_config[0] = agent_types[0] + '_arm_only'
-        # elif ('head_only' in urdf_types[0]) or ('headonly' in urdf_types[0]):
-        #     type_config[0] = agent_types[0] + '_head_only'
-        # else:
-        #     type_config[0] = agent_types[0] + '_default'
-
-        # if ('arm_only' in urdf_types[1]) or ('armonly' in urdf_types[1]) or ('only_arm' in urdf_types[1]) or ('onlyarm' in urdf_types[1]):
-        #     type_config[1] = agent_types[1] + '_arm_only'
-        # elif ('head_only' in urdf_types[1]) or ('headonly' in urdf_types[1]):
-        #     type_config[1] = agent_types[1] + '_head_only'
-        # else:
-        #     type_config[1] = agent_types[1] + '_default'
 
         agent_info = {
             "agent_idx": agent_idx,
