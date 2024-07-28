@@ -169,7 +169,7 @@ def generate_single_episode(
     geodesic_to_euclid_min_ratio: float = 1.1,
     number_retries_per_target: int = 10,
     max_placement_tries: int = 10,
-    scene_dataset_path: str = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d_habitat/mp3d/",
+    scene_dataset_path: str = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d/",
 ) -> Generator[Rearrange3DEpisode, None, None]:
     
     sim = initialize_sim(sim, cfg, scene_dataset_path)
@@ -311,7 +311,7 @@ def generate_single_episode(
     )
 
 #TODO(YCC):generate HM3D/MP3D episodes
-def generate_mobility_episodes(config_path, output_dir, num_episodes, dataset = "mp3d", scene_dataset_path = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d_habitat/mp3d/"):
+def generate_mobility_episodes(config_path, output_dir, num_episodes, dataset = "mp3d", scene_dataset_path = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d/"):
     assert num_episodes > 0, "Number of episodes must be greater than 0."
     assert osp.exists(
             config_path
@@ -357,7 +357,7 @@ def generate_mobility_episodes(config_path, output_dir, num_episodes, dataset = 
 if __name__ == "__main__":
     config_path = "/home/yuchecheng/habitat-lab/habitat-lab/habitat/datasets/rearrange/configs/mp3d.yaml" 
     output_dir = "/home/yuchecheng/habitat-lab/data/datasets/mobility"
-    scene_dataset_path = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d_habitat/mp3d/"
+    scene_dataset_path = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d/"
     dataset = "mp3d"       
     num_episodes = 10  
 
