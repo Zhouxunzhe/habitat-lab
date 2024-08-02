@@ -190,8 +190,13 @@ class HabitatMASEvaluator(Evaluator):
                     for a in action_data.env_actions.cpu()
                 ]
             else:
-                step_data = [a.item() for a in action_data.env_actions.cpu()]
-
+                # step_data = [a.item() for a in action_data.env_actions.cpu()]
+                env_actions = action_data.env_actions.cpu()
+                if agent.num_total_agents < 2:
+                    step_data = [a.item() for a in env_actions]
+                else:
+                    # step_data = [item.item() for a in env_actions for item in a]
+                    step_data = [a for a in env_actions]
             outputs = envs.step(step_data)
 
             observations, rewards_l, dones, infos = [
