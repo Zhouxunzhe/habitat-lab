@@ -8,6 +8,8 @@ import os
 import os.path as osp
 import time
 from collections import defaultdict
+from habitat_sim.utils.common import quat_from_angle_axis
+from habitat.core.dataset import Episode
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -490,6 +492,8 @@ class RearrangeSim(HabitatSim):
                 else:
                     type_config[idx] = agent_types[idx] + "_default"
 
+        if agent_idx is None:
+            agent_idx = 0
         agent_info = {
             "agent_idx": agent_idx,
             "agent_type": type_config[agent_idx],

@@ -400,6 +400,8 @@ def overlay_frame(frame, info, additional=None):
     for k, v in flattened_info.items():
         if isinstance(v, str):
             lines.append(f"{k}: {v}")
+        elif isinstance(v, list):
+            lines.append(f"{k}: {v[0]}")
         else:
             lines.append(f"{k}: {v:.2f}")
     if additional is not None:

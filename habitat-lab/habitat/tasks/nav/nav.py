@@ -1341,3 +1341,255 @@ class NavigationTask(EmbodiedTask):
 
     def _check_episode_is_active(self, *args: Any, **kwargs: Any) -> bool:
         return not getattr(self, "is_stop_called", False)
+
+
+@registry.register_measure
+class MultiAgentDistanceToGoal(Measure):
+    """The measure calculates the distance towards the goal for multiple agents."""
+
+    cls_uuid: str = "multi_agent_distance_to_goal"
+
+    def __init__(
+        self, sim, config: "DictConfig", *args: Any, **kwargs: Any
+    ):
+        self._sim = sim
+        self._config = config
+        self._previous_positions: List[Optional[Tuple[float, float, float]]] = [None] * len(sim.agents)
+        self._episode_view_points: Optional[List[Tuple[float, float, float]]] = None
+        self._distance_to = self._config.distance_to
+
+        super().__init__(**kwargs)
+
+    def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
+        return self.cls_uuid
+
+    def reset_metric(self, episode, *args: Any, **kwargs: Any):
+        self._previous_positions = [None] * len(self._sim.habitat_config.agents)
+        if self._distance_to == "VIEW_POINTS":
+            self._episode_view_points = [
+                view_point.agent_state.position
+                for goal in episode.goals
+                for view_point in goal.view_points
+            ]
+        self.update_metric(episode=episode, *args, **kwargs)  # type: ignore
+
+    def update_metric(
+        self, episode: NavigationEpisode, *args: Any, **kwargs: Any
+    ):
+        current_positions = [self._sim.get_agent_state(agent_id).position for agent_id in range(len(self._sim.habitat_config.agents))]
+
+        distances_to_target = []
+        for agent_id, current_position in enumerate(current_positions):
+            if self._distance_to == "POINT":
+                distance_to_target = self._sim.geodesic_distance(
+                    current_position,
+                    [goal.position for goal in episode.goals],
+                    episode,
+                )
+            elif self._distance_to == "VIEW_POINTS":
+                distance_to_target = self._sim.geodesic_distance(
+                    current_position, self._episode_view_points, episode
+                )
+            else:
+                raise ValueError(f"Invalid distance_to parameter: {self._distance_to}")
+
+            self._previous_positions[agent_id] = (
+                current_position[0],
+                current_position[1],
+                current_position[2],
+            )
+            distances_to_target.append(distance_to_target)
+        self._metric = distances_to_target
+
+@registry.register_measure
+class MultiAgentDistanceToGoalReward(Measure):
+    """
+    The measure calculates a reward based on the distance towards the goal for multiple agents.
+    The reward is `- (new_distance - previous_distance)` i.e. the decrease of distance to the goal.
+    """
+
+    cls_uuid: str = "multi_agent_distance_to_goal_reward"
+
+    def __init__(
+        self, sim, config: "DictConfig", *args: Any, **kwargs: Any
+    ):
+        self._sim = sim
+        self._config = config
+        self._previous_distances: List[Optional[float]] = None
+        super().__init__()
+
+    def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
+        return self.cls_uuid
+
+    def reset_metric(self, episode, task, *args: Any, **kwargs: Any):
+        task.measurements.check_measure_dependencies(
+            self.uuid, [MultiAgentDistanceToGoal.cls_uuid]
+        )
+        self._previous_distances = task.measurements.measures[
+            MultiAgentDistanceToGoal.cls_uuid
+        ].get_metric()
+        self.update_metric(episode=episode, task=task, *args, **kwargs)  # type: ignore
+
+    def update_metric(
+        self, episode, task: EmbodiedTask, *args: Any, **kwargs: Any
+    ):
+        distances_to_target = task.measurements.measures[
+            MultiAgentDistanceToGoal.cls_uuid
+        ].get_metric()
+        sum_reward = 0
+        for i in range(len(distances_to_target)):
+            sum_reward -= (distances_to_target[i] - self._previous_distances[i])
+        self._metric = sum_reward
+        self._previous_distances = distances_to_target
+
+
+@registry.register_measure
+class MultiAgentSuccess(Measure):
+    r"""Whether or not the agents succeeded at their tasks
+
+    This measure depends on MultiAgentDistanceToGoal measure.
+    """
+
+    cls_uuid: str = "multi_agent_success"
+
+    def __init__(
+        self, sim, config: "DictConfig", *args: Any, **kwargs: Any
+    ):
+        self._sim = sim
+        self._config = config
+        self._success_distance = self._config.success_distance
+
+        super().__init__()
+
+    def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
+        return self.cls_uuid
+
+    def reset_metric(self, episode, task, *args: Any, **kwargs: Any):
+        task.measurements.check_measure_dependencies(
+            self.uuid, [MultiAgentDistanceToGoal.cls_uuid]
+        )
+        self.update_metric(episode=episode, task=task, *args, **kwargs)  # type: ignore
+
+    def update_metric(
+        self, episode, task: EmbodiedTask, *args: Any, **kwargs: Any
+    ):
+        distances_to_target = task.measurements.measures[
+            MultiAgentDistanceToGoal.cls_uuid
+        ].get_metric()
+
+        success = all(
+            hasattr(task, "is_stop_called")
+            and task.is_stop_called  # type: ignore
+            and distance < self._success_distance
+            for distance in distances_to_target
+        )
+
+        self._metric = 1.0 if success else 0.0
+
+@registry.register_measure
+class MultiAgentSPL(Measure):
+    r"""SPL (Success weighted by Path Length) for multiple agents.
+
+    The measure depends on MultiAgentDistanceToGoal measure and MultiAgentSuccess measure.
+    """
+
+    cls_uuid: str = "multi_agent_spl"
+
+    def __init__(
+        self, sim, config: "DictConfig", *args: Any, **kwargs: Any
+    ):
+        self._sim = sim
+        self._config = config
+        self._previous_positions: List[Union[None, np.ndarray, List[float]]] = [None] * len(sim.agents)
+        self._start_end_episode_distances: List[Optional[float]] = [None] * len(sim.agents)
+        self._agent_episode_distances: List[Optional[float]] = [0.0] * len(sim.agents)
+        super().__init__()
+
+    def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
+        return self.cls_uuid
+
+    def reset_metric(self, episode, task, *args: Any, **kwargs: Any):
+        task.measurements.check_measure_dependencies(
+            self.uuid, [MultiAgentDistanceToGoal.cls_uuid, MultiAgentSuccess.cls_uuid]
+        )
+
+        self._previous_positions = [self._sim.get_agent_state(agent_id).position for agent_id in range(len(self._sim.habitat_config.agents))]
+        self._agent_episode_distances = [0.0] * len(self._sim.habitat_config.agents)
+        self._start_end_episode_distances = task.measurements.measures[
+            MultiAgentDistanceToGoal.cls_uuid
+        ].get_metric()
+        self.update_metric(episode=episode, task=task, *args, **kwargs)  # type: ignore
+
+    def _euclidean_distance(self, position_a, position_b):
+        return np.linalg.norm(position_b - position_a, ord=2)
+
+    def update_metric(
+        self, episode, task: EmbodiedTask, *args: Any, **kwargs: Any
+    ):
+        ep_success = task.measurements.measures[MultiAgentSuccess.cls_uuid].get_metric()
+
+        current_positions = [self._sim.get_agent_state(agent_id).position for agent_id in range(len(self._sim.habitat_config.agents))]
+
+        for agent_id, current_position in enumerate(current_positions):
+            self._agent_episode_distances[agent_id] += self._euclidean_distance(
+                current_position, self._previous_positions[agent_id]
+            )
+            self._previous_positions[agent_id] = current_position
+
+        spl = sum(
+            ep_success * (
+                self._start_end_episode_distances[agent_id]
+                / max(self._start_end_episode_distances[agent_id], self._agent_episode_distances[agent_id])
+            )
+            for agent_id in range(len(self._sim.habitat_config.agents))
+        ) / len(self._sim.habitat_config.agents)
+
+        self._metric = spl
+
+@registry.register_measure
+class MultiAgentSoftSPL(MultiAgentSPL):
+    r"""Soft SPL for multiple agents.
+
+    Similar to SPL with a relaxed soft-success criteria.
+    """
+
+    cls_uuid: str = "multi_agent_soft_spl"
+
+    def reset_metric(self, episode, task, *args: Any, **kwargs: Any):
+        task.measurements.check_measure_dependencies(
+            self.uuid, [MultiAgentDistanceToGoal.cls_uuid]
+        )
+
+        self._previous_positions = [self._sim.get_agent_state(agent_id).position for agent_id in range(len(self._sim.habitat_config.agents))]
+        self._agent_episode_distances = [0.0] * len(self._sim.habitat_config.agents)
+        self._start_end_episode_distances = task.measurements.measures[
+            MultiAgentDistanceToGoal.cls_uuid
+        ].get_metric()
+        self.update_metric(episode=episode, task=task, *args, **kwargs)  # type: ignore
+
+    def update_metric(self, episode, task, *args: Any, **kwargs: Any):
+        current_positions = [self._sim.get_agent_state(agent_id).position for agent_id in range(len(self._sim.habitat_config.agents))]
+        distances_to_target = task.measurements.measures[
+            MultiAgentDistanceToGoal.cls_uuid
+        ].get_metric()
+
+        soft_successes = [
+            max(0, (1 - distance_to_target / self._start_end_episode_distances[agent_id]))
+            for agent_id, distance_to_target in enumerate(distances_to_target)
+        ]
+
+        for agent_id, current_position in enumerate(current_positions):
+            self._agent_episode_distances[agent_id] += self._euclidean_distance(
+                current_position, self._previous_positions[agent_id]
+            )
+            self._previous_positions[agent_id] = current_position
+
+        soft_spl = sum(
+            soft_successes[agent_id] * (
+                self._start_end_episode_distances[agent_id]
+                / max(self._start_end_episode_distances[agent_id], self._agent_episode_distances[agent_id])
+            )
+            for agent_id in range(len(self._sim.habitat_config.agents))
+        ) / len(self._sim.habitat_config.agents)
+
+        self._metric = soft_spl
