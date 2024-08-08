@@ -57,6 +57,7 @@ python -m habitat_sim.utils.datasets_download --uids hssd-hab hab3-episodes habi
 Besides, you should:
 - download the robot configuration data from [here](https://drive.google.com/drive/folders/1ZxxpeqwBBbaTPjdgfss5LUsCkUgue12O?usp=drive_link), and place it into the data/robots folder.
 - download the perception and manipulation episodes data from [here](https://drive.google.com/drive/folders/1EKuXVMyKA5FuCNveV86QE6VvT6Whhiy7?usp=drive_link), and place them into the data/datasets folder.
+- download the mobility episodes data from [here](https://drive.google.com/drive/folders/1q_Khj1JpDE0zm4jv1WG1Mn3hlPydvMTc?usp=drive_link), and place it into the data/datasets folder
 
 The folder should look like this:
 ```
@@ -85,6 +86,9 @@ habitat-lab
 │           ...
 │       ├── perception
 │           ├── perception_eval_drone.json.gz
+│           ...
+│       ├── mobility
+│           ├── mobility_eval.json.gz
 │           ...
 ...
 ```
