@@ -228,21 +228,6 @@ class RearrangeTask(NavigationTask):
                     ) = self._sim.set_articulated_agent_base_to_random_point(
                         agent_idx=agent_idx, filter_func=filter_agent_position
                     )
-                # TODO(YCC): making sure not to initialize the robot on the stairs
-                on_stair = True
-                for _ in range(10):
-                    (
-                        articulated_agent_pos,
-                        articulated_agent_rot,
-                    ) = self._sim.set_articulated_agent_base_to_random_point(
-                        agent_idx=agent_idx, filter_func=filter_agent_position
-                    )
-                    # TODO(YCC): height limit
-                    if articulated_agent_pos[1] < 0.5:
-                        on_stair = False
-                        break
-                if on_stair:
-                    raise ValueError("The robot is still sampled on the stair after 10 tries.")
             else:
                 episode_id = self._sim.ep_info.episode_id
                 agents = self._robot_config[episode_id]['agents']
@@ -428,6 +413,8 @@ class RearrangeTask(NavigationTask):
         return self.n_objs
 
     def get_task_text_context(self) -> dict:
+        if 'dataset' in self._sim.ep_info.info and self._sim.ep_info.info['dataset'] == 'mp3d':
+            return {}
         current_episode_idx = self._sim.ep_info.episode_id
         robot_config = self._robot_config[current_episode_idx]["agents"]
         return get_text_context(self._sim, robot_config)

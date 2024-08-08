@@ -3,6 +3,7 @@
 dataset_path: "/data/scene_datasets/mp3d/mp3d.scene_dataset_config.json" # mp3d
 additional_object_paths:
   - "data/objects/ycb/configs/"
+  - "data/replica_cad/configs/objects"
 
 object_sets:
   -
@@ -90,4 +91,47 @@ object_sets:
 
     excluded_substrings: []
     comment: "Leave included_substrings empty to select all objects."
+
+receptacle_sets:
+  -
+    name: "table"
+    included_object_substrings:
+      - "frl_apartment_table_01"
+      - "frl_apartment_wall_cabinet_03"
+      - "frl_apartment_basket"
+      - "frl_apartment_tvstand"
+      - "frl_apartment_cabinet"
+      - "frl_apartment_wall_cabinet_02"
+      - "frl_apartment_chair_01"
+      - "frl_apartment_table_03"
+      - "frl_apartment_table_02"
+      - "frl_apartment_sofa"
+      - "frl_apartment_wall_cabinet_01"
+    excluded_object_substrings: []
+    included_receptacle_substrings:
+      - ""
+    excluded_receptacle_substrings: []
+    comment: "The empty substrings act like wildcards, selecting all receptacles for all objects."
+
+object_samplers:
+  -
+    name: "kitchen_counter"
+    type: "uniform"
+    params:
+      object_sets: ["kitchen"]
+      receptacle_sets: ["table"]
+      num_samples: [1, 1]
+      orientation_sampling: "up"
+
+object_target_samplers:
+  -
+    name: "any_targets"
+    type: "uniform"
+    params:
+      object_samplers: ["kitchen_counter"]
+      receptacle_sets: ["table"]
+      num_samples: [1, 1]
+      orientation_sampling: "up"
+
+
 
