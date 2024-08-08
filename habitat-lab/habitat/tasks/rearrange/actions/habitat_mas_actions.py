@@ -65,27 +65,65 @@ class OracleNavDiffBaseAction(OracleNavAction):
         self.skill_done = False
         self._targets = {}
         self.config = config
-        self.pathfinder = self._create_pathfinder(config)
+        self.pathfinder = None
 
     def _create_pathfinder(self, config):
         """
         Create a pathfinder for the current agent base
         """
         pf = habitat_sim.nav.PathFinder()
-        modified_settings = self._sim.pathfinder.nav_mesh_settings
+        # deepcopy does not work since NavMeshSettings is non-pickleable
+        # modified_settings = deepcopy(self._sim.pathfinder.nav_mesh_settings)
+        modified_settings = habitat_sim.NavMeshSettings()
+        for key in dir(self._sim.pathfinder.nav_mesh_settings):
+            attr = getattr(self._sim.pathfinder.nav_mesh_settings, key)
+            if not key.startswith("__") and not callable(attr):
+                setattr(
+                    modified_settings,
+                    key,
+                    attr
+                )
+        
         modified_settings.agent_radius = config.agent_radius
         modified_settings.agent_height = config.agent_height
         modified_settings.agent_max_climb = config.agent_max_climb
         modified_settings.agent_max_slope = config.agent_max_slope
-        
+        modified_settings.include_static_objects = True
         # Create a new pathfinder with slightly stricter radius to provide nav buffer from collision
         modified_settings.agent_radius += 0.05
         assert self._sim.recompute_navmesh(
             pf, modified_settings
         ), "failed to recompute navmesh"
+        
+        # DEBUG: save recomputed navmesh
+        if False:
+            from habitat_mas.perception.nav_mesh import NavMesh
+            import open3d as o3d
+            
+            if self._agent_index == 0:
+                navmesh_vertices = self._sim.pathfinder.build_navmesh_vertices()
+                navmesh_indices = self._sim.pathfinder.build_navmesh_vertex_indices()
+                nav_mesh = NavMesh(
+                    vertices=np.stack(navmesh_vertices, axis=0),
+                    triangles=np.array(navmesh_indices).reshape(-1, 3),
+                )
+                o3d.io.write_triangle_mesh("navmesh_default.ply", nav_mesh.mesh)
+            
+            
+            navmesh_vertices = pf.build_navmesh_vertices()
+            navmesh_indices = pf.build_navmesh_vertex_indices()
+            nav_mesh = NavMesh(
+                vertices=np.stack(navmesh_vertices, axis=0),
+                triangles=np.array(navmesh_indices).reshape(-1, 3),
+            )
+            o3d.io.write_triangle_mesh(f"navmesh_agent_{self._agent_index}.ply", nav_mesh.mesh)
+            self._sim.pathfinder = pf
+            
+
+            
         return pf
 
-    def _step_filter(self, start_pos: Vector3, end_pos: Vector3) -> Vector3:
+    def step_filter(self, start_pos: Vector3, end_pos: Vector3) -> Vector3:
         r"""Computes a valid navigable end point given a target translation on the NavMesh.
         Uses the configured sliding flag.
 
@@ -93,7 +131,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         :param end_pos: The target end position of a translation.
         """
         if self.pathfinder.is_loaded:
-            if self.config.sim_cfg.allow_sliding:
+            if self.config.allow_dyn_slide:
                 end_pos = self.pathfinder.try_step(start_pos, end_pos)
             else:
                 end_pos = self.pathfinder.try_step_no_sliding(start_pos, end_pos)
@@ -119,7 +157,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
             + base_offset
         )
 
-        filtered_query_pos = self._sim.step_filter(
+        filtered_query_pos = self.step_filter(
             prev_query_pos, target_query_pos
         )
         fixup = filtered_query_pos - target_query_pos
@@ -189,6 +227,10 @@ class OracleNavDiffBaseAction(OracleNavAction):
         return path.points
 
     def step(self, *args, **kwargs):
+        # if pathfinder is not created, create it 
+        if not self.pathfinder:
+            self.pathfinder = self._create_pathfinder(self.config)
+        
         self.skill_done = False
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"

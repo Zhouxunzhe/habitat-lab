@@ -307,6 +307,11 @@ class HabitatSim(habitat_sim.Simulator, Simulator):
             )
         )
         self._prev_sim_obs: Optional[Observations] = None
+        
+        self.navmesh_visualization = self.habitat_config.get(
+            "navmesh_visualization", False
+        )
+        
 
     def create_sim_config(
         self, _sensor_suite: SensorSuite
