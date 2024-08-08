@@ -32,15 +32,10 @@ __all__ = [
     # NAVIGATION MEASURES
     "NumStepsMeasurementConfig",
     "DistanceToGoalMeasurementConfig",
-    "MultiAgentDistanceToGoalMeasurementConfig",
     "SuccessMeasurementConfig",
-    "MultiAgentSuccessMeasurementConfig",
     "SPLMeasurementConfig",
-    "MultiAgentSPLMeasurementConfig",
     "SoftSPLMeasurementConfig",
-    "MultiAgentSoftSPLMeasurementConfig",
     "DistanceToGoalRewardMeasurementConfig",
-    "MultiAgentDistanceToGoalRewardMeasurementConfig"
     # NAVIGATION LAB SENSORS
     "ObjectGoalSensorConfig",
     "InstanceImageGoalSensorConfig",
@@ -908,17 +903,6 @@ class SuccessMeasurementConfig(MeasurementConfig):
     type: str = "Success"
     success_distance: float = 0.2
 
-@dataclass
-class MultiAgentSuccessMeasurementConfig(MeasurementConfig):
-    r"""
-    For Navigation tasks only, Measures 1.0 if all agents reached a success and 0 otherwise.
-    A success is defined as calling the `StopAction` when the `MultiAgentDistanceToGoal`
-    Measure is smaller than `success_distance`.
-
-    :property success_distance: The minimal distance the robot must be to the goal for a success.
-    """
-    type: str = "MultiAgentSuccess"
-    success_distance: float = 0.2
 
 @dataclass
 class SPLMeasurementConfig(MeasurementConfig):
@@ -933,10 +917,6 @@ class SPLMeasurementConfig(MeasurementConfig):
     """
     type: str = "SPL"
 
-@dataclass
-class MultiAgentSPLMeasurementConfig(MeasurementConfig):
-    type: str = "MultiAgentSPL"
-
 
 @dataclass
 class SoftSPLMeasurementConfig(MeasurementConfig):
@@ -946,10 +926,6 @@ class SoftSPLMeasurementConfig(MeasurementConfig):
     SoftSPL = max(0, 1 - distance_to_goal / optimal_distance_to_goal) * optimal_distance_to_goal / distance_traveled_so_far
     """
     type: str = "SoftSPL"
-
-@dataclass
-class MultiAgentSoftSPLMeasurementConfig(MeasurementConfig):
-    type: str = "MultiAgentSoftSPL"
 
 
 @dataclass
@@ -1030,14 +1006,6 @@ class ObjectToGoalDistanceMeasurementConfig(MeasurementConfig):
     """
     type: str = "ObjectToGoalDistance"
 
-# TODO(YCC): remember to differentiate between ObjectToGoalDistance and ObjectToGoalDist
-@dataclass
-class ObjectToGoalDistMeasurementConfig(MeasurementConfig):
-    type: str = "ObjectToGoalDist"
-
-@dataclass
-class AgentToObjectDistanceMeasurementConfig(MeasurementConfig):
-    type: str = "AgentToObjectDistance"
 
 @dataclass
 class EndEffectorToObjectDistanceMeasurementConfig(MeasurementConfig):
@@ -1548,10 +1516,6 @@ class DistanceToGoalMeasurementConfig(MeasurementConfig):
     type: str = "DistanceToGoal"
     distance_to: str = "POINT"
 
-@dataclass
-class MultiAgentDistanceToGoalMeasurementConfig(MeasurementConfig):
-    type: str = "MultiAgentDistanceToGoal"
-    distance_to: str = "POINT"
 
 @dataclass
 class DistanceToGoalRewardMeasurementConfig(MeasurementConfig):
@@ -1562,9 +1526,6 @@ class DistanceToGoalRewardMeasurementConfig(MeasurementConfig):
     """
     type: str = "DistanceToGoalReward"
 
-@dataclass
-class MultiAgentDistanceToGoalRewardMeasurementConfig(MeasurementConfig):
-    type: str = "MultiAgentDistanceToGoalReward"
 
 @dataclass
 class AnswerAccuracyMeasurementConfig(MeasurementConfig):
@@ -2732,22 +2693,10 @@ cs.store(
     node=DistanceToGoalMeasurementConfig,
 )
 cs.store(
-    package="habitat.task.measurements.multi_agent_distance_to_goal",
-    group="habitat/task/measurements",
-    name="multi_agent_distance_to_goal",
-    node=MultiAgentDistanceToGoalMeasurementConfig,
-)
-cs.store(
     package="habitat.task.measurements.distance_to_goal_reward",
     group="habitat/task/measurements",
     name="distance_to_goal_reward",
     node=DistanceToGoalRewardMeasurementConfig,
-)
-cs.store(
-    package="habitat.task.measurements.multi_agent_distance_to_goal_reward",
-    group="habitat/task/measurements",
-    name="multi_agent_distance_to_goal_reward",
-    node=MultiAgentDistanceToGoalRewardMeasurementConfig,
 )
 cs.store(
     package="habitat.task.measurements.success",
@@ -2756,34 +2705,16 @@ cs.store(
     node=SuccessMeasurementConfig,
 )
 cs.store(
-    package="habitat.task.measurements.multi_agent_success",
-    group="habitat/task/measurements",
-    name="multi_agent_success",
-    node=MultiAgentSuccessMeasurementConfig,
-)
-cs.store(
     package="habitat.task.measurements.spl",
     group="habitat/task/measurements",
     name="spl",
     node=SPLMeasurementConfig,
 )
 cs.store(
-    package="habitat.task.measurements.multi_agent_spl",
-    group="habitat/task/measurements",
-    name="multi_agent_spl",
-    node=MultiAgentSPLMeasurementConfig,
-)
-cs.store(
     package="habitat.task.measurements.soft_spl",
     group="habitat/task/measurements",
     name="soft_spl",
     node=SoftSPLMeasurementConfig,
-)
-cs.store(
-    package="habitat.task.measurements.multi_agent_soft_spl",
-    group="habitat/task/measurements",
-    name="multi_agent_soft_spl",
-    node=MultiAgentSoftSPLMeasurementConfig,
 )
 cs.store(
     package="habitat.task.measurements.num_steps",
@@ -2886,18 +2817,6 @@ cs.store(
     group="habitat/task/measurements",
     name="object_to_goal_distance",
     node=ObjectToGoalDistanceMeasurementConfig,
-)
-cs.store(
-    package="habitat.task.measurements.object_to_goal_dist",
-    group="habitat/task/measurements",
-    name="object_to_goal_dist",
-    node=ObjectToGoalDistMeasurementConfig,
-)
-cs.store(
-    package="habitat.task.measurements.agent_to_object_distance",
-    group="habitat/task/measurements",
-    name="agent_to_object_distance",
-    node=AgentToObjectDistanceMeasurementConfig,
 )
 cs.store(
     package="habitat.task.measurements.obj_at_goal",
