@@ -1766,4 +1766,76 @@ class ArmWorkspaceRGBArmSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterf
                 self._debug_save_counter += 1
 
         return rgb_obs
-        
+
+
+@registry.register_sensor
+class ArmWorkspaceRGBThirdSensor(ArmWorkspaceRGBSensor):
+    """ Sensor to visualize the reachable workspace of an articulated arm """
+    cls_uuid: str = "arm_workspace_rgb_third"
+
+    def __init__(self, sim, config, *args, **kwargs):
+        super().__init__(sim=sim, config=config, *args, **kwargs)
+
+        self.rgb_sensor_name = config.get("rgb_sensor_name", "third_rgb")
+        self.depth_sensor_name = config.get("depth_sensor_name", "third_depth")
+
+
+@registry.register_sensor
+class ObjectMasksSensor(UsesArticulatedAgentInterface, Sensor):
+    """ Sensor to mask the objects that are interested """
+    cls_uuid: str = "object_masks"
+
+    def __init__(self, sim, config, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+
+    def _get_uuid(self, *args, **kwargs):
+        return ObjectMasksSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.SEMANTIC
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        # The observation space is flexible, should not be used as gym input
+        return spaces.Box(low=0, high=np.iinfo(np.int64).max, shape=(), dtype=np.int64)
+
+    def _get_objects_info(self, object_ids, object_dict):
+        """ Get the names and handles of objects with given IDs """
+        objects_info = {}
+        for obj_id, obj_dict in zip(object_ids, object_dict.values()):
+            objects_info[obj_id] = obj_dict.full_name
+        return objects_info
+
+    # This method assumes the existence of a method to get the semantic sensor's data
+    def get_observation(self, observations, *args, **kwargs):
+        """ Get the detected objects from the semantic sensor data """
+
+        sg = SceneGraphHSSD()
+        sg.load_gt_scene_graph(self._sim)
+
+        objects_info = self._get_objects_info(self._sim.scene_obj_ids, sg.object_layer.obj_dict)
+
+        semantic_obs = observations['head_semantic'].squeeze()
+        rgb_obs = observations['head_rgb']
+
+        # all_ids = np.unique(semantic_obs)
+        # all_ids = np.delete(all_ids, [0, 1])
+
+        mask = np.isin(semantic_obs, self._sim.scene_obj_ids).astype(np.uint8)
+        # mask = np.isin(semantic_obs, all_ids).astype(np.uint8)
+        colored_mask = np.zeros_like(rgb_obs)
+        colored_mask[mask == 1] = [0, 255, 0]
+        masked_rgb = cv2.addWeighted(rgb_obs, 0.7, colored_mask, 0.3, 0)
+
+        for obj_id in self._sim.scene_obj_ids:
+        # for obj_id in all_ids:
+            positions = np.where(semantic_obs == obj_id)
+            if positions[0].size > 0:
+                center_x = int(np.mean(positions[1]))
+                center_y = int(np.mean(positions[0]))
+                cv2.putText(masked_rgb, objects_info[obj_id],
+                            (center_x, center_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+        return masked_rgb
+
