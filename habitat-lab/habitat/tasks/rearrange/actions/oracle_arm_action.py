@@ -12,7 +12,8 @@ from habitat.articulated_agent_controllers import HumanoidRearrangeController
 from habitat.core.registry import registry
 from habitat.tasks.rearrange.actions.actions import (
     ArticulatedAgentAction,
-    ArmEEAction
+    ArmEEAction,
+    ArmRelPosKinematicReducedActionStretch
 )
 from habitat.tasks.rearrange.utils import (
     coll_name_matches,
@@ -159,6 +160,160 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
         should_pick = pick_action[1]
 
         if object_pick_pddl_idx <= 0 or object_pick_pddl_idx > len(self._entities):
+            return self.ee_target
+
+        object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
+        cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
+        # TODO(zxz): modify translation matrix
+        translation = object_coord - cur_ee_pos
+
+        # translation from object to end effector in base frame
+        translation = self.cur_articulated_agent.base_transformation.inverted().transform_vector(translation)
+
+
+        should_rest = False
+        # if self.hand_state == HandState.APPROACHING:  # Approaching
+        # Only move the hand to object if has to drop or object is not grabbed
+        if should_pick == 0 or self.cur_grasp_mgr.snap_idx is None:
+            translation = np.clip(translation, -1, 1)
+            self._ee_ctrl_lim = 0.03
+            translation *= self._ee_ctrl_lim
+            self.set_desired_ee_pos(translation)
+
+            # DEBUG VISUALIZATION
+            if self._render_ee_target:
+                global_pos = self.cur_articulated_agent.base_transformation.transform_point(
+                    self.ee_target
+                )
+                self._sim.viz_ids["ee_target"] = self._sim.visualize_position(
+                    global_pos, self._sim.viz_ids["ee_target"]
+                )
+
+            # TODO: should we add retracting action here?
+
+            # Grasp & Ungrasp when we are close to the target
+            # if np.linalg.norm(translation_base) < self._config.grasp_thresh_dist:
+            #     self.cur_grasp_mgr.snap_to_obj(
+            #         self._sim.scene_obj_ids[object_pick_idx],
+            #     )
+            #     return
+        return self.ee_target
+
+
+@registry.register_task_action
+class StretchOraclePickAction(ArmEEAction, ArmRelPosKinematicReducedActionStretch, ArticulatedAgentAction):
+    """
+    Pick/drop action for the articulated_agent given the object/receptacle index.
+    Uses inverse kinematics (requires pybullet) to apply end-effector position control for the articulated_agent's arm.
+    """
+
+    def __init__(self, *args, config, sim: RearrangeSim, task, **kwargs):
+        super().__init__(self, *args, config=config, sim=sim, **kwargs)
+        self._sim = sim
+        self._task = task
+        self._entities = self._task.pddl_problem.get_ordered_entities_list()
+        self._prev_ep_id = None
+        # Agent not initialized
+        # self._init_cord = self.cur_articulated_agent.ee_transform().translation
+        self._init_cord = np.array([0.0, 0.0, 0.0])
+        self._hand_pose_iter = 0
+
+        self._delta_pos_limit = self._config.delta_pos_limit
+        self._should_clip = self._config.get("should_clip", True)
+        self._arm_joint_mask = self._config.arm_joint_mask
+        self._arm_joint_limit = self._config.arm_joint_limit
+
+    def reset(self, *args, **kwargs):
+        super().reset()
+        self.set_desired_ee_pos(self._init_cord)
+
+
+    @property
+    def action_space(self):
+        return spaces.Box(
+                    shape=(2,),
+                    low=np.finfo(np.float32).min,
+                    high=np.finfo(np.float32).max,
+                    dtype=np.float32,
+                )
+    # NOTE: get_rigid_object_manager has different object idx than that of pddl planner
+    # def _get_coord_for_idx(self, object_target_idx):
+    #     obj_pos = (
+    #         self._sim.get_rigid_object_manager()
+    #         .get_object_by_id(object_target_idx)
+    #         .translation
+    #     )
+    #     return obj_pos
+
+    def _get_coord_for_pddl_idx(self, object_target_idx):
+        pick_obj_entity = self._entities[int(object_target_idx)]
+        obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
+            pick_obj_entity
+        )
+        return obj_pos
+
+    def get_scene_index_obj(self, object_target_idx):
+        pick_obj_entity = self._entities[object_target_idx]
+        entity_name = pick_obj_entity.name
+        obj_id = self._task.pddl_problem.sim_info.obj_ids[entity_name]
+        return self._sim.scene_obj_ids[obj_id]
+
+    def _suction_grasp(self):
+        """
+        Grasp object using suction grasp, snap to object if contact is detected.
+        """
+        attempt_snap_entity: Optional[Union[str, int]] = None
+        match_coll = None
+        contacts = self._sim.get_physics_contact_points()
+
+        # TODO: the two arguments below should be part of args
+        ee_index = 0
+        index_grasp_manager = 0
+
+        robot_id = self._sim.articulated_agent.sim_obj.object_id
+        all_gripper_links = list(
+            self._sim.articulated_agent.params.gripper_joints
+        )
+        robot_contacts = [
+            c
+            for c in contacts
+            if coll_name_matches(c, robot_id)
+            and any(coll_link_name_matches(c, l) for l in all_gripper_links)
+        ]
+
+        if len(robot_contacts) == 0:
+            return
+
+        # Contacted any objects?
+        for scene_obj_id in self._sim.scene_obj_ids:
+            for c in robot_contacts:
+                if coll_name_matches(c, scene_obj_id):
+                    match_coll = c
+                    break
+            if match_coll is not None:
+                attempt_snap_entity = scene_obj_id
+                break
+
+        if attempt_snap_entity is not None:
+            rom = self._sim.get_rigid_object_manager()
+            ro = rom.get_object_by_id(attempt_snap_entity)
+
+            ee_T = self.cur_articulated_agent.ee_transform()
+            obj_in_ee_T = ee_T.inverted() @ ro.transformation
+
+            # here we need the link T, not the EE T for the constraint frame
+            ee_link_T = self.cur_articulated_agent.sim_obj.get_link_scene_node(
+                self.cur_articulated_agent.params.ee_links[ee_index]
+            ).absolute_transformation()
+
+            self._sim.grasp_mgr.snap_to_obj(
+                int(attempt_snap_entity),
+                force=False,
+                # rel_pos is the relative position of the object COM in link space
+                rel_pos=ee_link_T.inverted().transform_point(ro.translation),
+                keep_T=obj_in_ee_T,
+                should_open_gripper=False,
+            )
             return
 
         object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
