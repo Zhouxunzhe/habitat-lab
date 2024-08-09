@@ -316,6 +316,34 @@ class StretchOraclePickAction(ArmEEAction, ArmRelPosKinematicReducedActionStretc
             )
             return
 
+    def set_desired_ee_pos(self, ee_pos: np.ndarray) -> np.array:
+        self.ee_target += np.array(ee_pos)
+
+        self.apply_ee_constraints()
+
+        joint_pos = np.array(self.cur_articulated_agent.arm_joint_pos)
+        joint_vel = np.zeros(joint_pos.shape)
+
+        self._ik_helper.set_arm_state(joint_pos, joint_vel)
+
+        des_joint_pos = self._ik_helper.calc_ik(self.ee_target)
+        # des_joint_pos = list(des_joint_pos)
+        # if self.cur_articulated_agent.sim_obj.motion_type == MotionType.DYNAMIC:
+        #     self.cur_articulated_agent.arm_motor_pos = des_joint_pos
+        # if self.cur_articulated_agent.sim_obj.motion_type == MotionType.KINEMATIC:
+        #     self.cur_articulated_agent.arm_joint_pos = des_joint_pos
+        #     self.cur_articulated_agent.fix_joint_values = des_joint_pos
+
+        return np.array(des_joint_pos)
+
+    def step(self, pick_action, **kwargs):
+
+        object_pick_pddl_idx = pick_action[0]
+        should_pick = pick_action[1]
+
+        if object_pick_pddl_idx <= 0 or object_pick_pddl_idx > len(self._entities):
+            return self.ee_target
+
         object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
         cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
         translation = object_coord - cur_ee_pos  
@@ -330,7 +358,56 @@ class StretchOraclePickAction(ArmEEAction, ArmRelPosKinematicReducedActionStretc
         if should_pick == 0 or self.cur_grasp_mgr.snap_idx is None:
             translation_base = np.clip(translation_base, -1, 1)
             translation_base *= self._ee_ctrl_lim
-            self.set_desired_ee_pos(translation_base)
+            delta_pos = self.set_desired_ee_pos(translation_base)
+
+            # DEBUG VISUALIZATION
+            if self._render_ee_target:
+                global_pos = self.cur_articulated_agent.base_transformation.transform_point(
+                    self.ee_target
+                )
+                self._sim.viz_ids["ee_target"] = self._sim.visualize_position(
+                    global_pos, self._sim.viz_ids["ee_target"]
+                )
+
+            if self._should_clip:
+                # clip from -1 to 1
+                delta_pos = np.clip(delta_pos, -1, 1)
+            delta_pos *= self._delta_pos_limit
+            self._sim: RearrangeSim
+
+            # Expand delta_pos based on mask
+            expanded_delta_pos = np.zeros(len(self._arm_joint_mask))
+            src_idx = 0
+            tgt_idx = 0
+            for mask in self._arm_joint_mask:
+                if mask == 0:
+                    tgt_idx += 1
+                    src_idx += 1
+                    continue
+                expanded_delta_pos[tgt_idx] = delta_pos[src_idx]
+                tgt_idx += 1
+                src_idx += 1
+
+            min_limit, max_limit = self.cur_articulated_agent.arm_joint_limits
+
+            set_arm_pos = (
+                expanded_delta_pos + self.cur_articulated_agent.arm_motor_pos
+            )
+            # Perform roll over to the joints so that the user cannot control
+            # the motor 2, 3, 4 for the arm.
+            if expanded_delta_pos[0] >= 0:
+                for i in range(3):
+                    if set_arm_pos[i] > max_limit[i]:
+                        set_arm_pos[i + 1] += set_arm_pos[i] - max_limit[i]
+                        set_arm_pos[i] = max_limit[i]
+            else:
+                for i in range(3):
+                    if set_arm_pos[i] < min_limit[i]:
+                        set_arm_pos[i + 1] -= min_limit[i] - set_arm_pos[i]
+                        set_arm_pos[i] = min_limit[i]
+            set_arm_pos = np.clip(set_arm_pos, min_limit, max_limit)
+
+            self.cur_articulated_agent.arm_motor_pos = set_arm_pos
 
             # DEBUG VISUALIZATION
             if self._render_ee_target:
