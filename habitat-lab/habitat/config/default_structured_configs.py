@@ -310,6 +310,26 @@ class OracleArmActionConfig(ArmActionConfig):
     render_ee_target: bool = True
 
 @dataclass
+class StretchOracleArmActionConfig(ArmActionConfig):
+    r"""
+    In Rearrangement tasks only, the action that will move the robot arm around. The action represents to delta angle (in radians) of each joint.
+    Use pybullet IK planner to control the arm action.
+    """
+    type: str = "ArmAction"
+    arm_controller: str = "StretchOraclePickAction"
+    grip_controller: str = "SuctionGraspAction"
+    render_ee_target: bool = True
+    arm_joint_mask: Optional[List[int]] = field(default_factory=lambda: [1, 0, 0, 0, 1, 1, 1, 1])
+    # arm_joint_dimensionality: int = 10
+    grasp_thresh_dist: float = 0.15
+    disable_grip: bool = False
+    delta_pos_limit: float = 0.0125
+    ee_ctrl_lim: float = 0.015
+    # gaze_distance_range: Optional[List[float]] = field(default_factory=lambda: [0.1, 3.0])
+    # center_cone_angle_threshold: float = 20.0
+    # center_cone_vector: Optional[List[float]] = field(default_factory=lambda: [0.0, 1.0, 0.0])
+
+@dataclass
 class BaseVelocityActionConfig(ActionConfig):
     r"""
     In Rearrangement only. Corresponds to the base velocity. Contains two continuous actions, the first one controls forward and backward motion, the second the rotation.
@@ -2163,6 +2183,12 @@ cs.store(
     group="habitat/task/actions",
     name="oracle_arm_action",
     node=OracleArmActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.arm_action",
+    group="habitat/task/actions",
+    name="stretch_oracle_arm_action",
+    node=StretchOracleArmActionConfig,
 )
 
 cs.store(
