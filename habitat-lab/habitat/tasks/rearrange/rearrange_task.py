@@ -222,7 +222,7 @@ class RearrangeTask(NavigationTask):
                 filter_agent_position = _filter_agent_position
             
             if self._dataset.config.randomize_agent_start:
-                
+            
                 (
                     articulated_agent_pos,
                     articulated_agent_rot,

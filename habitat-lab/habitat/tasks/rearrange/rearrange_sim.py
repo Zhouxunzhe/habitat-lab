@@ -6,12 +6,8 @@
 import json
 import os
 import os.path as osp
-from re import A
 import time
 from collections import defaultdict
-from habitat.datasets.rearrange.samplers import receptacle
-from habitat_sim.utils.common import quat_from_angle_axis
-from habitat.core.dataset import Episode
 from typing import (
     TYPE_CHECKING,
     Any,
