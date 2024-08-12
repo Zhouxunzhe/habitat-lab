@@ -384,7 +384,10 @@ class IkHelper:
     def set_arm_state(self, joint_pos, joint_vel=None):
         if joint_vel is None:
             joint_vel = np.zeros((len(joint_pos),))
-        for i in range(7):
+
+        dof = len(joint_pos)
+
+        for i in range(dof):
             p.resetJointState(
                 self.robo_id,
                 i,

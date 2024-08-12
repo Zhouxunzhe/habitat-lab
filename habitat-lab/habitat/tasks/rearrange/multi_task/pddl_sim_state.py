@@ -159,7 +159,15 @@ class PddlRobotState:
             # episode = sim_info.episode
             # task = sim_info.env
             # obs = sim_info.env.sensor_suite.get_observations(observations=observations, episode=episode, task=task)
-            obs = sim_info.env.sensor_suite.get(f"agent_{robot_id}_detected_objects").get_observation(observations)
+            # TODO(zxz): modify here for single agent
+            assert (
+                    f"agent_{robot_id}_detected_objects" in sim_info.env.sensor_suite.sensors
+                    or f"detected_objects" in sim_info.env.sensor_suite.sensors
+            ), f"agent_{robot_id}_detected_objects or detected_objects should be in the sensors"
+            if f"agent_{robot_id}_detected_objects" in sim_info.env.sensor_suite.sensors:
+                obs = sim_info.env.sensor_suite.get(f"agent_{robot_id}_detected_objects").get_observation(observations)
+            else:
+                obs = sim_info.env.sensor_suite.get(f"detected_objects").get_observation(observations)
 
             if abs_obj_id not in obs:
                 return False
