@@ -722,86 +722,7 @@ class RearrangeSim(HabitatSim):
                 ep_info.scene_id, list(self._handle_to_object_id.keys())
             )
             if 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d':
-                assert ep_info.target_receptacles is not None and ep_info.goal_receptacles is not None
-                receptacles, target_receptacles, goal_receptacles = [], [], []
-                info = {}
-                for i, (tar_recep_handle, tar_tranform, tar_translation) in enumerate(ep_info.target_receptacles):
-                    if tar_recep_handle.endswith('_:0000'):
-                        tar_recep_name = tar_recep_handle[:-6]
-                    tar_template = otm.get_templates_by_handle_substring(
-                        tar_recep_name
-                    )
-                    if not tar_template:
-                        raise ValueError(
-                            f"Template not found for object with handle {tar_recep_handle}"
-                        )
-                    tar_path = list(tar_template.keys())[0]
-                    target_receptacle = rom.add_object_by_template_handle(
-                        tar_path
-                    )
-                    target_receptacle.transformation = mn.Matrix4(
-                        [[tar_tranform[j][i] for j in range(4)] for i in range(4)]
-                    )
-                    target_receptacle.translation = tar_translation
-                    user_attr = target_receptacle.user_attributes
-                    
-                    info["translation"] = np.array(tar_translation)
-                    target_receptacles.extend(
-                        parse_receptacles_from_user_config(
-                            user_attr,
-                            parent_object_handle=tar_recep_handle,
-                            parent_template_directory=tar_path,
-                            mp3d=True,
-                            info=info
-                        )
-                    )
-                receptacles.extend(target_receptacles)
-                for i, (goal_recep_handle, goal_transform, goal_translation) in enumerate(ep_info.goal_receptacles):
-                    if goal_recep_handle.endswith('_:0000'):
-                        goal_recep_name = goal_recep_handle[:-6]
-                    goal_template = otm.get_templates_by_handle_substring(
-                        goal_recep_name
-                    )
-                    if not goal_template:
-                        raise ValueError(
-                            f"Template not found for object with handle {goal_recep_handle}"
-                        )
-                    goal_path = list(goal_template.keys())[0]
-                    goal_receptacle = rom.add_object_by_template_handle(
-                        goal_path
-                    )
-                    goal_receptacle.transformation = mn.Matrix4(
-                        [[goal_transform[j][i] for j in range(4)] for i in range(4)]
-                    )
-                    goal_receptacle.translation = goal_translation
-                    user_attr = goal_receptacle.user_attributes
-                    info["translation"] = np.array(goal_translation)
-                    goal_receptacles.extend(
-                        parse_receptacles_from_user_config(
-                            user_attr,
-                            parent_object_handle=goal_recep_handle,
-                            parent_template_directory=goal_path,
-                            mp3d=True,
-                            info=info
-                        )
-                    )
-                receptacles.extend(goal_receptacles)
-
-                receps = {}
-                for recep in receptacles:
-                    recep = cast(AABBReceptacle, recep)
-                    local_bounds = recep.bounds
-                    global_T = recep.get_global_transform(self)
-                    bounds = np.stack(
-                        [
-                            global_T.transform_point(local_bounds.min),
-                            global_T.transform_point(local_bounds.max),
-                        ],
-                        axis=0,
-                    )
-                    receps[recep.unique_name] = mn.Range3D(
-                        np.min(bounds, axis=0), np.max(bounds, axis=0)
-                    )
+                receps = self.set_receptacle_in_scene(ep_info)
                 self._receptacles_cache[ep_info.scene_id] = receps
                 self._receptacles = receps
     
@@ -1211,3 +1132,88 @@ class RearrangeSim(HabitatSim):
         self._extra_runtime_perf_stats = defaultdict(float)
 
         return stats_dict
+
+    def set_receptacle_in_scene(self, ep_info):
+        rom = self.get_rigid_object_manager()
+        otm = self.get_object_template_manager()
+        assert ep_info.target_receptacles is not None and ep_info.goal_receptacles is not None
+        receptacles, target_receptacles, goal_receptacles = [], [], []
+        info = {}
+        for i, (tar_recep_handle, tar_tranform, tar_translation) in enumerate(ep_info.target_receptacles):
+            if tar_recep_handle.endswith('_:0000'):
+                tar_recep_name = tar_recep_handle[:-6]
+            tar_template = otm.get_templates_by_handle_substring(
+                tar_recep_name
+            )
+            if not tar_template:
+                raise ValueError(
+                    f"Template not found for object with handle {tar_recep_handle}"
+                )
+            tar_path = list(tar_template.keys())[0]
+            target_receptacle = rom.add_object_by_template_handle(
+                tar_path
+            )
+            target_receptacle.transformation = mn.Matrix4(
+                [[tar_tranform[j][i] for j in range(4)] for i in range(4)]
+            )
+            target_receptacle.translation = tar_translation
+            user_attr = target_receptacle.user_attributes
+            
+            info["translation"] = np.array(tar_translation)
+            target_receptacles.extend(
+                parse_receptacles_from_user_config(
+                    user_attr,
+                    parent_object_handle=tar_recep_handle,
+                    parent_template_directory=tar_path,
+                    mp3d=True,
+                    info=info
+                )
+            )
+        receptacles.extend(target_receptacles)
+        for i, (goal_recep_handle, goal_transform, goal_translation) in enumerate(ep_info.goal_receptacles):
+            if goal_recep_handle.endswith('_:0000'):
+                goal_recep_name = goal_recep_handle[:-6]
+            goal_template = otm.get_templates_by_handle_substring(
+                goal_recep_name
+            )
+            if not goal_template:
+                raise ValueError(
+                    f"Template not found for object with handle {goal_recep_handle}"
+                )
+            goal_path = list(goal_template.keys())[0]
+            goal_receptacle = rom.add_object_by_template_handle(
+                goal_path
+            )
+            goal_receptacle.transformation = mn.Matrix4(
+                [[goal_transform[j][i] for j in range(4)] for i in range(4)]
+            )
+            goal_receptacle.translation = goal_translation
+            user_attr = goal_receptacle.user_attributes
+            info["translation"] = np.array(goal_translation)
+            goal_receptacles.extend(
+                parse_receptacles_from_user_config(
+                    user_attr,
+                    parent_object_handle=goal_recep_handle,
+                    parent_template_directory=goal_path,
+                    mp3d=True,
+                    info=info
+                )
+            )
+        receptacles.extend(goal_receptacles)
+
+        receps = {}
+        for recep in receptacles:
+            recep = cast(AABBReceptacle, recep)
+            local_bounds = recep.bounds
+            global_T = recep.get_global_transform(self)
+            bounds = np.stack(
+                [
+                    global_T.transform_point(local_bounds.min),
+                    global_T.transform_point(local_bounds.max),
+                ],
+                axis=0,
+            )
+            receps[recep.unique_name] = mn.Range3D(
+                np.min(bounds, axis=0), np.max(bounds, axis=0)
+            )
+        return receps

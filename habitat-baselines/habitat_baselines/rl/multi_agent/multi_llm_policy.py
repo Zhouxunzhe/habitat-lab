@@ -73,8 +73,10 @@ class MultiLLMPolicy(MultiPolicy):
             env_text_context = envs_text_context[i]
             # if no previous actions, then it is the first step of the episode
             if not env_prev_actions.any():
-                robot_resume = env_text_context["robot_resume"]
-                scene_description = env_text_context["scene_description"]
+                if "robot_resume" in env_text_context:
+                    robot_resume = env_text_context["robot_resume"]
+                if "scene_description" in env_text_context:
+                    scene_description = env_text_context["scene_description"]
                 #TODO: Add group discussion here
                 # task_assignments = group_discussion(robot_resume, scene_description)
                 # {
