@@ -89,12 +89,26 @@ habitat-lab
 ...
 ```
 
+### Data Generation
+
+Here is a demo data generation command for dataset in `hssd` scene.
+
+```sh
+python habitat-lab/habitat/datasets/rearrange/run_episode_generator.py --run 
+--config data/hssd_dataset.yaml 
+--num-episodes 50 
+--out data/datasets/hssd_eval.json.gz 
+--type hssd 
+[Optional] --resume habitat-mas/habitat_mas/data/robot_resume/StretchRobot_default.json
+```
+
+- `--config`: path of your dataset generation configuration.
+- `--num-episodes`: episodes number you want to generate.
+- `--out`: desired path of your newly generated dataset.
+- `--type`: the purpose of your dataset, currently there are only three types: `preception`, `manipulation`, `hssd`.
+- `--resume`: path of desired robot resume as object position constraint, currently it is not used, you can freely ignore it.
+
 ### Data Structure
-
-**Multi robot navigation** ()
-
-- Deploy robots: spot, drone, fetch, stretch for navigation tasks.
-- Obtain frame data for testing vision-language model understanding.
 
 **Multi robot perception**
 
