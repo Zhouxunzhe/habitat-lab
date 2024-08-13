@@ -1667,7 +1667,8 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         return rgb_obs
 
-
+# TODO(zxz): there are still some bugs in this sensor
+# TODO(zxz): the issue could be in arm camera transformation in habitat-sim not consistent with that in habitat-lab
 @registry.register_sensor
 class ArmWorkspaceRGBArmSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterface, Sensor):
     """ Sensor to visualize the reachable workspace of an articulated arm """
@@ -1810,6 +1811,8 @@ class ObjectMasksSensor(UsesArticulatedAgentInterface, Sensor):
     def get_observation(self, observations, *args, **kwargs):
         """ Get the detected objects from the semantic sensor data """
 
+        assert ('replica' in self._sim.config.sim_cfg.scene_dataset_config_file or 'hssd' in self._sim.config.sim_cfg.scene_dataset_config_file), \
+            f"object masks sensor can only be used in replica or hssd dataset."
         sg = SceneGraphHSSD()
         sg.load_gt_scene_graph(self._sim)
 
