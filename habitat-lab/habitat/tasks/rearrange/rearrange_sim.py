@@ -36,6 +36,7 @@ from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode
 from habitat.datasets.rearrange.samplers.receptacle import (
     AABBReceptacle,
     find_receptacles,
+    parse_receptacles_from_user_config,
 )
 from habitat.sims.habitat_simulator.habitat_simulator import HabitatSim
 from habitat.tasks.rearrange.articulated_agent_manager import (
@@ -479,14 +480,6 @@ class RearrangeSim(HabitatSim):
                 agent_types[idx] = None
                 urdf_types[idx] = None
                 
-        # agent_types = {
-        #     0: sim_config.agents.agent_0.articulated_agent_type,
-        #     1: sim_config.agents.agent_1.articulated_agent_type,
-        # }
-        # urdf_types = {
-        #     0: sim_config.agents.agent_0.articulated_agent_urdf,
-        #     1: sim_config.agents.agent_1.articulated_agent_urdf,
-        # }
         type_config = {}
         
         for idx, urdf_path in urdf_types.items():
@@ -497,21 +490,9 @@ class RearrangeSim(HabitatSim):
                     type_config[idx] = agent_types[idx] + "_head_only"
                 else:
                     type_config[idx] = agent_types[idx] + "_default"
-        
-        # if ('arm_only' in urdf_types[0]) or ('armonly' in urdf_types[0]) or ('only_arm' in urdf_types[0]) or ('onlyarm' in urdf_types[0]):
-        #     type_config[0] = agent_types[0] + '_arm_only'
-        # elif ('head_only' in urdf_types[0]) or ('headonly' in urdf_types[0]):
-        #     type_config[0] = agent_types[0] + '_head_only'
-        # else:
-        #     type_config[0] = agent_types[0] + '_default'
 
-        # if ('arm_only' in urdf_types[1]) or ('armonly' in urdf_types[1]) or ('only_arm' in urdf_types[1]) or ('onlyarm' in urdf_types[1]):
-        #     type_config[1] = agent_types[1] + '_arm_only'
-        # elif ('head_only' in urdf_types[1]) or ('headonly' in urdf_types[1]):
-        #     type_config[1] = agent_types[1] + '_head_only'
-        # else:
-        #     type_config[1] = agent_types[1] + '_default'
-
+        if agent_idx is None:
+            agent_idx = 0
         agent_info = {
             "agent_idx": agent_idx,
             "agent_type": type_config[agent_idx],
@@ -538,6 +519,10 @@ class RearrangeSim(HabitatSim):
         base_dir = osp.join(*ep_info.scene_id.split("/")[:2])
 
         navmesh_path = osp.join(base_dir, "navmeshes", scene_name + ".navmesh")
+
+        if 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d':
+            base_dir = ep_info.scene_id.split(".")[:-1][0]
+            navmesh_path = base_dir + ".navmesh"
 
         if osp.exists(navmesh_path):
             self.pathfinder.load_nav_mesh(navmesh_path)
@@ -640,7 +625,7 @@ class RearrangeSim(HabitatSim):
             pos, self._largest_indoor_island_idx
         )
 
-        max_iter = 10
+        max_iter = 100 # 10
         offset_distance = 1.5
         distance_per_iter = 0.5
         num_sample_points = 1000
@@ -732,7 +717,11 @@ class RearrangeSim(HabitatSim):
             self._receptacles = self._create_recep_info(
                 ep_info.scene_id, list(self._handle_to_object_id.keys())
             )
-
+            if 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d':
+                receps = self.set_receptacle_in_scene(ep_info)
+                self._receptacles_cache[ep_info.scene_id] = receps
+                self._receptacles = receps
+    
             ao_mgr = self.get_articulated_object_manager()
             # Make all articulated objects (including the robots) kinematic
             for aoi_handle in ao_mgr.get_object_handles():
@@ -1139,3 +1128,88 @@ class RearrangeSim(HabitatSim):
         self._extra_runtime_perf_stats = defaultdict(float)
 
         return stats_dict
+
+    def set_receptacle_in_scene(self, ep_info):
+        rom = self.get_rigid_object_manager()
+        otm = self.get_object_template_manager()
+        assert ep_info.target_receptacles is not None and ep_info.goal_receptacles is not None
+        receptacles, target_receptacles, goal_receptacles = [], [], []
+        info = {}
+        for i, (tar_recep_handle, tar_tranform, tar_translation) in enumerate(ep_info.target_receptacles):
+            if tar_recep_handle.endswith('_:0000'):
+                tar_recep_name = tar_recep_handle[:-6]
+            tar_template = otm.get_templates_by_handle_substring(
+                tar_recep_name
+            )
+            if not tar_template:
+                raise ValueError(
+                    f"Template not found for object with handle {tar_recep_handle}"
+                )
+            tar_path = list(tar_template.keys())[0]
+            target_receptacle = rom.add_object_by_template_handle(
+                tar_path
+            )
+            target_receptacle.transformation = mn.Matrix4(
+                [[tar_tranform[j][i] for j in range(4)] for i in range(4)]
+            )
+            target_receptacle.translation = tar_translation
+            user_attr = target_receptacle.user_attributes
+            
+            info["translation"] = np.array(tar_translation)
+            target_receptacles.extend(
+                parse_receptacles_from_user_config(
+                    user_attr,
+                    parent_object_handle=tar_recep_handle,
+                    parent_template_directory=tar_path,
+                    mp3d=True,
+                    info=info
+                )
+            )
+        receptacles.extend(target_receptacles)
+        for i, (goal_recep_handle, goal_transform, goal_translation) in enumerate(ep_info.goal_receptacles):
+            if goal_recep_handle.endswith('_:0000'):
+                goal_recep_name = goal_recep_handle[:-6]
+            goal_template = otm.get_templates_by_handle_substring(
+                goal_recep_name
+            )
+            if not goal_template:
+                raise ValueError(
+                    f"Template not found for object with handle {goal_recep_handle}"
+                )
+            goal_path = list(goal_template.keys())[0]
+            goal_receptacle = rom.add_object_by_template_handle(
+                goal_path
+            )
+            goal_receptacle.transformation = mn.Matrix4(
+                [[goal_transform[j][i] for j in range(4)] for i in range(4)]
+            )
+            goal_receptacle.translation = goal_translation
+            user_attr = goal_receptacle.user_attributes
+            info["translation"] = np.array(goal_translation)
+            goal_receptacles.extend(
+                parse_receptacles_from_user_config(
+                    user_attr,
+                    parent_object_handle=goal_recep_handle,
+                    parent_template_directory=goal_path,
+                    mp3d=True,
+                    info=info
+                )
+            )
+        receptacles.extend(goal_receptacles)
+
+        receps = {}
+        for recep in receptacles:
+            recep = cast(AABBReceptacle, recep)
+            local_bounds = recep.bounds
+            global_T = recep.get_global_transform(self)
+            bounds = np.stack(
+                [
+                    global_T.transform_point(local_bounds.min),
+                    global_T.transform_point(local_bounds.max),
+                ],
+                axis=0,
+            )
+            receps[recep.unique_name] = mn.Range3D(
+                np.min(bounds, axis=0), np.max(bounds, axis=0)
+            )
+        return receps

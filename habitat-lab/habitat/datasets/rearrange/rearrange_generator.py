@@ -470,6 +470,7 @@ class RearrangeEpisodeGenerator:
 
                 cameras_info = resume['perception']['cameras_info']
                 arm_workspace = resume['manipulation']['arm_workspace']
+                mobility_summary = resume['mobility']['summary']
 
                 # TODO(ZXZ): modify episode generation algorithm
                 if episode_type == 'perception':
@@ -496,6 +497,9 @@ class RearrangeEpisodeGenerator:
                     #     if (pos[1][3] < 0.89043515920639 or
                     #             pos[1][3] > 1.8497142791748):
                     #         new_episode = None
+                elif episode_type == 'mobility':
+                    pass
+
                 else:
                     raise ValueError(f"Unknown type: {episode_type}")
 

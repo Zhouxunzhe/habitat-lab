@@ -414,6 +414,8 @@ class RearrangeTask(NavigationTask):
         return self.n_objs
 
     def get_task_text_context(self) -> dict:
+        if 'dataset' in self._sim.ep_info.info and self._sim.ep_info.info['dataset'] == 'mp3d':
+            return {}
         current_episode_idx = self._sim.ep_info.episode_id
         robot_config = self._robot_config[current_episode_idx]["agents"]
         return get_text_context(self._sim, robot_config)
