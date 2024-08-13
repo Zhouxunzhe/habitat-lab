@@ -60,11 +60,14 @@ class HierarchicalPolicy(nn.Module, Policy):
         # Can map multiple skills to the same underlying skill controller.
         self._skill_redirects: Dict[int, int] = {}
 
-        if "rearrange_stop" not in orig_action_space.spaces:
+        if "rearrange_stop" not in orig_action_space.spaces and "stop" not in orig_action_space.spaces:
             raise ValueError("Hierarchical policy requires the stop action")
-        self._stop_action_idx, _ = find_action_range(
-            orig_action_space, "rearrange_stop"
-        )
+        if "rearrange_stop" in orig_action_space.spaces:
+            self._stop_action_idx, _ = find_action_range(
+                orig_action_space, "rearrange_stop"
+            )
+        else:
+            self._stop_action_idx, _ = find_action_range(orig_action_space, "stop")
 
         self._pddl = self._create_pddl(full_config, config)
         self._create_skills(

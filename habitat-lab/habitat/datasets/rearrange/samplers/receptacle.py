@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import corrade as cr
 import magnum as mn
+from sympy import false
 import numpy as np
 
 import habitat_sim
@@ -584,6 +585,8 @@ def parse_receptacles_from_user_config(
     parent_template_directory: str = "",
     valid_link_names: Optional[List[str]] = None,
     ao_uniform_scaling: float = 1.0,
+    mp3d: bool = False,
+    info: Optional[Dict[str, Any]] = None,
 ) -> List[Union[Receptacle, AABBReceptacle, TriangleMeshReceptacle]]:
     """
     Parse receptacle metadata from the provided user subconfig object.
@@ -657,6 +660,8 @@ def parse_receptacles_from_user_config(
             receptacle_position = ao_uniform_scaling * sub_config.get(
                 "position"
             )
+            if mp3d:
+                receptacle_position = ao_uniform_scaling * info["translation"]
             receptacle_scale = ao_uniform_scaling * sub_config.get("scale")
 
             if aabb_receptacle_id_string in sub_config_key:

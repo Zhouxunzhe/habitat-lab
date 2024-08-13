@@ -497,6 +497,13 @@ class SelectBaseOrArmActionConfig(ActionConfig):
     type: str = "SelectBaseOrArmAction"
 
 
+@dataclass
+class GrabOrReleaseActionConfig(ActionConfig):
+    type: str = "GrabOrReleaseAction"
+    crosshair_pos: Optional[List[int]] = field(default_factory=lambda: [128, 128])
+    grab_distance: float = 2.0
+    visual_sensor: str = "rgb"
+
 # -----------------------------------------------------------------------------
 # # EQA actions
 # -----------------------------------------------------------------------------
@@ -790,6 +797,22 @@ class DetectedObjectsSensorConfig(LabSensorConfig):
     type: str = "DetectedObjectsSensor"
     pixel_threshold: int = 10
     
+@dataclass
+class GrippedObjectSensorConfig(LabSensorConfig):
+    type: str = "GrippedObjectSensor"
+
+@dataclass
+class ObjectPositionConfig(LabSensorConfig):
+    type: str = "ObjectPosition"
+    goal_format: str = "POLAR"
+    dimensionality: int = 2
+
+@dataclass
+class ObjectGoalConfig(LabSensorConfig):
+    type: str = "ObjectGoal"
+    goal_format: str = "POLAR"
+    dimensionality: int = 2
+
 @dataclass
 class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     type: str = "ArmWorkspaceRGBSensor"
@@ -2258,6 +2281,12 @@ cs.store(
     node=OracleNavActionConfig,
 )
 cs.store(
+    package="habitat.task.actions.grab_release",
+    group="habitat/task/actions",
+    name="grab_release",
+    node=GrabOrReleaseActionConfig,
+)
+cs.store(
     package="habitat.task.actions.pddl_apply_action",
     group="habitat/task/actions",
     name="pddl_apply_action",
@@ -2604,6 +2633,24 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="detected_objects_sensor",
     node=DetectedObjectsSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.gripped_object_id",
+    group="habitat/task/lab_sensors",
+    name="gripped_object_id",
+    node=GrippedObjectSensorConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.object_position",
+    group="habitat/task/lab_sensors",
+    name="object_position",
+    node=ObjectPositionConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.object_goal",
+    group="habitat/task/lab_sensors",
+    name="object_goal",
+    node=ObjectGoalConfig
 )
 cs.store(
     package="habitat.task.lab_sensors.arm_workspace_rgb_sensor",
