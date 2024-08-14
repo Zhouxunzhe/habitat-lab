@@ -25,7 +25,7 @@ class ResetArmSkill(SkillPolicy):
             [float(x) for x in config.reset_joint_state]
         )
 
-        self._arm_ac_range = find_action_range(action_space, "arm_action")
+        self._arm_ac_range = find_action_range(action_space, "arm_pick_action")
         self._arm_ac_range = (self._arm_ac_range[0], self._rest_state.shape[0])
 
     def on_enter(

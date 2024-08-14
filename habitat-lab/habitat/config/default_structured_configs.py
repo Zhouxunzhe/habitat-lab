@@ -298,19 +298,43 @@ class ArmActionConfig(ActionConfig):
     auto_grasp: bool = False
 
 @dataclass
-class OracleArmActionConfig(ArmActionConfig):
+class ArmPickActionConfig(ArmActionConfig):
+    type: str = "ArmPickAction"
+    arm_controller: str = "OraclePickAction"
+    grip_controller: str = "SuctionGraspAction"
+
+@dataclass
+class ArmPlaceActionConfig(ArmActionConfig):
+    type: str = "ArmPlaceAction"
+    arm_controller: str = "OraclePlaceAction"
+    grip_controller: str = "SuctionGraspAction"
+
+@dataclass
+class OraclePickActionConfig(ArmActionConfig):
     r"""
     In Rearrangement tasks only, the action that will move the robot arm around. The action represents to delta angle (in radians) of each joint.
     Use pybullet IK planner to control the arm action.
     """
-    type: str = "ArmAction"
+    type: str = "ArmPickAction"
     arm_controller: str = "OraclePickAction"
     grip_controller: str = "SuctionGraspAction"
     grasp_thresh_dist: float = 0.0
     render_ee_target: bool = True
 
 @dataclass
-class StretchOracleArmActionConfig(ArmActionConfig):
+class OraclePlaceActionConfig(ArmActionConfig):
+    r"""
+    In Rearrangement tasks only, the action that will move the robot arm around. The action represents to delta angle (in radians) of each joint.
+    Use pybullet IK planner to control the arm action.
+    """
+    type: str = "ArmPlaceAction"
+    arm_controller: str = "OraclePlaceAction"
+    grip_controller: str = "SuctionGraspAction"
+    grasp_thresh_dist: float = 0.0
+    render_ee_target: bool = True
+
+@dataclass
+class StretchOraclePickActionConfig(ArmActionConfig):
     r"""
     In Rearrangement tasks only, the action that will move the robot arm around. The action represents to delta angle (in radians) of each joint.
     Use pybullet IK planner to control the arm action.
@@ -361,7 +385,7 @@ class BaseVelocityNonCylinderActionConfig(ActionConfig):
     # is more than collision_threshold for any point.
     collision_threshold: float = 1e-5
     # The x and y locations of the clamped NavMesh position
-    navmesh_offset: Optional[List[List[float]]] = None
+    navmesh_offset: Optional[List[List[float]]] = field(default_factory=lambda:[[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]])
     # If we allow the robot to move laterally.
     enable_lateral_move: bool = False
     # If the condition of sliding includes the checking of rotation
@@ -459,7 +483,7 @@ class OracleNavActionConfig(ActionConfig):
     # is more than collision_threshold for any point.
     collision_threshold: float = 1e-5
     # The x and y locations of the clamped NavMesh position
-    navmesh_offset: Optional[List[List[float]]] = None
+    navmesh_offset: Optional[List[List[float]]] = field(default_factory=lambda:[[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]])
     # If we allow the robot to move laterally.
     enable_lateral_move: bool = False
     # If the condition of sliding includs the checking of rotation
@@ -2222,14 +2246,32 @@ cs.store(
 cs.store(
     package="habitat.task.actions.arm_action",
     group="habitat/task/actions",
-    name="oracle_arm_action",
-    node=OracleArmActionConfig,
+    name="arm_pick_action",
+    node=ArmPickActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.arm_action",
+    group="habitat/task/actions",
+    name="arm_place_action",
+    node=ArmPlaceActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.arm_action",
+    group="habitat/task/actions",
+    name="arm_pick_action",
+    node=OraclePickActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.arm_action",
+    group="habitat/task/actions",
+    name="arm_place_action",
+    node=OraclePlaceActionConfig,
 )
 cs.store(
     package="habitat.task.actions.arm_action",
     group="habitat/task/actions",
     name="stretch_oracle_arm_action",
-    node=StretchOracleArmActionConfig,
+    node=StretchOraclePickActionConfig,
 )
 
 cs.store(
