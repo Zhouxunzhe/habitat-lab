@@ -54,7 +54,7 @@ class OraclePickPolicy(NnSkillPolicy):
             batch_size,
         )
 
-        action_name = "arm_action"
+        action_name = "arm_pick_action"
         self._pick_ac_idx, _ = find_action_range(action_space, action_name)
 
     def set_pddl_problem(self, pddl_prob): 
@@ -183,14 +183,96 @@ class OraclePickPolicy(NnSkillPolicy):
         )
     
     def _get_coord_for_idx(self, object_target_idx):
-        pick_obj_entity = self._entities[object_target_idx]
+        obj_entity = self._entities[object_target_idx]
         obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
-            pick_obj_entity
+            obj_entity
         )
         return obj_pos
     
 
 class OraclePlacePolicy(OraclePickPolicy):
+    """
+    Skill to generate a placing motion. Moves the arm next to an object,
+    """
+    @dataclass
+    class OraclePlaceActionArgs:
+        """
+        :property action_idx: The index of the oracle action we want to execute
+        :property grab_release: Whether we want to grab (1) or drop an object (0)
+        """
+        action_idx: int
+        grab_release: int
+
+    def __init__(
+        self,
+        wrap_policy,
+        config,
+        action_space,
+        filtered_obs_space,
+        filtered_action_space,
+        batch_size,
+        pddl_domain_path,
+        pddl_task_path,
+        task_config,
+    ):
+        super().__init__(
+            wrap_policy,
+            config,
+            action_space,
+            filtered_obs_space,
+            filtered_action_space,
+            batch_size,
+            pddl_domain_path,
+            pddl_task_path,
+            task_config,
+        )
+
+        action_name = "arm_place_action"
+        self._place_ac_idx, _ = find_action_range(action_space, action_name)
+
+    def on_enter(
+        self,
+        skill_arg,
+        batch_idx,
+        observations,
+        rnn_hidden_states,
+        prev_actions,
+        skill_name,
+    ):
+        self._is_target_obj = None
+        self._targ_obj_idx = None
+        self._prev_angle = {}
+
+        ret = NnSkillPolicy.on_enter(
+            self,
+            skill_arg,
+            batch_idx,
+            observations,
+            rnn_hidden_states,
+            prev_actions,
+            skill_name,
+        )
+        self._was_running_on_prev_step = False
+        return ret
+
+    def _is_skill_done(
+        self,
+        observations,
+        rnn_hidden_states,
+        prev_actions,
+        masks,
+        batch_idx,
+    ) -> torch.BoolTensor:
+        # Is the agent holding the object and is the end-effector at the
+        # resting position?
+        # rel_resting_pos = torch.linalg.vector_norm(
+        #     observations[RelativeRestingPositionSensor.cls_uuid], dim=-1
+        # )
+        # is_within_thresh = rel_resting_pos < self._config.at_resting_threshold
+        is_holding = observations[IsHoldingSensor.cls_uuid].view(-1)
+        return torch.tensor([0.], device='cuda:0').type(torch.bool)
+        return is_holding.type(torch.bool)
+
     def _parse_skill_arg(self, skill_name: str, skill_arg):
         if len(skill_arg) == 2:
             search_target, _ = skill_arg
@@ -208,6 +290,29 @@ class OraclePlacePolicy(OraclePickPolicy):
             )
         match_i = self._all_entities.index(target)
 
-        return OraclePickPolicy.OraclePickActionArgs(
-            match_i, self.RELEASE_ID
+        # Since the recep_idx might be 0, we encode the id by plus 1
+        return OraclePlacePolicy.OraclePlaceActionArgs(
+            match_i+1, self.RELEASE_ID
+        )
+
+    def _internal_act(
+        self,
+        observations,
+        rnn_hidden_states,
+        prev_actions,
+        masks,
+        cur_batch_idx,
+        deterministic=False,
+    ):
+        full_action = torch.zeros(
+            (masks.shape[0], self._full_ac_size), device=masks.device
+        )
+        action_idxs = torch.FloatTensor(
+            [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
+        )
+
+        full_action[:, self._place_ac_idx] = action_idxs
+
+        return PolicyActionData(
+            actions=full_action, rnn_hidden_states=rnn_hidden_states
         )
