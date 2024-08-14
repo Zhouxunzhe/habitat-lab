@@ -849,6 +849,17 @@ class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     depth_sensor_name: str = "head_depth"
 
 @dataclass
+class NavWorkspaceRGBSensorConfig(LabSensorConfig):
+    uuid: str = "nav_workspace_rgb"
+    type: str = "NavWorkspaceRGBSensor"
+    agent_idx: int = 0
+    pixel_threshold: int = 10
+    height: int = 480
+    width: int = 640
+    rgb_sensor_name: str = "head_rgb"
+    depth_sensor_name: str = "head_depth"
+
+@dataclass
 class ArmWorkspaceRGBArmSensorConfig(LabSensorConfig):
     uuid: str = "arm_workspace_rgb_arm"
     type: str = "ArmWorkspaceRGBArmSensor"
@@ -2717,6 +2728,12 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="arm_workspace_rgb_sensor",
     node=ArmWorkspaceRGBSensorConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.nav_workspace_rgb_sensor",
+    group="habitat/task/lab_sensors",
+    name="nav_workspace_rgb_sensor",
+    node=NavWorkspaceRGBSensorConfig
 )
 cs.store(
     package="habitat.task.lab_sensors.arm_workspace_rgb_arm_sensor",
