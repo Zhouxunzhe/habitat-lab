@@ -1635,7 +1635,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         colors = []
         ik_helper = self._sim.get_agent_data(self.agent_id).ik_helper
         for point in down_sampled_points_xyz:
-            cur_ee_pos = self._sim.articulated_agent.ee_transform().translation
+            cur_ee_pos = self._sim.get_agent_data(self.agent_id).articulated_agent.ee_transform().translation
             reachable = ik_helper.is_reachable(cur_ee_pos, point, self.ctrl_lim)
             # Green if reachable, red if not
             colors.append([0, 255, 0] if reachable else [255, 0, 0])
@@ -1737,7 +1737,7 @@ class ArmWorkspaceRGBArmSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterf
         colors = []
         ik_helper = self._sim.get_agent_data(self.agent_id).ik_helper
         for point in down_sampled_points_xyz:
-            cur_ee_pos = self._sim.articulated_agent.ee_transform().translation
+            cur_ee_pos = self._sim.get_agent_data(self.agent_id).articulated_agent.ee_transform().translation
             reachable = ik_helper.is_reachable(cur_ee_pos, point, self.ctrl_lim)
             # Green if reachable, red if not
             colors.append([0, 255, 0] if reachable else [255, 0, 0])
