@@ -6,6 +6,5 @@ defaults:
 
 type: RearrangeDataset-v0
 split: eval
-#data_path: data/datasets/single_agent_eval.json.gz
-data_path: data/datasets/single_agent_success.json.gz
+data_path: data/datasets/replica_cad/two_agent_perception_eval.json.gz
 scenes_dir: "data/scene_datasets/hssd-hab"
