@@ -6,8 +6,10 @@ defaults:
 
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: SpotRobot_default
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: DJIDrone_default
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_2: FetchRobot_default
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_3: StretchRobot_default
 
-  - /habitat/dataset/rearrangement: zxz_perception
+  - /habitat/dataset/embodied_mas: manipulation
 
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_action: oracle_arm_action
   - /habitat/task/actions@habitat.task.actions.agent_0_base_velocity: base_velocity_non_cylinder
@@ -20,7 +22,17 @@ defaults:
   - /habitat/task/actions@habitat.task.actions.agent_1_pddl_apply_action: pddl_apply_action
   - /habitat/task/actions@habitat.task.actions.agent_1_oracle_nav_action: drone_oracle_nav_action
 
+  - /habitat/task/actions@habitat.task.actions.agent_2_arm_action: oracle_arm_action
+  - /habitat/task/actions@habitat.task.actions.agent_2_base_velocity: base_velocity_non_cylinder
+  - /habitat/task/actions@habitat.task.actions.agent_2_rearrange_stop: rearrange_stop
+  - /habitat/task/actions@habitat.task.actions.agent_2_pddl_apply_action: pddl_apply_action
+  - /habitat/task/actions@habitat.task.actions.agent_2_oracle_nav_action: fetch_oracle_nav_action
 
+  - /habitat/task/actions@habitat.task.actions.agent_3_arm_action: oracle_arm_action
+  - /habitat/task/actions@habitat.task.actions.agent_3_base_velocity: base_velocity_non_cylinder
+  - /habitat/task/actions@habitat.task.actions.agent_3_rearrange_stop: rearrange_stop
+  - /habitat/task/actions@habitat.task.actions.agent_3_pddl_apply_action: pddl_apply_action
+  - /habitat/task/actions@habitat.task.actions.agent_3_oracle_nav_action: stretch_oracle_nav_action
 
   - /habitat/task/measurements:
     - pddl_success
@@ -40,10 +52,12 @@ defaults:
     - target_start_gps_compass_sensor
     - target_goal_gps_compass_sensor
     - localization_sensor
-    - other_agent_gps
+    #- other_agent_gps
     - detected_objects_sensor
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
+  - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_2_agents_within_threshold: agents_within_threshold
+  - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_3_agents_within_threshold: agents_within_threshold
   - _self_
 
 habitat:
@@ -57,6 +71,14 @@ habitat:
         x_len: 2.0
         y_len: 1.5
         agent_idx: 1
+      agent_2_agents_within_threshold:
+        x_len: 2.0
+        y_len: 1.5
+        agent_idx: 2
+      agent_3_agents_within_threshold:
+        x_len: 2.0
+        y_len: 1.5
+        agent_idx: 3
     type: RearrangePddlTask-v0
     reward_measure: rearrange_cooperate_reward
     success_measure: pddl_success
@@ -74,39 +96,8 @@ habitat:
         end_on_collide: True
         collide_penalty: 0.5
     task_spec_base_path: benchmark/multi_agent/
-    task_spec: pddl/zxz_tworobot_oneobj_perception
+    task_spec: pddl/multi_agent_man
     pddl_domain_def: fp
-    actions:
-      agent_0_base_velocity:
-        lin_speed: 40.0
-        ang_speed: 20.0
-
-      agent_0_oracle_nav_action:
-        type: OracleNavAction
-        motion_control: base_velocity_non_cylinder
-        lin_speed: 10.0
-        ang_speed: 10.0
-        spawn_max_dist_to_obj: -1.0
-        # For noncylinder navmesh action
-        # If we allow the agent to do sliding
-        allow_dyn_slide: True
-        # navmesh_offset: [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
-        navmesh_offset: []
-        # If we allow the robot to move laterally
-        enable_lateral_move: False
-        # There is a collision if the difference between the clamped NavMesh position and target position
-        # is more than collision_threshold for any point.
-        collision_threshold: 0.1
-        dist_thresh: 0.3
-        turn_thresh: 0.5
-
-      agent_1_base_velocity:
-        type: DroneBaseVelAction
-        lin_speed: 10.0
-        ang_speed: 10.0
-        allow_dyn_slide: True
-        allow_back: True
-
     robot_at_thresh: 3.0
 
   environment:
@@ -123,6 +114,8 @@ habitat:
     agents_order:
       - agent_0
       - agent_1
+      - agent_2
+      - agent_3
 
     kinematic_mode: True
     ac_freq_ratio: 1
@@ -134,9 +127,13 @@ habitat:
     agents:
       agent_0:
         joint_start_noise: 0.0
+      agent_2:
+        joint_start_noise: 0.0
+      agent_3:
+        joint_start_noise: 0.0
   dataset:
-    data_path: data/datasets/perception/perception_eval.json.gz
+    data_path: data/datasets/replica_cad/multi_agent_eval.json.gz
     # new
-    randomize_agent_start: 0
-    robot_config: data/robots/json/perception.json
-    mode: perception
+    randomize_agent_start: 1
+    robot_config: data/robots/json/manipulation.json
+    mode: manipulation
