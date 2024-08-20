@@ -24,6 +24,9 @@ from habitat.tasks.rearrange.actions.oracle_nav_action import (
     OracleNavCoordinateAction
 )
 
+DEBUG_SAVE_NAVMESH = False
+DEBUG_SAVE_PATHFINDER_MAP = False
+
 @registry.register_task_action
 class OracleNavDiffBaseAction(OracleNavAction):
     """
@@ -97,7 +100,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         ), "failed to recompute navmesh"
         
         # DEBUG: save recomputed navmesh
-        if False:
+        if DEBUG_SAVE_NAVMESH:
             from habitat_mas.perception.nav_mesh import NavMesh
             import open3d as o3d
             
@@ -313,7 +316,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         robot_pos = np.array(self.cur_articulated_agent.base_pos)
 
         # DEBUG: plot the map and path
-        if True:
+        if DEBUG_SAVE_PATHFINDER_MAP:
             sim_map = self._plot_map_and_path(kwargs, self._sim.pathfinder, save_name="sim")
             agent_map = self._plot_map_and_path(kwargs, self.pathfinder, save_name="agent")
             
