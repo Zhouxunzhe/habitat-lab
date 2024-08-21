@@ -294,7 +294,7 @@ class MobilityGenerator:
                         target_receptacle
                     )
                 target_position = np.array(
-                    [target_position[0], target_position[1] + 0.5, target_position[2]])
+                    [target_position[0], target_position[1] + 0.2, target_position[2]])
                 new_tar_recep.translation = target_position
                 new_tar_recep.rotation = mn.Quaternion.rotation(
                     mn.Rad(random.uniform(0, math.pi * 2.0)), mn.Vector3.y_axis()
@@ -344,7 +344,7 @@ class MobilityGenerator:
                         goal_receptacle
                     )
                 goal_position = np.array(
-                    [goal_position[0], goal_position[1] + 0.5, goal_position[2]])
+                    [goal_position[0], goal_position[1] + 0.2, goal_position[2]])
                 new_goal_recep.translation = goal_position
                 new_goal_recep.rotation = mn.Quaternion.rotation(
                     mn.Rad(random.uniform(0, math.pi * 2.0)), mn.Vector3.y_axis()
