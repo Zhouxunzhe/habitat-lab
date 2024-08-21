@@ -40,13 +40,11 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
         self._prev_ep_id = None
         # Agent not initialized 
         # self._init_cord = self.cur_articulated_agent.ee_transform().translation
-        self._init_cord = np.array([0.0, 0.0, 0.0])
         self._hand_pose_iter = 0
+        self.is_reset = False
 
     def reset(self, *args, **kwargs):
         super().reset()
-        self.set_desired_ee_pos(self._init_cord)
-        
 
     @property
     def action_space(self):
@@ -155,26 +153,27 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
             self.cur_articulated_agent.fix_joint_values = des_joint_pos
 
     def step(self, pick_action, **kwargs):
-        
         object_pick_pddl_idx = pick_action[0]
         should_pick = pick_action[1]
 
-        if object_pick_pddl_idx <= 0 or object_pick_pddl_idx > len(self._entities):
+        if object_pick_pddl_idx > len(self._entities):
             return self.ee_target
 
-        object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
-        cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
-        # TODO(zxz): modify translation matrix
-        translation = object_coord - cur_ee_pos
+        if should_pick == 1:
+            # or self.cur_grasp_mgr.snap_idx is None
+            object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
+            cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
+            # TODO(zxz): 使用ee_transform获得的ee_pos与arm_joint_pos使用calc_fk计算的ee_pos不一样
+            if not self.is_reset:
+                self.ee_target = self._ik_helper.calc_fk(self.cur_articulated_agent.arm_joint_pos)
+                self.is_reset = True
+            translation = object_coord - cur_ee_pos
 
-        # translation from object to end effector in base frame
-        translation_base = self.cur_articulated_agent.base_transformation.inverted().transform_vector(translation)
-
-
-        should_rest = False
-        # if self.hand_state == HandState.APPROACHING:  # Approaching
-        # Only move the hand to object if has to drop or object is not grabbed
-        if should_pick == 0 or self.cur_grasp_mgr.snap_idx is None:
+            # translation from object to end effector in base frame
+            translation_base = self.cur_articulated_agent.base_transformation.inverted().transform_vector(translation)
+            should_rest = False
+            # if self.hand_state == HandState.APPROACHING:  # Approaching
+            # Only move the hand to object if has to drop or object is not grabbed
             translation_base = np.clip(translation_base, -1, 1)
             self._ee_ctrl_lim = 0.03
             translation_base *= self._ee_ctrl_lim
@@ -192,11 +191,14 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
             # TODO: should we add retracting action here?
 
             # Grasp & Ungrasp when we are close to the target
-            if np.linalg.norm(translation_base) < self._config.grasp_thresh_dist:
-                self.cur_grasp_mgr.snap_to_obj(
-                    self.get_scene_index_obj(object_pick_pddl_idx),
-                )
-                return self.ee_target
+            # if np.linalg.norm(translation_base) < self._config.grasp_thresh_dist:
+            #     self.cur_grasp_mgr.snap_to_obj(
+            #         self.get_scene_index_obj(object_pick_pddl_idx),
+            #     )
+            #     return self.ee_target
+        else:
+            self.is_reset = False
+
         return self.ee_target
 
 
@@ -213,6 +215,7 @@ class OraclePlaceAction(OraclePickAction):
         self._task = task
         self._entities = self._task.pddl_problem.get_ordered_entities_list()
         self._prev_ep_id = None
+        self.is_reset = False
 
     def reset(self, *args, **kwargs):
         ArmEEAction.reset(self, *args, **kwargs)
@@ -231,24 +234,25 @@ class OraclePlaceAction(OraclePickAction):
         recep_place_pddl_idx = place_action[0]
         should_place = place_action[1]
 
-        if recep_place_pddl_idx <= 0 or recep_place_pddl_idx-1 > len(self._entities):
+        if recep_place_pddl_idx-1 > len(self._entities):
             return self.ee_target
-        # decode the recep_idx by minus 1
-        recep_place_pddl_idx -= 1
 
-        # get recep coordinates
-        recep_coord = self._get_coord_for_pddl_idx(recep_place_pddl_idx)
-        cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
-        # TODO(zxz): modify translation matrix
-        translation = recep_coord - cur_ee_pos
+        if should_place == 2:
+            # get recep coordinates
+            recep_coord = self._get_coord_for_pddl_idx(recep_place_pddl_idx)
+            cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
+            if not self.is_reset:
+                self.ee_target = self._ik_helper.calc_fk(self.cur_articulated_agent.arm_joint_pos)
+                self.is_reset = True
+            translation = recep_coord - cur_ee_pos
 
-        # translation from object to end effector in base frame
-        translation_base = self.cur_articulated_agent.base_transformation.inverted().transform_vector(translation)
+            # translation from object to end effector in base frame
+            translation_base = self.cur_articulated_agent.base_transformation.inverted().transform_vector(translation)
 
-        should_rest = False
-        # if self.hand_state == HandState.APPROACHING:  # Approaching
-        # Only move the hand to object if has to drop or object is not grabbed
-        if should_place == 0 or self.cur_grasp_mgr.snap_idx is None:
+            should_rest = False
+            # if self.hand_state == HandState.APPROACHING:  # Approaching
+            # Only move the hand to object if has to drop or object is not grabbed
+            # or self.cur_grasp_mgr.snap_idx is None
             translation_base = np.clip(translation_base, -1, 1)
             self._ee_ctrl_lim = 0.03
             translation_base *= self._ee_ctrl_lim
@@ -264,10 +268,11 @@ class OraclePlaceAction(OraclePickAction):
                 )
 
             # Grasp & Ungrasp when we are close to the target
-            if np.linalg.norm(translation_base) < self._config.grasp_thresh_dist:
-                self.cur_grasp_mgr.desnap()
+            # if np.linalg.norm(translation_base) < self._config.grasp_thresh_dist:
+            #     self.cur_grasp_mgr.desnap()
+        else:
+            self.is_reset = False
 
-        self.reset()
         return self.ee_target
 
 
@@ -322,7 +327,6 @@ class StretchOraclePickAction(ArmRelPosKinematicReducedActionStretch, OraclePick
         
         # translation from object to end effector in base frame
         translation_base = self.cur_articulated_agent.base_transformation.inverted().transform_vector(translation)
-
 
         should_rest = False
         # if self.hand_state == HandState.APPROACHING:  # Approaching
