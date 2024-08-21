@@ -334,6 +334,18 @@ class OraclePlaceActionConfig(ArmActionConfig):
     render_ee_target: bool = True
 
 @dataclass
+class ResetArmActionConfig(ArmActionConfig):
+    r"""
+    In Rearrangement tasks only, the action that will move the robot arm around. The action represents to delta angle (in radians) of each joint.
+    Use pybullet IK planner to control the arm action.
+    """
+    type: str = "ResetArmAction"
+    arm_controller: str = "OracleResetArmAction"
+    grip_controller: str = "SuctionGraspAction"
+    grasp_thresh_dist: float = 0.0
+    render_ee_target: bool = True
+
+@dataclass
 class StretchOraclePickActionConfig(ArmActionConfig):
     r"""
     In Rearrangement tasks only, the action that will move the robot arm around. The action represents to delta angle (in radians) of each joint.
@@ -2263,8 +2275,14 @@ cs.store(
 cs.store(
     package="habitat.task.actions.arm_action",
     group="habitat/task/actions",
+    name="arm_reset_action",
+    node=ResetArmActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.arm_action",
+    group="habitat/task/actions",
     name="arm_place_action",
-    node=ArmPlaceActionConfig,
+    node=OraclePlaceActionConfig,
 )
 cs.store(
     package="habitat.task.actions.arm_action",

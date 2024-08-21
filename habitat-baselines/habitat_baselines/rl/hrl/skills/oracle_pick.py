@@ -23,6 +23,7 @@ class OraclePickPolicy(NnSkillPolicy):
 
     GRAB_ID = 1
     RELEASE_ID = 0
+    PICK_ID = 1
 
     @dataclass
     class OraclePickActionArgs:
@@ -55,7 +56,7 @@ class OraclePickPolicy(NnSkillPolicy):
         )
 
         action_name = "arm_pick_action"
-        self._pick_ac_idx, _ = find_action_range(action_space, action_name)
+        self._pick_srt_idx, self._pick_end_idx = find_action_range(action_space, action_name)
 
     def set_pddl_problem(self, pddl_prob): 
         super().set_pddl_problem(pddl_prob)
@@ -176,7 +177,7 @@ class OraclePickPolicy(NnSkillPolicy):
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
 
-        full_action[:, self._pick_ac_idx] = action_idxs
+        full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor([action_idxs, self.PICK_ID])
 
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
@@ -194,6 +195,8 @@ class OraclePlacePolicy(OraclePickPolicy):
     """
     Skill to generate a placing motion. Moves the arm next to an object,
     """
+
+    PLACE_ID = 2
     @dataclass
     class OraclePlaceActionArgs:
         """
@@ -228,7 +231,7 @@ class OraclePlacePolicy(OraclePickPolicy):
         )
 
         action_name = "arm_place_action"
-        self._place_ac_idx, _ = find_action_range(action_space, action_name)
+        self._place_srt_idx, self._place_end_idx = find_action_range(action_space, action_name)
 
     def on_enter(
         self,
@@ -292,7 +295,7 @@ class OraclePlacePolicy(OraclePickPolicy):
 
         # Since the recep_idx might be 0, we encode the id by plus 1
         return OraclePlacePolicy.OraclePlaceActionArgs(
-            match_i+1, self.RELEASE_ID
+            match_i, self.RELEASE_ID
         )
 
     def _internal_act(
@@ -311,7 +314,7 @@ class OraclePlacePolicy(OraclePickPolicy):
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
 
-        full_action[:, self._place_ac_idx] = action_idxs
+        full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor([action_idxs, self.PLACE_ID])
 
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states

@@ -243,6 +243,35 @@ class ArmPlaceAction(ArmAction):
                 self.grip_ctrlr.step(grip_action)
             return self.ee_target
 
+@registry.register_task_action
+class ResetArmAction(ArmAction):
+    """An arm control and grip control into one action space."""
+
+    def __init__(self, *args, config, sim: RearrangeSim, **kwargs):
+        super().__init__(*args, config=config, sim=sim, **kwargs)
+
+    @property
+    def action_space(self):
+        action_spaces = {
+            self._action_arg_prefix
+            + "arm_reset_action": self.arm_ctrlr.action_space,
+        }
+        return spaces.Dict(action_spaces)
+
+    def step(self, *args, **kwargs):
+        arm_action = kwargs[self._action_arg_prefix + "arm_reset_action"]
+
+        # Check if we can apply the arm action given a_selection_of_base_or_arm action.
+        # This is useful if we do not allow base and arm to move at the same time
+        if (
+            "a_selection_of_base_or_arm" in self._task.actions
+            and not self._task.actions["a_selection_of_base_or_arm"].select_arm
+        ):
+            return self.ee_target
+        else:
+            self.ee_target = self.arm_ctrlr.step(arm_action)
+            return self.ee_target
+
 
 @registry.register_task_action
 class ArmRelPosAction(ArticulatedAgentAction):
