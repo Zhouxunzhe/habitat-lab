@@ -80,13 +80,13 @@ habitat-lab
 │           ├── perception.json
 │       ...
 │   ├── datasets
-│       ├── manipulation
-│           ├── manipulation_eval_fetch.json.gz
+│       ├── replica_cad
+│           ├── single_agent_eval.json.gz
 │           ...
-│       ├── perception
-│           ├── perception_eval_drone.json.gz
+│       ├── hssd
+│           ├── hssd_eval.json.gz
 │           ...
-│       ├── mobility
+│       ├── mp3d
 │           ├── mobility_eval.json.gz
 │           ...
 ...
