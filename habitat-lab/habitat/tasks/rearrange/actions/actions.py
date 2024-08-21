@@ -622,10 +622,8 @@ class BaseVelAction(ArticulatedAgentAction):
         self.update_base()
 
     def try_slide_when_colliding(self, lin_vel):
-        self.vel_ctrl(-lin_vel, 0)
         self.vel_ctrl(0, 10.0)
-        self.vel_ctrl(2*lin_vel, 0)
-        self.vel_ctrl(0, -10.0)
+        self.vel_ctrl(lin_vel, 0)
 
 
 @registry.register_task_action
