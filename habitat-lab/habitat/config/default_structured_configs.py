@@ -319,7 +319,14 @@ class BaseVelocityActionConfig(ActionConfig):
     ang_speed: float = 10.0
     allow_dyn_slide: bool = True
     allow_back: bool = True
-
+    animate_leg: bool = True
+    # Leg animation checkpoint file
+    leg_animation_checkpoint: str = (
+        "data/robots/spot_data/spot_walking_trajectory.csv"
+    )
+    # The play step interval of the leg animation
+    play_i_perframe: int = 5
+    use_range: Optional[List[int]] = field(default_factory=lambda: [107, 863])
 
 @dataclass
 class BaseVelocityNonCylinderActionConfig(ActionConfig):
@@ -1985,6 +1992,7 @@ class SimulatorConfig(HabitatBaseConfig):
     
     #TODO(ycc): write to json config
     w2j: bool = False
+    json_path: str = "data/robots/json/test.json"
 
 
 @dataclass
