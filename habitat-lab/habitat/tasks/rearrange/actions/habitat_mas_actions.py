@@ -78,8 +78,9 @@ class OracleNavDiffBaseAction(OracleNavAction):
         pf = habitat_sim.nav.PathFinder()
         # deepcopy does not work since NavMeshSettings is non-pickleable
         # modified_settings = deepcopy(self._sim.pathfinder.nav_mesh_settings)
-        modified_settings = habitat_sim.NavMeshSettings()
-        modified_settings.set_defaults()
+        modified_settings = self._sim.pathfinder.nav_mesh_settings
+        # modified_settings = habitat_sim.NavMeshSettings()
+        # modified_settings.set_defaults()
         # for key in dir(self._sim.pathfinder.nav_mesh_settings):
         #     attr = getattr(self._sim.pathfinder.nav_mesh_settings, key)
         #     if not key.startswith("__") and not callable(attr):
