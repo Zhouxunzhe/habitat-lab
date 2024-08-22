@@ -601,8 +601,8 @@ class BaseVelAction(ArticulatedAgentAction):
         if lin_vel != 0.0 or ang_vel != 0.0:
             self.update_base()
             current_pos = self.cur_articulated_agent.base_pos
-            if lin_vel != 0.0 and np.allclose(prev_pos, current_pos, atol=1e-3):
-                self.try_slide_when_colliding(lin_vel)
+            # if lin_vel != 0.0 and np.allclose(prev_pos, current_pos, atol=1e-3):
+            #     self.try_slide_when_colliding(lin_vel)
 
             if self._animate_leg:
                 cur_i = int(self._play_i % self._play_length_data)
