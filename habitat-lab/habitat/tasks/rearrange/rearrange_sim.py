@@ -445,8 +445,14 @@ class RearrangeSim(HabitatSim):
 
         if episode_id not in data:
             data[episode_id] = {"agents": [agent_info]}
-        else:
+        elif not any(d["agent_idx"] == agent_idx for d in data[episode_id]["agents"]):
             data[episode_id]["agents"].append(agent_info)
+        else:
+            for d in data[episode_id]["agents"]:
+                if d["agent_idx"] == agent_idx:
+                    d["agent_type"] = agent_info["agent_type"]
+                    d["start_pos"] = agent_info["start_pos"]
+                    d["start_rot"] = agent_info["start_rot"]
 
         with open(file_path, "w") as f:
             json.dump(data, f, indent=4)
