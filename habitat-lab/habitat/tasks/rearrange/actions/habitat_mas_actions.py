@@ -78,16 +78,18 @@ class OracleNavDiffBaseAction(OracleNavAction):
         pf = habitat_sim.nav.PathFinder()
         # deepcopy does not work since NavMeshSettings is non-pickleable
         # modified_settings = deepcopy(self._sim.pathfinder.nav_mesh_settings)
-        modified_settings = habitat_sim.NavMeshSettings()
-        for key in dir(self._sim.pathfinder.nav_mesh_settings):
-            attr = getattr(self._sim.pathfinder.nav_mesh_settings, key)
-            if not key.startswith("__") and not callable(attr):
-                setattr(
-                    modified_settings,
-                    key,
-                    attr
-                )
-
+        modified_settings = self._sim.pathfinder.nav_mesh_settings
+        # modified_settings = habitat_sim.NavMeshSettings()
+        # modified_settings.set_defaults()
+        # for key in dir(self._sim.pathfinder.nav_mesh_settings):
+        #     attr = getattr(self._sim.pathfinder.nav_mesh_settings, key)
+        #     if not key.startswith("__") and not callable(attr):
+        #         setattr(
+        #             modified_settings,
+        #             key,
+        #             attr
+        #         )
+                
         modified_settings.agent_radius = config.agent_radius
         modified_settings.agent_height = config.agent_height
         modified_settings.agent_max_climb = config.agent_max_climb
@@ -98,6 +100,10 @@ class OracleNavDiffBaseAction(OracleNavAction):
         assert self._sim.recompute_navmesh(
             pf, modified_settings
         ), "failed to recompute navmesh"
+        
+        # assert self._sim.recompute_navmesh(
+        #     pf, self._sim.pathfinder.nav_mesh_settings
+        # ), "failed to recompute navmesh"
         
         # DEBUG: save recomputed navmesh
         if DEBUG_SAVE_NAVMESH:
@@ -157,7 +163,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         # Colorize the top-down map for visualization
         colorize_topdown_map = maps.colorize_topdown_map(topdown_map)
         # Convert the current path points to 2D coordinates
-        curr_path_points_2d = [((pt[0]), (pt[2])) for pt in curr_path_points]
+        curr_path_points_2d = [((pt[2]), (pt[0])) for pt in curr_path_points]
 
         # Convert the current path points to grid coordinates in the top-down map
         # for i in range(0, len(curr_path_points_2d)):
@@ -166,8 +172,8 @@ class OracleNavDiffBaseAction(OracleNavAction):
         grid_resolution = topdown_map.shape
         for i in range(0, len(curr_path_points_2d)):
             x, y = maps.to_grid(
-                realworld_x=curr_path_points_2d[i][1],
-                realworld_y=curr_path_points_2d[i][0],
+                realworld_x=curr_path_points_2d[i][0],
+                realworld_y=curr_path_points_2d[i][1],
                 grid_resolution=grid_resolution,
                 pathfinder=pathfinder,
             )
@@ -177,12 +183,17 @@ class OracleNavDiffBaseAction(OracleNavAction):
         maps.draw_path(colorize_topdown_map, curr_path_points_2d)
 
         # Get the robot's position and rotation
-        # robot_pos = np.array(self.cur_articulated_agent.base_pos)
+        base_pos = np.array(self.cur_articulated_agent.base_pos)
+        x, y = maps.to_grid(
+            realworld_x=base_pos[2],
+            realworld_y=base_pos[0],
+            grid_resolution=grid_resolution,
+            pathfinder=pathfinder,
+        )
         robot_rot = np.array(self.cur_articulated_agent.base_rot)
-
         # Draw the agent's position and rotation on the top-down map
         maps.draw_agent(image=colorize_topdown_map, agent_center_coord=[x, y], 
-                        agent_rotation=robot_rot, agent_radius_px=20)
+                        agent_rotation=robot_rot, agent_radius_px=30)
 
         return colorize_topdown_map
 
