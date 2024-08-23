@@ -115,10 +115,10 @@ habitat:
         joint_start_noise: 0.0
       
     w2j: False
-    json_path: "data/robots/json/mobility_eval.json"
+    json_path: "data/robots/robot_configs/mp3d/mobility_eval.json"
   dataset:
     data_path: data/datasets/mp3d/mobility_eval.json.gz
     # new
-    randomize_agent_start: 1
-    robot_config: data/robots/robot_config/mp3d/mobility_eval.json
+    randomize_agent_start: 0
+    robot_config: data/robots/robot_configs/mp3d/mobility_eval.json
     mode: mobility
