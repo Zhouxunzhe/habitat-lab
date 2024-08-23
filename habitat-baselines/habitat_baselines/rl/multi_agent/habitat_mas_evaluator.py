@@ -301,11 +301,10 @@ class HabitatMASEvaluator(Evaluator):
                         a.numpy(),
                         env_spec.action_space.low,
                         env_spec.action_space.high,
-                    )# 马勒戈壁的ppo-clip
+                    )
                     for a in action_data.env_actions.cpu()
                 ]
                 # print(f"----------------env_action\n{action_data.env_actions.cpu()}\n-----------------------------")
-                #目前走的是这里
             else:
                 # step_data = [a.item() for a in action_data.env_actions.cpu()]
                 env_actions = action_data.env_actions.cpu()
