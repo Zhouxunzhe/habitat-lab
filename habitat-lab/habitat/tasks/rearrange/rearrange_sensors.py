@@ -1490,7 +1490,8 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
     
         cx = width / 2.0 
         cy = height / 2.0 
-        f = (width / 2.0) / np.tan(hfov / 2.0)
+        # f = (width / 2.0) / np.tan(hfov / 2.0)
+        f = max(width, height) / 2.0 / np.tan(hfov / 2.0)
 
         return {
             "width": width,
@@ -1599,13 +1600,14 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         # Transform 3D points using the camera transformation matrix
         points_3d_hom = np.hstack((points_3d, np.ones((points_3d.shape[0], 1))))
-        cam_trans_inv = np.linalg.inv(np.asarray(cam_trans))
-        points_3d_transformed = cam_trans_inv @ points_3d_hom.T # transform points to camera frame
+        # cam_trans_inv = np.linalg.inv(np.asarray(cam_trans))
+        cam_trans = np.array(cam_trans)
+        points_3d_transformed = cam_trans @ points_3d_hom.T # transform points to camera frame
 
         # Project the transformed 3D points onto the 2D image plane
         x = points_3d_transformed[0, :]
         y = points_3d_transformed[1, :]
-        z = points_3d_transformed[2, :]
+        z = np.abs(points_3d_transformed[2, :])
 
         u = (x * fx / z) + cx
         v = (y * fy / z) + cy
