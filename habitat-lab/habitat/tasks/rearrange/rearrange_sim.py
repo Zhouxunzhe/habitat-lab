@@ -486,12 +486,12 @@ class RearrangeSim(HabitatSim):
             if 'dataset' in self.ep_info.info and self.ep_info.info['dataset'] == 'mp3d':
                 if agent_idx == 0 and not self.navigable_far_to_target(start_pos):
                     continue
-                elif agent_idx == 1:
-                    _, island_idx = get_largest_two_island(self.pathfinder, self)
-                    start_pos = self.pathfinder.get_random_navigable_point(
-                        island_index=island_idx
-                    )
-                    start_pos = self.snap_point_to_island(start_pos, island_idx)
+                # elif agent_idx > 0:
+                #     _, island_idx = get_largest_two_island(self.pathfinder, self)
+                #     start_pos = self.pathfinder.get_random_navigable_point(
+                #         island_index=island_idx
+                #     )
+                #     start_pos = self.snap_point_to_island(start_pos, island_idx)
                 
             if filter_func is not None and not filter_func(
                 start_pos, start_rot
