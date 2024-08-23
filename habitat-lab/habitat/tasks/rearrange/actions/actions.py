@@ -114,6 +114,7 @@ class ArmAction(ArticulatedAgentAction):
         self.arm_ctrlr = arm_controller_cls(
             *args, config=config, sim=sim, **kwargs
         )
+        # self.skill_done = False
 
         if self._config.grip_controller is not None:
             grip_controller_cls = registry.get_task_action(
@@ -134,6 +135,7 @@ class ArmAction(ArticulatedAgentAction):
         self.arm_ctrlr.reset(*args, **kwargs)
         if self.grip_ctrlr is not None:
             self.grip_ctrlr.reset(*args, **kwargs)
+        # self.skill_done = False
 
     @property
     def action_space(self):
@@ -149,7 +151,6 @@ class ArmAction(ArticulatedAgentAction):
 
     def step(self, *args, **kwargs):
         arm_action = kwargs[self._action_arg_prefix + "arm_action"]
-
         # Check if we can apply the arm action given a_selection_of_base_or_arm action.
         # This is useful if we do not allow base and arm to move at the same time
         if (

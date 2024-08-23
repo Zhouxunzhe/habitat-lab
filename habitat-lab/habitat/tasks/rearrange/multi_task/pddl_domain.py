@@ -380,6 +380,12 @@ class PddlDomain:
             receptacles=sim.receptacles,
             recep_place_shrink_factor=self._recep_place_shrink_factor,
         )
+        target_ids={
+                f"TARGET_{id_to_name[idx]}": idx
+                for idx in sim.get_targets()[0]
+            }
+        # print("target_ids:",target_ids)
+        # print("get_targets:",sim.get_targets())
         # Ensure that all objects are accounted for.
         for entity in self.all_entities.values():
             self._sim_info.search_for_entity(entity)

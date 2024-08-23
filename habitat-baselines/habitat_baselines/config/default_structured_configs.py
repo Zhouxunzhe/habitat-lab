@@ -48,10 +48,24 @@ class EvalConfig(HabitatBaselinesBaseConfig):
         # available options are "disk" and "tensorboard"
         default_factory=list
     )
+    video_option_new: bool = False
     image_option: List[str] = field(
         # available options are "disk" and "tensorboard"
         default_factory=list
     )
+    json_option: List[str] = field(
+        # available options are "disk" and "tensorboard"
+        default_factory=list
+    )
+    sample_info: List[str] = field(
+        # available options are "disk" and "tensorboard"
+        default_factory=list
+    )
+    episode_stored: List[str] = field(
+        # available options are "disk" and "tensorboard"
+        default_factory=list
+    )
+    vlm_eval : bool = False
     extra_sim_sensors: Dict[str, SimulatorSensorConfig] = field(
         default_factory=dict
     )
@@ -262,6 +276,7 @@ class HrlDefinedSkillConfig(HabitatBaselinesBaseConfig):
     # Additional skill data to be passed to the skill. Included so extending to
     # new skills doesn't require adding new Hydra dataclass configs.
     skill_data: Dict[str, Any] = field(default_factory=dict)
+    vlm_eval: bool = False
 
 
 @dataclass

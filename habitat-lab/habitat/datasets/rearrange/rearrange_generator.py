@@ -87,6 +87,7 @@ class RearrangeEpisodeGenerator:
         """
         # load and cache the config
         self.cfg = cfg
+        self.episode_id = 0
         self.start_cfg = self.cfg.copy()
         self._limit_scene_set = limit_scene_set
 
@@ -896,11 +897,11 @@ class RearrangeEpisodeGenerator:
             k: v.unique_name
             for k, v in self.object_to_containing_receptacle.items()
         }
-
+        self.episode_id +=1
         return RearrangeEpisode(
             scene_dataset_config=self.cfg.dataset_path,
             additional_obj_config_paths=self.cfg.additional_object_paths,
-            episode_id=str(self.num_ep_generated - 1),
+            episode_id=str(self.episode_id - 1),
             start_position=[0, 0, 0],
             start_rotation=[
                 0,

@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict, Any
 import numpy as np
+import gym
 import json
 from gym import spaces
 from dataclasses import dataclass, field
@@ -11,6 +12,20 @@ from habitat.core.simulator import Sensor, SensorTypes
 from habitat_mas.dataset.defaults import habitat_mas_data_dir
 from habitat_mas.scene_graph.scene_graph_hssd import SceneGraphHSSD
 from habitat_mas.scene_graph.utils import generate_objects_description, generate_agents_description    
+
+class Text(gym.Space):
+    def __init__(self, max_length):
+        super(Text, self).__init__(shape=(max_length,), dtype=np.str_)
+        self.max_length = max_length
+
+    def sample(self):
+        return ''.join(np.random.choice(list('abcdefghijklmnopqrstuvwxyz')) for _ in range(self.max_length))
+
+    def contains(self, x):
+        return isinstance(x, str) and len(x) <= self.max_length
+
+# 将自定义的 Text 空间添加到 gym.spaces
+spaces.Text = Text
 
 @registry.register_sensor
 class HSSDSceneDescriptionSensor(Sensor):

@@ -3,8 +3,8 @@
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
-import os
+import json
+import os,re
 import textwrap
 from typing import Dict, List, Optional, Tuple, Any
 
@@ -214,7 +214,7 @@ def tile_images(render_obs_images: List[np.ndarray]) -> np.ndarray:
 
 
 def observations_to_image(observation: Dict, info: Dict,
-                          config: Any, frame_id: int, episode_id=0) -> np.ndarray:
+                          config: Any, frame_id: int, episode_id=0,stop_step = False) -> np.ndarray:
     r"""Generate image of single frame from observation and info
     returned from a single environment step().
 
@@ -237,38 +237,125 @@ def observations_to_image(observation: Dict, info: Dict,
         robot_names[agent] = (config.habitat.simulator.agents[agent].
                               articulated_agent_type)
     image_option = config.habitat_baselines.eval.image_option
+    json_option = config.habitat_baselines.eval.json_option
     image_filter_list = config.habitat_baselines.eval.get("image_filter_list", ["head_rgb", "arm_workspace_rgb"])
     image_dir = config.habitat_baselines.image_dir
 
+    substrings = ["has_finished_arm_action","obj_pos","target_pos","localization_sensor","ee_pos","ee_global_pos_sensor","has_finished_oracle_nav","robot_trans_martix"]
+    #"has_finished_oracle_nav"
+    matched_data = {key: value.tolist() for key, value in observation.items() if any(sub in key for sub in substrings)}
     for sensor_name in observation:
-        if len(observation[sensor_name].shape) > 1:
-            obs_k = observation[sensor_name]
-            if not isinstance(obs_k, np.ndarray):
-                obs_k = obs_k.cpu().numpy()
-            if obs_k.dtype != np.uint8:
-                obs_k = obs_k * 255.0
-                obs_k = obs_k.astype(np.uint8)
-            if obs_k.shape[2] == 1:
-                obs_k = np.concatenate([obs_k for _ in range(3)], axis=2)
-            render_obs_images.append(obs_k)
+        # if(sensor_name=="agent_0_navtemptran_sensor"):
+        #     print(str(frame_id)+"_agent0: navtemptran_sensor:",observation[sensor_name])
+        # if(sensor_name=="agent_1_navtemptran_sensor"):
+        #     print(str(frame_id)+"_agent1: navtemptran_sensor:",observation[sensor_name])
+        # if(sensor_name=="agent_0_has_finished_oracle_nav") and ((observation[sensor_name] == 1.0) or (observation[sensor_name] == -1.0)):
+        #     print(str(frame_id)+"_agent0has_finished_oracle_nav",observation[sensor_name])
+        # if(sensor_name=="agent_1_has_finished_oracle_nav") and ((observation[sensor_name] == 1.0) or (observation[sensor_name] == -1.0)):
+        #     print(str(frame_id)+"_agent1has_finished_oracle_nav",observation[sensor_name])
+        # if(sensor_name=="agent_0_localization_sensor"):
+        #     print(str(frame_id)+'_agent0: location:',observation[sensor_name])
+        # # # if(sensor_name=="agent_0_ee_pos"):
+        #     print(str(frame_id)+'_agent0: ee_pos:',observation[sensor_name])
+        # if(sensor_name=="agent_1_localization_sensor"):
+        #     print(str(frame_id)+'_agent1: location:',observation[sensor_name])
+        # if(sensor_name=="agent_1_ee_pos"):
+        #     print(str(frame_id)+'_agent0: ee_pos:',observation[sensor_name])
+        # if(sensor_name=="agent_0_oracle_nav_target_path"):
+        #     print(str(frame_id)+'_agent0: point_compass:',observation[sensor_name])
+        # if(sensor_name =="agent_0_has_finished_oracle_nav"):
+        #     print(str(frame_id)+'_agent0: hasfinished:',observation[sensor_name])
+        # if(sensor_name =="agent_0_obj_goal_gps_compass"):
+        #     print(str(frame_id)+'_agent0: goalobj:',observation[sensor_name])
+        # if(sensor_name =="agent_1_obj_goal_gps_compass"):
+        #     print(str(frame_id)+'_agent1: goalobj:',observation[sensor_name])
+        # if(sensor_name=="agent_1_oracle_nav_temp"):
+        #     print(str(frame_id)+"_agent1: pathpoint:",observation[sensor_name])
+        # if(sensor_name=="agent_1_localization_sensor"):
+        #     print(str(frame_id)+'_agent1: location:',observation[sensor_name])
+        # # if(sensor_name=="agent_1_oracle_nav_target_path"):
+        #     print(str(frame_id)+'_agent1: point_compass:',observation[sensor_name])
+        # if(sensor_name =="agent_1_has_finished_oracle_nav"):
+        #     print(str(frame_id)+'_agent1: hasfinished:',observation[sensor_name])
+        # # if(sensor_name =="agent_1_obj_goal_gps_compass"):
+        # #     print(str(frame_id)+'_agent1: obj_goal_gps_compass:',observation[sensor_name])
+        
+        # # print(sensor_name)
+        if sensor_name!="agent_0_robot_trans_martix" and sensor_name!="agent_1_robot_trans_martix" and sensor_name!="agent_0_oracle_nav_target_path" and sensor_name!="agent_1_oracle_nav_target_path":
+            if len(observation[sensor_name].shape) > 1:
+                obs_k = observation[sensor_name]
+                if not isinstance(obs_k, np.ndarray):
+                    obs_k = obs_k.cpu().numpy()
+                if obs_k.dtype != np.uint8:
+                    obs_k = obs_k * 255.0
+                    obs_k = obs_k.astype(np.uint8)
+                if obs_k.shape[2] == 1:
+                    obs_k = np.concatenate([obs_k for _ in range(3)], axis=2)
+                render_obs_images.append(obs_k)
 
-            def hit_key_list(name, key_list):
-                for k in key_list:
-                    if k in name:
-                        return True
-                return False
-
-            if "disk" in image_option and hit_key_list(sensor_name, image_filter_list):
-                assert image_dir is not None
+                def hit_key_list(name, key_list):
+                    for k in key_list:
+                        if k in name:
+                            return True
+                    return False
+                sample_id = config.habitat_baselines.eval.episode_stored
+                sample_frame = config.habitat_baselines.eval.episode_stored
+                if "disk" in image_option and hit_key_list(sensor_name, image_filter_list):
+                    assert image_dir is not None
+                    image_ep_dir = os.path.join(image_dir, f"episode_{episode_id}")
+                    if not os.path.exists(image_ep_dir):
+                        os.makedirs(image_ep_dir)
+                    temp = 0
+                    if len(sample_frame) > 0:
+                        for i in range(len(sample_frame)):
+                            if int(episode_id) == int(sample_frame[i]['episode_id']):
+                                temp = i
+                                break
+                        # print(f"temp:{temp}",flush = True)
+                        for a in sample_frame[temp]['sample_frame']:
+                            match = re.search(r"agent_(\d+)", sensor_name)
+                            if match:
+                                number = int(match.group(1))
+                            if frame_id == a[0] and number == a[1] and int(episode_id) == int(sample_frame[temp]['episode_id']):
+                                image_name = ('frame_' + str(frame_id) + '_' + sensor_name+
+                                            robot_names[sensor_name[:7]] + sensor_name[7:])
+                                plt.imshow(obs_k)
+                                plt.axis('off')
+                                plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
+                                            bbox_inches='tight', pad_inches=0)
+                                break
+                    else:
+                        print(sensor_name[:7])
+                        image_name = ('frame_' + str(frame_id) + '_' +sensor_name+
+                              robot_names[sensor_name[:7]] + sensor_name[7:])
+                        plt.imshow(obs_k)
+                        plt.axis('off')
+                        plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
+                                    bbox_inches='tight', pad_inches=0)
                 image_ep_dir = os.path.join(image_dir, f"episode_{episode_id}")
                 if not os.path.exists(image_ep_dir):
-                    os.makedirs(image_ep_dir)
-                image_name = ('frame_' + str(frame_id) + '_' +
-                              robot_names[sensor_name[:7]] + sensor_name[7:])
-                plt.imshow(obs_k)
-                plt.axis('off')
-                plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
-                            bbox_inches='tight', pad_inches=0)
+                        os.makedirs(image_ep_dir)
+                # with open(os.path.join(image_ep_dir, 'frame_' + str(frame_id) +'_data.json'), 'w') as f:
+                #     json.dump(matched_data, f, indent=2)
+    if "disk" in json_option and stop_step is False:
+        image_ep_dir = os.path.join(image_dir, f"episode_{episode_id}")
+        if not os.path.exists(image_ep_dir):
+            os.makedirs(image_ep_dir)
+        if os.path.exists(os.path.join(image_ep_dir, 'sum_data.json')):
+            with open(os.path.join(image_ep_dir, 'sum_data.json'), 'r') as f:
+                data = json.load(f)
+        else:
+            data = {}
+        if 'entities' not in data:
+            data['entities'] = []
+        config_data = {
+            'step' : str(frame_id),
+            'data' : matched_data
+        }
+        data['entities'].append(config_data)
+        with open(os.path.join(image_ep_dir, 'sum_data.json'), 'w') as f:
+            json.dump(data, f, indent=2)
+
 
     assert (
         len(render_obs_images) > 0

@@ -242,12 +242,17 @@ class _ObservationBatchingCache(metaclass=Singleton):
 
         self._pool[key] = cache
         return cache
-
     def batch_obs(
         self,
         observations: List[DictTree],
         device: Optional[torch.device] = None,
     ) -> TensorDict:
+        from collections import OrderedDict
+        name_to_remove = {'agent_0_obj_list_info','agent_1_obj_list_info'}
+        for obs in observations:
+            for key in name_to_remove:
+                if key in obs:
+                    obs[key] = np.array([1])
         observations = [
             TensorOrNDArrayDict.from_tree(o).map(
                 lambda t: t.numpy()

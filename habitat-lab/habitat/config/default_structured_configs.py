@@ -61,6 +61,7 @@ __all__ = [
     "RelativeRestingPositionSensorConfig",
     "IsHoldingSensorConfig",
     "EEPositionSensorConfig",
+    "EEGlobalPositionSensorConfig",
     "JointSensorConfig",
     "HumanoidJointSensorConfig",
     "TargetStartSensorConfig",
@@ -68,6 +69,7 @@ __all__ = [
     "TargetStartGpsCompassSensorConfig",
     "InitialGpsCompassSensorConfig",
     "TargetGoalGpsCompassSensorConfig",
+    "ObjListSensorConfig",
     # REARRANGEMENT MEASUREMENTS
     "EndEffectorToRestDistanceMeasurementConfig",
     "RobotForceMeasurementConfig",
@@ -669,6 +671,12 @@ class EEPositionSensorConfig(LabSensorConfig):
     """
     type: str = "EEPositionSensor"
 
+@dataclass
+class EEGlobalPositionSensorConfig(LabSensorConfig):
+    r"""
+    Global
+    """
+    type: str = "EEGlobalPositionSensor"
 
 @dataclass
 class IsHoldingSensorConfig(LabSensorConfig):
@@ -759,12 +767,23 @@ class NavGoalPointGoalSensorConfig(LabSensorConfig):
     goal_is_human: bool = False
     human_agent_idx: int = 1
 
+@dataclass
+class OracleNavigationActionSensorConfig(LabSensorConfig):
+    type: str = "OracleNavigationActionSensor"
 
+@dataclass
+class TransofrobotSensorConfig(LabSensorConfig):
+    type: str = "TransofrobotSensor"
+
+@dataclass
+class NavObjPointSensorConfig(LabSensorConfig):
+    type: str = "NavObjPointSensor"
 @dataclass
 class GlobalPredicatesSensorConfig(LabSensorConfig):
     type: str = "GlobalPredicatesSensor"
-
-
+@dataclass
+class NavTempTranSensorConfig(LabSensorConfig):
+    type: str = "NavTempTranSensor"
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):
     type: str = "MultiAgentGlobalPredicatesSensor"
@@ -781,6 +800,11 @@ class AreAgentsWithinThresholdConfig(LabSensorConfig):
 @dataclass
 class HasFinishedOracleNavSensorConfig(LabSensorConfig):
     type: str = "HasFinishedOracleNavSensor"
+
+@dataclass
+class GetOracleNavTempSensorConfig(LabSensorConfig):
+    type: str = "GetOracleNavTempSensor"
+    agent_idx : int = 0
 
 
 @dataclass
@@ -879,6 +903,12 @@ class TargetGoalGpsCompassSensorConfig(LabSensorConfig):
     """
     type: str = "TargetGoalGpsCompassSensor"
 
+@dataclass
+class ObjListSensorConfig(LabSensorConfig):
+    r"""
+    list the obj coord pos
+    """
+    type :str = "ObjListSensor"
 
 @dataclass
 class NavToSkillSensorConfig(LabSensorConfig):
@@ -1318,7 +1348,7 @@ class DidViolateHoldConstraintMeasurementConfig(MeasurementConfig):
 class MoveObjectsRewardMeasurementConfig(MeasurementConfig):
     type: str = "MoveObjectsReward"
     pick_reward: float = 1.0
-    success_dist: float = 0.15
+    success_dist: float = 1.0
     single_rearrange_reward: float = 1.0
     dist_reward: float = 1.0
     constraint_violate_pen: float = 10.0
@@ -1667,7 +1697,7 @@ class TaskConfig(HabitatBaseConfig):
     # Disable drop except for when the object is at its goal.
     enable_safe_drop: bool = False
     art_succ_thresh: float = 0.15
-    robot_at_thresh: float = 2.0
+    robot_at_thresh: float = 0.1
 
     # The minimum distance between the agents at start. If < 0
     # there is no minimal distance
@@ -1774,8 +1804,8 @@ class HabitatSimFisheyeSemanticSensorConfig(SimulatorFisheyeSensorConfig):
 @dataclass
 class HeadRGBSensorConfig(HabitatSimRGBSensorConfig):
     uuid: str = "head_rgb"
-    width: int = 256
-    height: int = 256
+    width: int = 1024
+    height: int = 1024
 
 
 @dataclass
@@ -2568,6 +2598,12 @@ cs.store(
     node=EEPositionSensorConfig,
 )
 cs.store(
+    package="habitat.task.lab_sensors.end_effector_global_sensor",
+    group="habitat/task/lab_sensors",
+    name="end_effector_global_sensor",
+    node=EEGlobalPositionSensorConfig,
+)
+cs.store(
     package="habitat.task.lab_sensors.is_holding_sensor",
     group="habitat/task/lab_sensors",
     name="is_holding_sensor",
@@ -2633,6 +2669,37 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="has_finished_oracle_nav",
     node=HasFinishedOracleNavSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.oracle_nav_temp_goal",
+    group="habitat/task/lab_sensors",
+    name="oracle_nav_temp_goal",
+    node=GetOracleNavTempSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.oracle_nav_action_a",
+    group="habitat/task/lab_sensors",
+    name="oracle_nav_action_a",
+    node=OracleNavigationActionSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.get_nav_goal_point",
+    group="habitat/task/lab_sensors",
+    name="get_nav_goal_point",
+    node=NavObjPointSensorConfig,
+)
+
+cs.store(
+    package="habitat.task.lab_sensors.navtemptran_s",
+    group="habitat/task/lab_sensors",
+    name="navtemptran_s",
+    node=NavTempTranSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.trans_of_robot",
+    group="habitat/task/lab_sensors",
+    name="trans_of_robot",
+    node=TransofrobotSensorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.has_finished_humanoid_pick",
@@ -2716,15 +2783,21 @@ cs.store(
     node=TargetGoalGpsCompassSensorConfig,
 )
 cs.store(
+    package="habitat.task.lab_sensors.obj_list_infomation",
+    group="habitat/task/lab_sensors",
+    name="obj_list_infomation",
+    node=ObjListSensorConfig,
+)
+cs.store(
     package="habitat.task.lab_sensors.nav_to_skill_sensor",
     group="habitat/task/lab_sensors",
     name="nav_to_skill_sensor",
     node=NavToSkillSensorConfig,
 )
 cs.store(
-    package="habitat.task.lab_sensors.nav_goal_sensor",
+    package="habitat.task.lab_sensors.goal_to_agent_gps_compass",
     group="habitat/task/lab_sensors",
-    name="nav_goal_sensor",
+    name="goal_to_agent_gps_compass",
     node=NavGoalPointGoalSensorConfig,
 )
 cs.store(

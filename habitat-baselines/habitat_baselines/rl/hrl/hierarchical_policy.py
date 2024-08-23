@@ -26,7 +26,6 @@ from habitat_baselines.rl.hrl.utils import find_action_range
 from habitat_baselines.rl.ppo.policy import Policy, PolicyActionData
 from habitat_baselines.utils.common import get_num_actions
 
-
 @baseline_registry.register_policy
 class HierarchicalPolicy(nn.Module, Policy):
     """
@@ -59,7 +58,7 @@ class HierarchicalPolicy(nn.Module, Policy):
         self._idx_to_name: Dict[int, str] = {}
         # Can map multiple skills to the same underlying skill controller.
         self._skill_redirects: Dict[int, int] = {}
-
+        self.agent_name = agent_name
         if "rearrange_stop" not in orig_action_space.spaces and "stop" not in orig_action_space.spaces:
             raise ValueError("Hierarchical policy requires the stop action")
         if "rearrange_stop" in orig_action_space.spaces:
@@ -279,7 +278,6 @@ class HierarchicalPolicy(nn.Module, Policy):
                 skill_dat[dat_k] = dat[v]
             grouped_skills[k] = (v, skill_dat)
         return grouped_skills
-
     def act(
         self,
         observations,
@@ -287,6 +285,9 @@ class HierarchicalPolicy(nn.Module, Policy):
         prev_actions,
         masks,
         deterministic=False,
+        check_info = False,
+        eval_jump = False,
+        output = {},
         **kwargs,
     ):
         batch_size = masks.shape[0]
@@ -304,8 +305,10 @@ class HierarchicalPolicy(nn.Module, Policy):
         )
 
         # Always call high-level if the episode is over.
-        self._cur_call_high_level |= (~masks_cpu).view(-1)
-
+        temp = self._cur_call_high_level
+        temp |= (~masks_cpu).view(-1)
+        if check_info:
+            return self.agent_name,temp
         hl_terminate_episode, hl_info = self._update_skills(
             observations,
             hl_rnn_hidden_states,
@@ -316,6 +319,8 @@ class HierarchicalPolicy(nn.Module, Policy):
             log_info,
             self._cur_call_high_level,
             deterministic,
+            eval_jump = eval_jump,
+            output = output,
             **kwargs,
         )
         did_choose_new_skill = self._cur_call_high_level.clone()
@@ -442,6 +447,8 @@ class HierarchicalPolicy(nn.Module, Policy):
         log_info,
         should_choose_new_skill: torch.BoolTensor,
         deterministic: bool,
+        eval_jump = False,
+        output = {},
         **kwargs,
     ) -> Tuple[torch.BoolTensor, PolicyActionData]:
         """
@@ -461,22 +468,50 @@ class HierarchicalPolicy(nn.Module, Policy):
         # the next skill.
         batch_size = masks.shape[0]
         hl_terminate_episode = torch.zeros(batch_size, dtype=torch.bool)
+        # print(f"-------------------{should_choose_new_skill}---------------------------",flush=True)
         if should_choose_new_skill.sum() > 0:
-            (
-                new_skills,
-                new_skill_args,
-                hl_terminate_episode,
-                hl_info,
-            ) = self._high_level_policy.get_next_skill(
-                observations,
-                hl_rnn_hidden_states,
-                prev_actions,
-                masks,
-                should_choose_new_skill,
-                deterministic,
-                log_info,
-                **kwargs,
-            )
+            # print(f"self.agent_name:{self.agent_name}")
+            # print(f"output:{output}")
+            # print(f"eval:{eval_jump}")
+            if eval_jump:
+                skill_info = output[self.agent_name]
+                action = skill_info['name']
+                pos = skill_info['position']
+                i = int(self.agent_name.split('_')[-1])
+                if action == 'nav_to_point':
+                    new_skills = torch.tensor([4])
+                    new_skill_args = [[-3, f'robot_{i}']]
+                elif action == 'pick':
+                    new_skills = torch.tensor([0])
+                    obj_info = pos.split('-')[0]
+                    new_skill_args = [[obj_info,f'robot_{i}']]
+                else:
+                    new_skills = torch.tensor([2])
+                    new_skill_args = [[1, f'robot_{i}']]
+                hl_terminate_episode = hl_terminate_episode
+                hl_info = PolicyActionData()
+            else:
+                (
+                    new_skills,
+                    new_skill_args,
+                    hl_terminate_episode,
+                    hl_info,
+                ) = self._high_level_policy.get_next_skill(
+                    observations,
+                    hl_rnn_hidden_states,
+                    prev_actions,
+                    masks,
+                    should_choose_new_skill,
+                    deterministic,
+                    log_info,
+                    **kwargs,
+                )
+            print("_______________________info_________________",flush=True)
+            print("new_skills:",new_skills,flush=True)
+            print("new_skill_args:",new_skill_args,flush=True)
+            print("hl_info:",hl_info,flush=True)
+            print(f"self.agent_name:{self.agent_name}")
+            print("_______________________info_________________",flush=True)
             new_skills = new_skills.numpy()
 
             sel_grouped_skills = self._broadcast_skill_ids(
@@ -484,7 +519,8 @@ class HierarchicalPolicy(nn.Module, Policy):
                 sel_dat={},
                 should_adds=should_choose_new_skill,
             )
-
+            # print("sel_grouped_skills::",sel_grouped_skills,flush=True)
+            # print(f"self._skills:{self._skills}")
             for skill_id, (batch_ids, _) in sel_grouped_skills.items():
                 (
                     ll_rnn_hidden_states_batched,
@@ -528,6 +564,7 @@ class HierarchicalPolicy(nn.Module, Policy):
             self._cur_skills = (
                 (~should_choose_new_skill) * self._cur_skills
             ) + (should_choose_new_skill * new_skills)
+            
         else:
             # We made no decisions, so return an empty HL action info.
             hl_info = PolicyActionData()

@@ -142,7 +142,8 @@ class OraclePickPolicy(NnSkillPolicy):
             raise ValueError(
                 f"Unexpected number of skill arguments in {skill_arg}"
             )
-
+        if search_target == -3:
+            return OraclePickPolicy.OraclePickActionArgs(search_target, self.GRAB_ID)
         target = self._pddl_problem.get_entity(search_target)
         if target is None:
             raise ValueError(

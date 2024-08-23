@@ -2,12 +2,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-
+import os
 import magnum as mn
 from magnum import Vector3
 import numpy as np
 from gym import spaces
-
+import habitat.utils.visualizations.maps as maps
 import habitat_sim
 from habitat.articulated_agent_controllers import HumanoidRearrangeController
 from habitat.core.registry import registry
@@ -62,10 +62,11 @@ class OracleNavDiffBaseAction(OracleNavAction):
             self._task.pddl_problem.get_ordered_entities_list()
         )
         self._prev_ep_id = None
-        self.skill_done = False
+        self.skill_done = -1.0
         self._targets = {}
         self.config = config
         self.pathfinder = None
+        self.step_sum = 0
 
     def _create_pathfinder(self, config):
         """
@@ -235,19 +236,60 @@ class OracleNavDiffBaseAction(OracleNavAction):
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
         ]
-        if nav_to_target_idx <= 0 or nav_to_target_idx > len(
-            self._poss_entities
-        ):
-            return
-        nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+        # print(f"agent:{self._action_arg_prefix}_nav_to_target_idx",nav_to_target_idx,flush=True)
+        if nav_to_target_idx == -2:
+            # from habitat_baselines.rl.multi_agent.habitat_mas_evaluator import get_context
+            
+            # # print("id:",id(com))
+            # ans = get_context().get_data()
+            import json
+            with open('./data_temp.json','r') as f:
+                ans = json.load(f)
+            agent_name = self._action_arg_prefix.rstrip("_")
+            final_nav_targ = ans[agent_name]['position']
+            obj_targ_pos = final_nav_targ
+        else:
+            if (nav_to_target_idx <= 0) or nav_to_target_idx > len(
+                self._poss_entities
+            ):
+                return
+            else:
+                nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+                final_nav_targ,obj_targ_pos = self._get_target_for_idx(
+                    nav_to_target_idx
+                )
 
-        final_nav_targ, obj_targ_pos = self._get_target_for_idx(
-            nav_to_target_idx
-        )
         base_T = self.cur_articulated_agent.base_transformation
         curr_path_points = self._path_to_point(final_nav_targ)
+        
+        # print("currpathpoint:",curr_path_points)
+        # topdown_map = maps.get_topdown_map(
+        #     pathfinder=self.pathfinder,
+        #     height = 0.1522
+        # )  #创建俯视图，此处height不确定，但似乎没什么影响
+        # colorize_topdown_map = maps.colorize_topdown_map(topdown_map) #俯视图标色，灰色为可行域
+        # curr_path_points_2d = [((pt[0]), (pt[2])) for pt in curr_path_points] #当前路径点取x，y轴，忽略z轴
+        
+        # for i in range(0,len(curr_path_points_2d)):
+        #     x,y = maps.to_grid(realworld_x = curr_path_points_2d[i][1],realworld_y=curr_path_points_2d[i][0],grid_resolution=[7295, 4096],pathfinder=self.pathfinder)
+        #     #转换到俯视图的坐标系下，用to_grid方法进行了放缩，此处grid_resolution的参数与get_topdown_map方法所构建的俯视图的参数要对应
+        #     curr_path_points_2d[i] = [x,y]
+        # maps.draw_path(top_down_map=colorize_topdown_map,path_points=curr_path_points_2d)
+        
         robot_pos = np.array(self.cur_articulated_agent.base_pos)
+        robot_rot = np.array(self.cur_articulated_agent.base_rot)
+        # x,y= robot_pos[0],robot_pos[2]
+        # tt = maps.to_grid(realworld_x = x,realworld_y=y,grid_resolution=[1024,1024],pathfinder=self.pathfinder)
 
+        # maps.draw_path(colorize_topdown_map,curr_path_points_2d) #将路径点画到俯视图上
+
+        # # ans = maps.draw_agent(image = topdown_map,agent_center_coord=[x,y],agent_rotation=robot_rot)
+        # import matplotlib.pyplot as plt
+        # plt.imshow(colorize_topdown_map)
+        # plt.title(f'Draw Map of {self._action_arg_prefix}_{self.step_sum}')
+        # # plt.show()
+        # plt.savefig(os.path.join('./debug_new/', f'Draw_Map_of_{self._action_arg_prefix}_{self.step_sum}'+'.png'),
+        #             bbox_inches='tight', pad_inches=0)  #记得先mkdir debug_new文件夹
         if curr_path_points is None:
             raise Exception
         else:

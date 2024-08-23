@@ -25,6 +25,30 @@ from habitat_baselines.utils.common import (
     is_continuous_action_space,
 )
 from habitat_baselines.utils.info_dict import extract_scalars_from_info
+from habitat_mas.agents.vlm_agent import VLMAgent
+from collections import OrderedDict
+import json
+# class Context:
+#     _instance = None
+
+#     def __new__(cls, *args, **kwargs):
+#         if not cls._instance:
+#             cls._instance = super(Context, cls).__new__(cls, *args, **kwargs)
+#             cls._instance.data = {}
+#         return cls._instance
+
+#     def update(self, data):
+#         self.data = data
+
+#     def get_data(self):
+#         return self.data
+# def get_context():
+#     return Context()
+# com = get_context()
+# print("com_id",id(com))
+import multiprocessing
+def produce_data(queue,data):
+    queue.put(data)
 
 class HabitatMASEvaluator(Evaluator):
     """
@@ -46,7 +70,9 @@ class HabitatMASEvaluator(Evaluator):
     ):
         observations = envs.reset()
         observations = envs.post_step(observations)
-
+        # queue = multiprocessing.Queue()
+        # producer_process = multiprocessing.Process(target=produce_Data,args=(queue,))
+        # producer_process.start()
         # # collect numerical observations and non-numerical observations
         # numerical_observations = {
         #     key: value
@@ -60,9 +86,18 @@ class HabitatMASEvaluator(Evaluator):
         # }
 
         # batch = batch_obs(numerical_observations, device=device)
-        batch = batch_obs(observations, device=device)
+        # print("observations:",observations)
+        name_to_remove = {'agent_0_obj_list_info','agent_1_obj_list_info'}
+        obj_info_item_disk = []
+        name_to_remove = {'agent_0_obj_list_info','agent_1_obj_list_info'}
+        for obs in observations:
+            for key in name_to_remove:
+                if key in obs:
+                    obj_info_item_disk.append(obs[key])
+                    obs[key] = np.array([1])
+        obj_info_item = obj_info_item_disk[0]
+        batch = batch_obs(observations, device=device) 
         batch = apply_obs_transforms_batch(batch, obs_transforms)  # type: ignore
-
         action_shape, discrete_actions = get_action_space_info(
             agent.actor_critic.policy_action_space
         )
@@ -120,6 +155,8 @@ class HabitatMASEvaluator(Evaluator):
         evals_per_ep = config.habitat_baselines.eval.evals_per_ep
         if number_of_eval_episodes == -1:
             number_of_eval_episodes = sum(envs.number_of_episodes)
+
+
         else:
             total_num_eps = sum(envs.number_of_episodes)
             # if total_num_eps is negative, it means the number of evaluation episodes is unknown
@@ -138,15 +175,27 @@ class HabitatMASEvaluator(Evaluator):
         envs_text_context = {}
         pbar = tqdm.tqdm(total=number_of_eval_episodes * evals_per_ep)
         agent.eval()
+        if config.habitat_baselines.eval.vlm_eval:
+            vlm_agent = VLMAgent(agent_num = 2,image_dir = './video_dir/image',
+                                 json_dir = './video_dir/image_dir/episode_91/episode_91.json')
+
+        
         while (
             len(stats_episodes) < (number_of_eval_episodes * evals_per_ep)
             and envs.num_envs > 0
         ):
+            
             current_episodes_info = envs.current_episodes()
-
+            # print(f"cur:{current_episodes_info[0].episode_id}")
+            # sample_episode = config.habitat_baselines.eval.episode_stored
+            
+            # print(f"cur:{current_episodes_info[0].episode_id}",flush=True)
+            # print("flag:",config.habitat_baselines.eval.episode_stored,flush=True)
+            
             # If all prev_actions are zero, meaning this is the start of an episode
             # Then collect the context of the episode
             if not prev_actions.any():
+            
                 envs_text_context = envs.call(["get_task_text_context"] * envs.num_envs)
 
             space_lengths = {}
@@ -156,6 +205,68 @@ class HabitatMASEvaluator(Evaluator):
                     "index_len_recurrent_hidden_states": hidden_state_lens,
                     "index_len_prev_actions": action_space_lens,
                 }
+            # print("start:---------------------------------------------------------------------------")
+            # print("---------------------------------------------------------------------------")
+            filter_action = {}
+            if config.habitat_baselines.eval.vlm_eval:
+                eval_jump = True
+            else:
+                eval_jump = False
+            if config.habitat_baselines.eval.vlm_eval:
+                
+                with inference_mode():
+                    check_info = agent.actor_critic.act(
+                        batch,
+                        test_recurrent_hidden_states,
+                        prev_actions,
+                        not_done_masks,
+                        deterministic=False,
+                        envs_text_context=envs_text_context,
+                        check_info = True,
+                        **space_lengths,
+                    )
+                
+                agent_query = [1 if value.item() else 0 for _ , value in check_info]
+                if agent_query != [0,0]:
+                    agent_0_image = batch["agent_0_head_rgb"].cpu()
+                    agent_1_image = batch["agent_1_head_rgb"].cpu()
+                    agent_0_trans = batch["agent_0_robot_trans_martix"].cpu()
+                    agent_1_trans = batch["agent_1_robot_trans_martix"].cpu()
+                    image = [agent_0_image,agent_1_image]
+                    agent_trans = [agent_0_trans,agent_1_trans]
+                    # print(f"agent_trans:{agent_trans}")
+                    filter_action = vlm_agent.answer(agent_trans,agent_query,image)
+                    # producer_process = multiprocessing.Process(target=produce_data,args=(queue,filter_action))
+                    # producer_process.start()
+                    # com.update(filter_action)
+                    # print("data:",com.data)
+                    print("filter_action",filter_action)
+                    for agent_id,info in filter_action.items():
+                        if info["name"] == "pick":
+                            position = info["position"]
+                            mindistance = 100000
+                            min_key = None
+                            for key,value in obj_info_item.items():
+                                if not str(key).startswith("robot_"):
+                                    distance = np.linalg.norm(position - value)
+                                    if distance < mindistance:
+                                        min_key = key
+                                        mindistance = distance
+                                        # print()
+                            info["position"] = str(min_key)
+                    stored_path ='./data_temp.json'
+                    if os.path.exists(stored_path) and os.path.getsize(stored_path) == 0:
+                        with open(stored_path,'w') as f:
+                            json.dump(filter_action,f)
+                    else:
+                        with open(stored_path,'r') as f:
+                            data = json.load(f)
+                        for key in filter_action:
+                            if key in data:
+                                data[key] = filter_action[key]
+                        with open(stored_path,'w') as f:
+                            json.dump(data,f)
+
             with inference_mode():
                 action_data = agent.actor_critic.act(
                     batch,
@@ -164,8 +275,11 @@ class HabitatMASEvaluator(Evaluator):
                     not_done_masks,
                     deterministic=False,
                     envs_text_context=envs_text_context,
+                    eval_jump = eval_jump,
+                    output = filter_action,
                     **space_lengths,
                 )
+            
                 if action_data.should_inserts is None:
                     test_recurrent_hidden_states = (
                         action_data.rnn_hidden_states
@@ -179,6 +293,7 @@ class HabitatMASEvaluator(Evaluator):
             # NB: Move actions to CPU.  If CUDA tensors are
             # sent in to env.step(), that will create CUDA contexts
             # in the subprocesses.
+            # print(f"----------------action_data\n{action_data}\n-----------------------------")
             if is_continuous_action_space(env_spec.action_space):
                 # Clipping actions to the specified limits
                 step_data = [
@@ -186,9 +301,11 @@ class HabitatMASEvaluator(Evaluator):
                         a.numpy(),
                         env_spec.action_space.low,
                         env_spec.action_space.high,
-                    )
+                    )# 马勒戈壁的ppo-clip
                     for a in action_data.env_actions.cpu()
                 ]
+                # print(f"----------------env_action\n{action_data.env_actions.cpu()}\n-----------------------------")
+                #目前走的是这里
             else:
                 # step_data = [a.item() for a in action_data.env_actions.cpu()]
                 env_actions = action_data.env_actions.cpu()
@@ -198,7 +315,8 @@ class HabitatMASEvaluator(Evaluator):
                     # step_data = [item.item() for a in env_actions for item in a]
                     step_data = [a for a in env_actions]
             outputs = envs.step(step_data)
-
+            # print("end:---------------------------------------------------------------------------")
+            # print("---------------------------------------------------------------------------")
             observations, rewards_l, dones, infos = [
                 list(x) for x in zip(*outputs)
             ]
@@ -229,6 +347,7 @@ class HabitatMASEvaluator(Evaluator):
             ).unsqueeze(1)
             current_episode_reward += rewards
             next_episodes_info = envs.current_episodes()
+            # print(f"next:{next_episodes_info}")
             envs_to_pause = []
             n_envs = envs.num_envs
             for i in range(n_envs):
@@ -250,6 +369,7 @@ class HabitatMASEvaluator(Evaluator):
 
                 if len(config.habitat_baselines.eval.video_option) > 0:
                     # TODO move normalization / channel changing out of the policy and undo it here
+                    
                     frame = observations_to_image(
                         {k: v[i] for k, v in batch.items()}, disp_info,
                         config, len(rgb_frames[0]),
@@ -263,6 +383,7 @@ class HabitatMASEvaluator(Evaluator):
                             disp_info, config, 
                             frame_id=len(rgb_frames[0]),
                             episode_id=current_episodes_info[i].episode_id,
+                            
                         )
                         final_frame = overlay_frame(final_frame, disp_info)
                         rgb_frames[i].append(final_frame)
@@ -292,7 +413,7 @@ class HabitatMASEvaluator(Evaluator):
                     prev_actions[i] = 0
                     test_recurrent_hidden_states[i] = 0
 
-                    if len(config.habitat_baselines.eval.video_option) > 0:
+                    if len(config.habitat_baselines.eval.video_option) > 0 and config.habitat_baselines.eval.video_option_new:
                         generate_video(
                             video_option=config.habitat_baselines.eval.video_option,
                             video_dir=config.habitat_baselines.video_dir,
@@ -307,6 +428,10 @@ class HabitatMASEvaluator(Evaluator):
                         )
 
                         # Since the starting frame of the next episode is the final frame.
+                        rgb_frames[i] = rgb_frames[i][-1:]
+                    elif len(config.habitat_baselines.eval.image_option)>0:
+                        rgb_frames[i] = rgb_frames[i][-1:]
+                    elif len(config.habitat_baselines.eval.video_option) > 0 and len(config.habitat_baselines.eval.json_option) > 0:
                         rgb_frames[i] = rgb_frames[i][-1:]
 
                     gfx_str = infos[i].get(GfxReplayMeasure.cls_uuid, "")
@@ -344,6 +469,8 @@ class HabitatMASEvaluator(Evaluator):
             if any(envs_to_pause):
                 agent.actor_critic.on_envs_pause(envs_to_pause)
 
+
+
         pbar.close()
         assert (
             len(ep_eval_count) >= number_of_eval_episodes
@@ -367,4 +494,4 @@ class HabitatMASEvaluator(Evaluator):
 
         metrics = {k: v for k, v in aggregated_stats.items() if k != "reward"}
         for k, v in metrics.items():
-            writer.add_scalar(f"eval_metrics/{k}", v, step_id)
+            writer.add_scalar(f"eval_metrics/{k}", v, step_id)()

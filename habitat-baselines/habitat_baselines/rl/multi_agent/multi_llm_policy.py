@@ -48,6 +48,9 @@ class MultiLLMPolicy(MultiPolicy):
         masks,
         deterministic=False,
         envs_text_context=[{}],
+        check_info = False,
+        eval_jump = False,
+        output = {},
         **kwargs,
     ):
 
@@ -90,6 +93,7 @@ class MultiLLMPolicy(MultiPolicy):
 
         # Stage 2: Individual policy actions
         agent_actions = []
+        check_infomation = []
         for agent_i, policy in enumerate(self._active_policies):
             # collect assigned tasks for agent_i across all envs
             agent_i_handle = f"agent_{agent_i}"
@@ -100,18 +104,38 @@ class MultiLLMPolicy(MultiPolicy):
             agent_obs = self._update_obs_with_agent_prefix_fn(
                 observations, agent_i
             )
-
-            agent_actions.append(
-                policy.act(
-                    agent_obs,
-                    agent_rnn_hidden_states[agent_i],
-                    agent_prev_actions[agent_i],
-                    agent_masks[agent_i],
-                    deterministic,
-                    envs_text_context=envs_text_context,
-                    agent_task_assignments=agent_task_assignments # pass the task planning result to the policy
+            if check_info:
+                check_infomation.append(
+                        policy.act(
+                        agent_obs,
+                        agent_rnn_hidden_states[agent_i],
+                        agent_prev_actions[agent_i],
+                        agent_masks[agent_i],
+                        deterministic,
+                        envs_text_context=envs_text_context,
+                        agent_task_assignments=agent_task_assignments,
+                        check_info = check_info
+                        # pass the task planning result to the policy
+                    )
                 )
-            )
+            else:
+                agent_actions.append(
+                    policy.act(
+                        agent_obs,
+                        agent_rnn_hidden_states[agent_i],
+                        agent_prev_actions[agent_i],
+                        agent_masks[agent_i],
+                        deterministic,
+                        envs_text_context=envs_text_context,
+                        agent_task_assignments=agent_task_assignments,
+                        check_info = check_info,
+                        eval_jump = eval_jump,
+                        output = output
+                        # pass the task planning result to the policy
+                    )
+                )
+        if check_info:
+            return check_infomation
         policy_info = _merge_list_dict(
             [ac.policy_info for ac in agent_actions]
         )

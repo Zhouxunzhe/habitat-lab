@@ -22,9 +22,11 @@ from habitat.tasks.rearrange.utils import (
 )
 from habitat.tasks.rearrange.rearrange_sim import RearrangeSim
 from habitat_sim.physics import MotionType
+from context import ContextManager
+def method_a(context):
+    return context.shared_value
 
-
-
+from context import ContextManager
 @registry.register_task_action
 class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
     """
@@ -42,11 +44,12 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
         # self._init_cord = self.cur_articulated_agent.ee_transform().translation
         self._init_cord = np.array([0.0, 0.0, 0.0])
         self._hand_pose_iter = 0
+        self.skill_done = False
 
     def reset(self, *args, **kwargs):
         super().reset()
         self.set_desired_ee_pos(self._init_cord)
-        
+        self.skill_done = False
 
     @property
     def action_space(self):
@@ -155,14 +158,22 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
             self.cur_articulated_agent.fix_joint_values = des_joint_pos
 
     def step(self, pick_action, **kwargs):
-        
         object_pick_pddl_idx = pick_action[0]
         should_pick = pick_action[1]
+        if object_pick_pddl_idx == -3:
+            import json
+            with open('./data_temp.json','r') as f:
+                ans = json.load(f)
+            agent_name = self._action_arg_prefix.rstrip("_")
+            object_coord_list = ans[agent_name]['position']
+            import magnum as mn
+            object_coord = mn.Vector3(*object_coord_list)
+            print("object_coord:",object_coord)
+        else:
+            if (object_pick_pddl_idx <= 0) or object_pick_pddl_idx > len(self._entities):
+                return self.ee_target
 
-        if object_pick_pddl_idx <= 0 or object_pick_pddl_idx > len(self._entities):
-            return self.ee_target
-
-        object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
+            object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
         cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
         # TODO(zxz): modify translation matrix
         translation = object_coord - cur_ee_pos
@@ -417,7 +428,10 @@ class StretchOraclePickAction(ArmEEAction, ArmRelPosKinematicReducedActionStretc
                 self._sim.viz_ids["ee_target"] = self._sim.visualize_position(
                     global_pos, self._sim.viz_ids["ee_target"]
                 )
-                
+        if should_pick == 1 and self.cur_grasp_mgr.snap_idx is not None:
+            self.skill_done = True
+        else:
+            self.skill_done = False
             # TODO: should we add retracting action here? 
         
             # Grasp & Ungrasp when we are close to the target

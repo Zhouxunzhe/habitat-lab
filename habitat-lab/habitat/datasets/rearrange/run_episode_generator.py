@@ -428,7 +428,7 @@ if __name__ == "__main__":
                 # filename
                 if not output_path.endswith(".json.gz"):
                     output_path += ".json.gz"
-
+            
             if (
                 not osp.exists(osp.dirname(output_path))
                 and len(osp.dirname(output_path)) > 0
@@ -436,9 +436,26 @@ if __name__ == "__main__":
                 os.makedirs(osp.dirname(output_path))
             # serialize the dataset
             import gzip
+            dataset = dataset.to_json()
+            dataset_json = json.loads(dataset)
+            # print("____________________________________________________________")
+            # print(dataset_json)
+            # print("____________________________________________________________")
+            item = random.sample(range(1,180),5)
+            # print("____________________________________________________________")
+            # print(item)
+            # print("____________________________________________________________")
+            i = 0
+            for episode in dataset_json['episodes']:
+                episode['episode_id'] = str(item[i])
+                i+=1
+ 
+            # with open(f'{output_path}_json', 'w') as file:
+            #     json.dump(dataset_json, file, indent=4)
 
             with gzip.open(output_path, "wt") as f:
-                f.write(dataset.to_json())
+                f.write(json.dumps(dataset_json))
+            
 
             logger.info(
                 "=============================================================="

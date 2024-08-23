@@ -6,6 +6,7 @@
 
 
 from collections import defaultdict, deque
+from habitat.tasks.rearrange.utils import place_agent_at_dist_from_pos
 from typing import Dict, List, Tuple
 import magnum as mn
 import cv2
@@ -13,7 +14,14 @@ import numpy as np
 from gym import spaces
 import open3d as o3d
 import habitat_sim
-
+from habitat.tasks.rearrange.actions.oracle_nav_action import (
+    OracleNavAction,
+    OracleNavCoordinateAction
+)
+from habitat.tasks.rearrange.actions.actions import (
+    ArticulatedAgentAction,
+    ArmEEAction
+)
 from habitat.articulated_agents.humanoids import KinematicHumanoid
 from habitat.core.embodied_task import Measure
 from habitat.core.registry import registry
@@ -54,13 +62,13 @@ class MultiObjSensor(PointGoalSensor):
 
 
 @registry.register_sensor
-class TargetCurrentSensor(UsesArticulatedAgentInterface, MultiObjSensor):
+class TargetCurrentSensor(ArticulatedAgentAction,MultiObjSensor):
     """
     This is the ground truth object position sensor relative to the robot end-effector coordinate frame.
     """
 
     cls_uuid: str = "obj_goal_pos_sensor"
-
+        
     def _get_observation_space(self, *args, **kwargs):
         return spaces.Box(
             shape=(3,),
@@ -76,7 +84,7 @@ class TargetCurrentSensor(UsesArticulatedAgentInterface, MultiObjSensor):
             .articulated_agent.ee_transform()
             .inverted()
         )
-
+        
         idxs, _ = self._sim.get_targets()
         scene_pos = self._sim.get_scene_pos()
         pos = scene_pos[idxs]
@@ -84,8 +92,7 @@ class TargetCurrentSensor(UsesArticulatedAgentInterface, MultiObjSensor):
         for i in range(pos.shape[0]):
             pos[i] = T_inv.transform_point(pos[i])
 
-        return pos.reshape(-1)
-
+        return pos
 
 @registry.register_sensor
 class TargetStartSensor(UsesArticulatedAgentInterface, MultiObjSensor):
@@ -93,16 +100,15 @@ class TargetStartSensor(UsesArticulatedAgentInterface, MultiObjSensor):
     Relative position from end effector to target object
     """
 
-    cls_uuid: str = "obj_start_sensor"
+    cls_uuid: str = "ee_global_pos_sensor"
 
     def get_observation(self, *args, observations, episode, **kwargs):
-        self._sim: RearrangeSim
-        global_T = self._sim.get_agent_data(
-            self.agent_id
-        ).articulated_agent.ee_transform()
-        T_inv = global_T.inverted()
-        pos = self._sim.get_target_objs_start()
-        return batch_transform_point(pos, T_inv, np.float32).reshape(-1)
+        ee_pos = (
+            self._sim.get_agent_data(self.agent_id)
+            .articulated_agent.ee_transform()
+            .translation
+        )
+        return np.array(ee_pos, dtype=np.float32)
 
 
 class PositionGpsCompassSensor(UsesArticulatedAgentInterface, Sensor):
@@ -159,14 +165,110 @@ class TargetStartGpsCompassSensor(PositionGpsCompassSensor):
 @registry.register_sensor
 class TargetGoalGpsCompassSensor(PositionGpsCompassSensor):
     cls_uuid: str = "obj_goal_gps_compass"
+        # Agent not initialized 
+        # self._init_cord = self.cur_articulated_agent.ee_transform().translation
 
     def _get_uuid(self, *args, **kwargs):
         return TargetGoalGpsCompassSensor.cls_uuid
-
     def _get_positions(self) -> np.ndarray:
-        _, pos = self._sim.get_targets()
-        return pos
 
+        # idx, pos = self._sim.get_targets()
+        idxs, target = self._sim.get_targets()
+        scene_pos = self._sim.get_scene_pos()
+        target_pos = scene_pos[idxs]
+        #print(f"target{target},target_pos{target_pos}")
+        # print("test:",idx)
+        # print("compass_goal",pos)
+        _entities = self._task.pddl_problem.get_ordered_entities_list()
+        print("en:",_entities)
+        obj_pos_0 = self._task.pddl_problem.sim_info.get_entity_pos(
+            _entities[0]
+        )
+        obj_pos_1 = self._task.pddl_problem.sim_info.get_entity_pos(
+            _entities[1]
+        )
+        obj_pos_2 = self._task.pddl_problem.sim_info.get_entity_pos(
+            _entities[2]
+        )
+        obj_pos_3 = self._task.pddl_problem.sim_info.get_entity_pos(
+            _entities[3]
+        )
+        obj_pos_4 = self._task.pddl_problem.sim_info.get_entity_pos(
+            _entities[4]
+        )
+        obj_pos_5 = self._task.pddl_problem.sim_info.get_entity_pos(
+            _entities[5]
+        )
+        # print("ordered_action",self._task.pddl_problem.get_ordered_actions())
+        print("obj_pos0::",obj_pos_0)
+        print("obj_pos1::",obj_pos_1)
+        print("obj_pos2::",obj_pos_2)
+        print("obj_pos3::",obj_pos_3)
+        print("obj_pos4::",obj_pos_4)
+        print("obj_pos5::",obj_pos_5)
+        entity_pos = {element: self._task.pddl_problem.sim_info.get_entity_pos(element)
+                      for element in _entities}
+        return scene_pos
+@registry.register_sensor
+class ObjListSensor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "obj_list_info"
+
+    def __init__(self, sim, task, *args, **kwargs):
+        self._task = task
+        self._sim = sim
+        super().__init__(*args, task=task, **kwargs)
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+    @staticmethod
+    def _get_uuid(*args, **kwargs):
+        return ObjListSensor.cls_uuid
+
+    def _get_observation_space(self, *args, **kwargs):
+        low = -np.inf
+        high = np.inf
+        return spaces.Dict({
+            "TARGET_any_targets|0-T:goal_entity_type": spaces.Box(low=low, high=high, shape=(3,), dtype=np.float32),
+            "TARGET_any_targets|1-T:goal_entity_type": spaces.Box(low=low, high=high, shape=(3,), dtype=np.float32),
+            "any_targets|0-T:movable_entity_type": spaces.Box(low=low, high=high, shape=(3,), dtype=np.float32),
+            "any_targets|1-T:movable_entity_type": spaces.Box(low=low, high=high, shape=(3,), dtype=np.float32),
+            "robot_0-T:robot_entity_type": spaces.Box(low=low, high=high, shape=(3,), dtype=np.float32),
+            "robot_1-T:robot_entity_type": spaces.Box(low=low, high=high, shape=(3,), dtype=np.float32),
+        })
+
+    def get_observation(self, observations, episode, *args, **kwargs):
+        #print(f"target{target},target_pos{target_pos}")
+        # print("test:",idx)
+        # print("compass_goal",pos)
+        _entities = self._task.pddl_problem.get_ordered_entities_list()
+        # print("en:",_entities)
+        # obj_pos_0 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[0]
+        # )
+        # obj_pos_1 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[1]
+        # )
+        # obj_pos_2 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[2]
+        # )
+        # obj_pos_3 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[3]
+        # )
+        # obj_pos_4 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[4]
+        # )
+        # obj_pos_5 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[5]
+        # )
+        # # print("ordered_action",self._task.pddl_problem.get_ordered_actions())
+        # print("obj_pos0::",obj_pos_0)
+        # print("obj_pos1::",obj_pos_1)
+        # print("obj_pos2::",obj_pos_2)
+        # print("obj_pos3::",obj_pos_3)
+        # print("obj_pos4::",obj_pos_4)
+        # print("obj_pos5::",obj_pos_5)
+        entity_pos = {element: np.array(self._task.pddl_problem.sim_info.get_entity_pos(element),dtype = np.float32)
+                      for element in _entities}
+        return entity_pos
 
 @registry.register_sensor
 class AbsTargetStartSensor(MultiObjSensor):
@@ -331,14 +433,79 @@ class EEPositionSensor(UsesArticulatedAgentInterface, Sensor):
         trans = self._sim.get_agent_data(
             self.agent_id
         ).articulated_agent.base_transformation
+        # print("trans:",trans.type)
         ee_pos = (
             self._sim.get_agent_data(self.agent_id)
             .articulated_agent.ee_transform()
             .translation
         )
+        # print("eesss:",ee_pos)
+        # if self.agent_id == 0:print(str(self.agent_id)+"ee_pos_global:",ee_pos)
         local_ee_pos = trans.inverted().transform_point(ee_pos)
-
+        
+        # print("hello:",local_ee_pos)
+        # print("goog",goob[:3])
         return np.array(local_ee_pos, dtype=np.float32)
+
+@registry.register_sensor
+class EEGlobalPositionSensor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "ee_global_pos"
+
+    def __init__(self, sim, config, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+
+    @staticmethod
+    def _get_uuid(*args, **kwargs):
+        return EEGlobalPositionSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, **kwargs):
+        return spaces.Box(
+            shape=(3,),
+            low=np.finfo(np.float32).min,
+            high=np.finfo(np.float32).max,
+            dtype=np.float32,
+        )
+
+    def get_observation(self, observations, episode, *args, **kwargs):
+        ee_pos = (
+            self._sim.get_agent_data(self.agent_id)
+            .articulated_agent.ee_transform()
+            .translation
+        )
+        return np.array(ee_pos, dtype=np.float32)
+    
+@registry.register_sensor
+class TransofrobotSensor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "robot_trans_martix"
+
+    def _get_uuid(self, *args, **kwargs):
+        return TransofrobotSensor.cls_uuid
+
+    def __init__(self, sim, config, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, **kwargs):
+        return spaces.Box(
+            shape=(4,4),
+            low=np.finfo(np.float32).min,
+            high=np.finfo(np.float32).max,
+            dtype=np.float32,
+        )
+
+    def get_observation(self, observations, episode, task, *args, **kwargs):
+        trans = self._sim.get_agent_data(
+            self.agent_id
+        ).articulated_agent.base_transformation
+        # print(f"agent_{self.agent_id}_trans:{trans}")
+        return np.array(trans, dtype=np.float32)
 
 
 @registry.register_sensor
@@ -442,10 +609,62 @@ class LocalizationSensor(UsesArticulatedAgentInterface, Sensor):
         T = articulated_agent.base_transformation
         forward = np.array([1.0, 0, 0])
         heading_angle = get_angle_to_pos(T.transform_vector(forward))
+        cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
+        # agent_pos = cur_articulated_agent.base_pos
         return np.array(
             [*articulated_agent.base_pos, heading_angle], dtype=np.float32
         )
+        # return agent_pos
 
+@registry.register_sensor
+class NavTempTranSensor(UsesArticulatedAgentInterface, Sensor):
+    """
+    ObjPOint
+    """
+
+    cls_uuid = "obj_pos"
+
+    def __init__(self, sim, config, task, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+        self._task = task
+        self._targets = {}
+        self._entities = self._task.pddl_problem.get_ordered_entities_list()
+    def _get_uuid(self, *args, **kwargs):
+        return NavTempTranSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, **kwargs):
+        return spaces.Box(
+            shape=(3,),
+            low=np.finfo(np.float32).min,
+            high=np.finfo(np.float32).max,
+            dtype=np.float32,
+        )
+
+    
+    def get_observation(self, observations, episode, *args, **kwargs):
+        # nav_to_target_idx = kwargs[
+        #     self._action_arg_prefix + "oracle_nav_action"
+        # ]
+        # if nav_to_target_idx <= 0 or nav_to_target_idx > len(
+        #     self._poss_entities
+        # ):
+        #     return
+        # nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+        if self.agent_id == 0:
+            nav_to_target_idx = 3
+        else:
+            nav_to_target_idx = 2
+        nav_to_obj = self._entities[nav_to_target_idx]
+        obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
+            nav_to_obj
+        )
+        
+
+        return obj_pos
 
 @registry.register_sensor
 class IsHoldingSensor(UsesArticulatedAgentInterface, Sensor):
@@ -1201,7 +1420,6 @@ class RuntimePerfStats(Measure):
                 k: np.mean(v) for k, v in self._metric_queue.items()
             }
 
-
 @registry.register_sensor
 class HasFinishedOracleNavSensor(UsesArticulatedAgentInterface, Sensor):
     """
@@ -1225,6 +1443,7 @@ class HasFinishedOracleNavSensor(UsesArticulatedAgentInterface, Sensor):
         return spaces.Box(shape=(1,), low=0, high=1, dtype=np.float32)
 
     def get_observation(self, observations, episode, *args, **kwargs):
+        # print('aa',self._task.actions)
         if self.agent_id is not None:
             use_k = f"agent_{self.agent_id}_oracle_nav_action"
         else:
@@ -1241,6 +1460,133 @@ class HasFinishedOracleNavSensor(UsesArticulatedAgentInterface, Sensor):
         nav_action = self._task.actions[use_k]
         return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
 
+@registry.register_sensor
+class NavObjPointSensor(UsesArticulatedAgentInterface, Sensor):
+
+    cls_uuid: str = "target_pos"
+
+    def __init__(self, sim, config, *args, task, **kwargs):
+        self._task = task
+        self._sim = sim
+        self._entities = self._task.pddl_problem.get_ordered_entities_list()
+        super().__init__(config=config)
+
+    def _get_uuid(self, *args, **kwargs):
+        return NavObjPointSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+       
+        return spaces.Box(shape=(3,),
+            low=0,
+            high=1,
+            dtype=np.float32,)
+    def get_observation(self, task, *args, **kwargs):
+        
+        
+        if self.agent_id == 0:
+            nav_to_target_idx = 0
+        else:
+            nav_to_target_idx = 1
+        nav_to_obj = self._entities[nav_to_target_idx]
+        obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
+            nav_to_obj
+        )
+        return obj_pos
+
+@registry.register_sensor
+class GetOracleNavTempSensor(UsesArticulatedAgentInterface, Sensor):
+    """
+    输出导航到目标点的path
+    """
+
+    cls_uuid: str = "oracle_nav_temp"
+
+    def __init__(self, sim, config, *args, task, **kwargs):
+        
+        self._task = task
+        self._sim = sim
+        self._targets = {}
+    
+    
+        super().__init__(config=config)
+
+    def _get_uuid(self, *args, **kwargs):
+        return GetOracleNavTempSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        # observation_space = spaces.Dict({
+        #     "key" : spaces.Box(shape=(1,),low=0, high=1000,dtype=np.float32),
+        #     "value" : spaces.Box(shape=(2,),low=0, high=1000,dtype = np.float32)
+        # }
+        # )
+        # # return spaces.Box(shape=(1,), low=0, high=1, dtype=np.float32)
+        # return observation_spac
+        # return spaces.Box(shape=(20,3), low=0, high=1, dtype=np.float32)
+        return spaces.Box(shape=(20,3),
+            low=np.finfo(np.float32).min,
+            high=np.finfo(np.float32).max,
+            dtype=np.float32,)
+    
+    
+    def _path_to_point(self,point):
+        cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
+        agent_pos = cur_articulated_agent.base_pos
+        path = habitat_sim.ShortestPath()
+        path.requested_start = agent_pos
+        path.requested_end = point
+        found_path = self._sim.pathfinder.find_path(path)
+        if not found_path:
+            return [agent_pos, point]
+        return path.points
+    
+    def get_observation(self, task, *args, **kwargs):
+        idxs,goals = self._sim.get_targets()
+        # print("aaa:",idxs)
+        # print("bbb;",goals)
+        # scence_pos = self._sim.get_scene_pos()
+        # setter_pos = scence_pos[idxs]
+        # setter_pos = setter_pos[1]
+        first_three_targets = goals
+        # sum = task.nav_goal_pos
+        # path = self._path_to_point(final_nav_targ)
+        # print("ss:",path)
+        path = self._path_to_point(first_three_targets[0])
+        return path
+
+    # def get_observations(self, observations, episode, *args, **kwargs):
+    #     if self.agent_id is not None:
+    #         use_k = f"agent_{self.agent_id}_oracle_nav_action"
+    #     else:
+    #         use_k = "oracle_nav_action"
+
+    #     if use_k not in self._task.actions:
+    #         return np.array(False, dtype=np.float32)[..., None]
+    #     else:
+    #         nav_action = self._task.actions[use_k]
+    #         idxs, target_pos = self._sim.get_targets()
+    #         print("target_pos",target_pos)
+    #         scene_pos = self._sim.get_scene_pos()
+    #         target_point = scene_pos[idxs]
+    #         print("target_point",target_point)
+    #         first_three_targets = target_point[0]
+    #         # print("11:",first_three_targets)
+    #         path_points = nav_action._path_to_point(first_three_targets)  # 获取路径点
+
+    #         if len(path_points) == 0:
+    #             return np.array([[0,0,0]]*20, dtype=np.float32)
+    #         first_point = path_points
+    #         return np.array(first_point[:20], dtype=np.float32)
+    #         # first_point = path_points[0]
+    #         # # return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
+    #         # return np.array(nav_action._path_to_point(), dtype=np.float32)[..., None]
+
+    
 @registry.register_sensor
 class HasFinishedArmActionSensor(UsesArticulatedAgentInterface, Sensor):
     """
@@ -1264,13 +1610,14 @@ class HasFinishedArmActionSensor(UsesArticulatedAgentInterface, Sensor):
         return spaces.Box(shape=(1,), low=0, high=1, dtype=np.float32)
 
     def get_observation(self, observations, episode, *args, **kwargs):
+    
         if self.agent_id is not None:
             use_k = f"agent_{self.agent_id}_arm_action"
         else:
             use_k = "arm_action"
             
         if use_k not in self._task.actions:
-            return np.array(False, dtype=np.float32)[..., None]
+            return np.array(-1, dtype=np.float32)[..., None]
         else:
             pick_action = self._task.actions[use_k]
             return np.array(pick_action.skill_done, dtype=np.float32)[..., None]
@@ -1650,6 +1997,9 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
             self._get_camera_info(depth_camera_name), 
             self._get_camera_extrinsic(depth_camera_name)
         )
+        # print(f"{self.agent_id}_get_camera_info:{self._get_camera_info(depth_camera_name)}")
+        # print(f"{self.agent_id}_get_camera_info:{self._get_camera_extrinsic(depth_camera_name)}")
+
         for pixel_coord, color in zip(pixel_coords, colors):
             x, y = pixel_coord.astype(int)
             cv2.circle(rgb_obs, (x, y), 2, color, -1)

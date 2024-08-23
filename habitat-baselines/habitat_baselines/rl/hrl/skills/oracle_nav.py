@@ -25,7 +25,7 @@ class OracleNavPolicy(NnSkillPolicy):
         :property action_idx: The index of the oracle action we want to execute
         """
 
-        action_idx: int
+        action_idx: list
 
     def __init__(
         self,
@@ -51,6 +51,7 @@ class OracleNavPolicy(NnSkillPolicy):
         self._oracle_nav_ac_idx, _ = find_action_range(
             action_space, "oracle_nav_action"
         )
+        self.config = config
 
     def set_pddl_problem(self, pddl_prob):
         super().set_pddl_problem(pddl_prob)
@@ -120,6 +121,7 @@ class OracleNavPolicy(NnSkillPolicy):
 
     def _parse_skill_arg(self, skill_name: str, skill_arg):
         # if skill arg is a dictionary
+        # print("skill_arg:::",skill_arg)
         if isinstance(skill_arg, dict):
             # decode string to dictionary
             search_target = skill_arg["target_obj"]
@@ -131,14 +133,16 @@ class OracleNavPolicy(NnSkillPolicy):
             raise ValueError(
                 f"Unexpected number of skill arguments in {skill_arg}"
             )
-
+        print("search_target:",search_target)
+        if search_target == -3:
+            return OracleNavPolicy.OracleNavActionArgs(search_target)
         target = self._pddl_problem.get_entity(search_target)
+        # print("target:",target)
         if target is None:
             raise ValueError(
                 f"Cannot find matching entity for {search_target}"
             )
         match_i = self._all_entities.index(target)
-
         return OracleNavPolicy.OracleNavActionArgs(match_i)
 
     @property

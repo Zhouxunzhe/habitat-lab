@@ -8,14 +8,20 @@ defaults:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_1.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_llm
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_fixed
+
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_fixed
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat/task/lab_sensors:
     # For the oracle navigation
     - has_finished_oracle_nav
     - all_predicates
+    - end_effector_global_sensor
+    # - has_finished_arm_action
+    # - oracle_nav_temp_goal
+    # # - oracle_nav_action_a
+    # - get_nav_goal_point
   - _self_
 
 
@@ -46,7 +52,7 @@ habitat_baselines:
   eval:
     should_load_ckpt: False
     video_option: ["disk"]
-    image_option: []
+    image_option: ["disk"]
 
   rl:
     agent:
@@ -93,7 +99,7 @@ habitat_baselines:
               skill_name: "OraclePickPolicy"
               action_name: "arm_action"
               obs_skill_inputs: ["is_holding"]
-              max_skill_steps: 100
+              max_skill_steps: 300
             #place:
             #  skill_name: "OraclePlacePolicy"
             #  action_name: "arm_action"

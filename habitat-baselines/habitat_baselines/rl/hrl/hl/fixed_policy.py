@@ -69,7 +69,6 @@ class FixedHighLevelPolicy(HighLevelPolicy):
 
         # Add a wait action at the end.
         solution_actions.append(parse_func("wait(3000)"))
-
         return solution_actions
 
     def apply_mask(self, mask):
@@ -145,7 +144,7 @@ class FixedHighLevelPolicy(HighLevelPolicy):
                 skill_args_data[batch_idx] = skill_args  # type: ignore[call-overload]
 
                 self._next_sol_idxs[batch_idx] += 1
-
+                print("skill_args_data:",skill_args_data)
         return next_skill, skill_args_data, immediate_end, PolicyActionData()
 
     def filter_envs(self, curr_envs_to_keep_active):
