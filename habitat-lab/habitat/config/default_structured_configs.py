@@ -2117,11 +2117,9 @@ class DatasetConfig(HabitatBaseConfig):
         "habitat-test-scenes/v1/{split}/{split}.json.gz"
     )
     # TODO(YCC): load robot config
-    mode: str = "perception"
+    mode: str = "test"
     randomize_agent_start: int = 1
-    robot_config: str = (
-        "data/robots/json/{mode}.json"
-    )
+    robot_config: str = ""
 
 
 @dataclass
