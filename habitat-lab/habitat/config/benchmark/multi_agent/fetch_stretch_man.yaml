@@ -3,11 +3,11 @@
 defaults:
   - /habitat: habitat_config_base
   - /habitat/task: task_config_base
-#Stretch
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: FetchRobot_default
 
-  - /habitat/dataset/rearrangement: zxz_manipulation
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: StretchRobot_default
+
+  - /habitat/dataset/embodied_mas: manipulation
 
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_action: oracle_arm_action
   - /habitat/task/actions@habitat.task.actions.agent_0_base_velocity: base_velocity_non_cylinder
@@ -19,9 +19,7 @@ defaults:
   - /habitat/task/actions@habitat.task.actions.agent_1_base_velocity: base_velocity_non_cylinder
   - /habitat/task/actions@habitat.task.actions.agent_1_rearrange_stop: rearrange_stop
   - /habitat/task/actions@habitat.task.actions.agent_1_pddl_apply_action: pddl_apply_action
-  - /habitat/task/actions@habitat.task.actions.agent_1_oracle_nav_action: fetch_oracle_nav_action
-
-
+  - /habitat/task/actions@habitat.task.actions.agent_1_oracle_nav_action: stretch_oracle_nav_action
 
   - /habitat/task/measurements:
     - pddl_success
@@ -43,11 +41,6 @@ defaults:
     - localization_sensor
     - other_agent_gps
     - detected_objects_sensor
-    - trans_of_robot
-    - navtemptran_s
-    - end_effector_global_sensor
- 
-    - arm_workspace_rgb_sensor
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
   - _self_
@@ -81,40 +74,12 @@ habitat:
         end_on_collide: True
         collide_penalty: 0.5
     task_spec_base_path: benchmark/multi_agent/
-    task_spec: pddl/zxz_tworobot_oneobj_rearrange
+    task_spec: pddl/fetch_stretch_man
     pddl_domain_def: fp
-    actions:
-      agent_0_base_velocity:
-        lin_speed: 40.0
-        ang_speed: 20.0
-
-      # agent_0_oracle_nav_action:
-      #   type: OracleNavAction
-      #   motion_control: base_velocity_non_cylinder
-      #   lin_speed: 10.0
-      #   ang_speed: 10.0
-      #   spawn_max_dist_to_obj: -1.0
-      #   # For noncylinder navmesh action
-      #   # If we allow the agent to do sliding
-      #   allow_dyn_slide: True
-      #   # navmesh_offset: [[0.0, 0.0], [0.25, 0.0], [-0.25, 0.0]]
-      #   navmesh_offset: []
-      #   # If we allow the robot to move laterally
-      #   enable_lateral_move: False
-      #   # There is a collision if the difference between the clamped NavMesh position and target position
-      #   # is more than collision_threshold for any point.
-      #   collision_threshold: 0.1
-      #   dist_thresh: 0.3
-      #   turn_thresh: 0.5
-
-      agent_1_base_velocity:
-        lin_speed: 40.0
-        ang_speed: 20.0
-
     robot_at_thresh: 3.0
 
   environment:
-    max_episode_steps: 1000
+    max_episode_steps: 750
     # iterator_options:
     #   shuffle: True
   simulator:
@@ -141,8 +106,8 @@ habitat:
       agent_0:
         joint_start_noise: 0.0
   dataset:
-    data_path: data/datasets/manipulation/manipulation_eval.json.gz
+    data_path: data/datasets/replica_cad/two_agent_manipulation_eval.json.gz
     # new
     randomize_agent_start: 0
-    robot_config: data/robots/json/manipulation.json
+    robot_config: data/robots/json/manipulation_new.json
     mode: manipulation

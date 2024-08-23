@@ -24,6 +24,9 @@ from habitat.tasks.rearrange.actions.oracle_nav_action import (
     OracleNavCoordinateAction
 )
 
+DEBUG_SAVE_NAVMESH = False
+DEBUG_SAVE_PATHFINDER_MAP = False
+
 @registry.register_task_action
 class OracleNavDiffBaseAction(OracleNavAction):
     """
@@ -75,16 +78,18 @@ class OracleNavDiffBaseAction(OracleNavAction):
         pf = habitat_sim.nav.PathFinder()
         # deepcopy does not work since NavMeshSettings is non-pickleable
         # modified_settings = deepcopy(self._sim.pathfinder.nav_mesh_settings)
-        modified_settings = habitat_sim.NavMeshSettings()
-        for key in dir(self._sim.pathfinder.nav_mesh_settings):
-            attr = getattr(self._sim.pathfinder.nav_mesh_settings, key)
-            if not key.startswith("__") and not callable(attr):
-                setattr(
-                    modified_settings,
-                    key,
-                    attr
-                )
-        
+        modified_settings = self._sim.pathfinder.nav_mesh_settings
+        # modified_settings = habitat_sim.NavMeshSettings()
+        # modified_settings.set_defaults()
+        # for key in dir(self._sim.pathfinder.nav_mesh_settings):
+        #     attr = getattr(self._sim.pathfinder.nav_mesh_settings, key)
+        #     if not key.startswith("__") and not callable(attr):
+        #         setattr(
+        #             modified_settings,
+        #             key,
+        #             attr
+        #         )
+                
         modified_settings.agent_radius = config.agent_radius
         modified_settings.agent_height = config.agent_height
         modified_settings.agent_max_climb = config.agent_max_climb
@@ -96,8 +101,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
             pf, modified_settings
         ), "failed to recompute navmesh"
         
+        # assert self._sim.recompute_navmesh(
+        #     pf, self._sim.pathfinder.nav_mesh_settings
+        # ), "failed to recompute navmesh"
+        
         # DEBUG: save recomputed navmesh
-        if False:
+        if DEBUG_SAVE_NAVMESH:
             from habitat_mas.perception.nav_mesh import NavMesh
             import open3d as o3d
             
@@ -123,6 +132,70 @@ class OracleNavDiffBaseAction(OracleNavAction):
 
             
         return pf
+
+    def _plot_map_and_path(self, kwargs, pathfinder: habitat_sim.nav.PathFinder, 
+                           save_name="sim", map_resolution=1024):
+        """
+        Plot the top-down map and the path on it
+        """
+        self.skill_done = False
+        nav_to_target_idx = kwargs[
+            self._action_arg_prefix + "oracle_nav_action"
+        ]
+        if nav_to_target_idx <= 0 or nav_to_target_idx > len(
+            self._poss_entities
+        ):
+            return
+        nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+
+        final_nav_targ, obj_targ_pos = self._get_target_for_idx(
+            nav_to_target_idx
+        )
+        # base_T = self.cur_articulated_agent.base_transformation
+        curr_path_points = self._path_to_point(final_nav_targ, pathfinder)
+
+        # Create a top-down map using the pathfinder and a specified height
+        topdown_map = maps.get_topdown_map(
+            pathfinder=pathfinder,
+            height=0.1522,
+            map_resolution=map_resolution,
+        )
+        # Colorize the top-down map for visualization
+        colorize_topdown_map = maps.colorize_topdown_map(topdown_map)
+        # Convert the current path points to 2D coordinates
+        curr_path_points_2d = [((pt[2]), (pt[0])) for pt in curr_path_points]
+
+        # Convert the current path points to grid coordinates in the top-down map
+        # for i in range(0, len(curr_path_points_2d)):
+        #     x, y = maps.to_grid(realworld_x=curr_path_points_2d[i][1], realworld_y=curr_path_points_2d[i][0], grid_resolution=[7295, 4096], pathfinder=pathfinder)
+        #     curr_path_points_2d[i] = [x, y]
+        grid_resolution = topdown_map.shape
+        for i in range(0, len(curr_path_points_2d)):
+            x, y = maps.to_grid(
+                realworld_x=curr_path_points_2d[i][0],
+                realworld_y=curr_path_points_2d[i][1],
+                grid_resolution=grid_resolution,
+                pathfinder=pathfinder,
+            )
+            curr_path_points_2d[i] = [x, y]
+
+        # Draw the path on the colorized top-down map
+        maps.draw_path(colorize_topdown_map, curr_path_points_2d)
+
+        # Get the robot's position and rotation
+        base_pos = np.array(self.cur_articulated_agent.base_pos)
+        x, y = maps.to_grid(
+            realworld_x=base_pos[2],
+            realworld_y=base_pos[0],
+            grid_resolution=grid_resolution,
+            pathfinder=pathfinder,
+        )
+        robot_rot = np.array(self.cur_articulated_agent.base_rot)
+        # Draw the agent's position and rotation on the top-down map
+        maps.draw_agent(image=colorize_topdown_map, agent_center_coord=[x, y], 
+                        agent_rotation=robot_rot, agent_radius_px=30)
+
+        return colorize_topdown_map
 
     def step_filter(self, start_pos: Vector3, end_pos: Vector3) -> Vector3:
         r"""Computes a valid navigable end point given a target translation on the NavMesh.
@@ -210,28 +283,32 @@ class OracleNavDiffBaseAction(OracleNavAction):
             )
         return self._targets[nav_to_target_idx]
 
-    def _path_to_point(self, point):
+    def _path_to_point(self, point, pathfinder=None):
         """
         Obtain path to reach the coordinate point. If agent_pos is not given
         the path starts at the agent base pos, otherwise it starts at the agent_pos
         value
         :param point: Vector3 indicating the target point
+        :param pathfinder: The pathfinder to use for computing the path
         """
         agent_pos = self.cur_articulated_agent.base_pos
 
         path = habitat_sim.ShortestPath()
         path.requested_start = agent_pos
         path.requested_end = point
-        found_path = self.pathfinder.find_path(path)
+        if pathfinder is None:
+            found_path = self.pathfinder.find_path(path)
+        else:
+            found_path = pathfinder.find_path(path)
         if not found_path:
             return [agent_pos, point]
         return path.points
 
     def step(self, *args, **kwargs):
-        # if pathfinder is not created, create it 
+        # if pathfinder is not created, create it
         if not self.pathfinder:
             self.pathfinder = self._create_pathfinder(self.config)
-        
+
         self.skill_done = False
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
@@ -277,19 +354,46 @@ class OracleNavDiffBaseAction(OracleNavAction):
         # maps.draw_path(top_down_map=colorize_topdown_map,path_points=curr_path_points_2d)
         
         robot_pos = np.array(self.cur_articulated_agent.base_pos)
-        robot_rot = np.array(self.cur_articulated_agent.base_rot)
-        # x,y= robot_pos[0],robot_pos[2]
-        # tt = maps.to_grid(realworld_x = x,realworld_y=y,grid_resolution=[1024,1024],pathfinder=self.pathfinder)
 
-        # maps.draw_path(colorize_topdown_map,curr_path_points_2d) #将路径点画到俯视图上
+        # DEBUG: plot the map and path
+        if DEBUG_SAVE_PATHFINDER_MAP:
+            sim_map = self._plot_map_and_path(kwargs, self._sim.pathfinder, save_name="sim")
+            agent_map = self._plot_map_and_path(kwargs, self.pathfinder, save_name="agent")
+            
+            # Get episode id
+            ep_id = self._sim.ep_info.episode_id
 
-        # # ans = maps.draw_agent(image = topdown_map,agent_center_coord=[x,y],agent_rotation=robot_rot)
-        # import matplotlib.pyplot as plt
-        # plt.imshow(colorize_topdown_map)
-        # plt.title(f'Draw Map of {self._action_arg_prefix}_{self.step_sum}')
-        # # plt.show()
-        # plt.savefig(os.path.join('./debug_new/', f'Draw_Map_of_{self._action_arg_prefix}_{self.step_sum}'+'.png'),
-        #             bbox_inches='tight', pad_inches=0)  #记得先mkdir debug_new文件夹
+            if not os.path.exists(f'./debug/{ep_id}'):
+                os.makedirs(f'./debug/{ep_id}')
+
+            # Display the colorized top-down map
+            import matplotlib.pyplot as plt
+            fig, axs = plt.subplots(1, 2)
+
+            # Plot sim_map
+            axs[0].imshow(sim_map)
+            axs[0].set_title(f'Sim Map')
+            axs[0].axis('on')
+
+            # Plot agent_map
+            axs[1].imshow(agent_map)
+            axs[1].set_title(f'Agent Map')
+            axs[1].axis('on')
+
+            # Save the figure
+            plt.savefig(
+                os.path.join(
+                    f"./debug/{ep_id}",
+                    f"{self._action_arg_prefix}_{self.step_sum}"
+                    + ".png",
+                ),
+                bbox_inches="tight",
+                pad_inches=0,
+            )
+            # plt.close(fig)
+                
+            self.step_sum += 1
+
         if curr_path_points is None:
             raise Exception
         else:

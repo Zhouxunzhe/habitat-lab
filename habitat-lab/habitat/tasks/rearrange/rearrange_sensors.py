@@ -40,6 +40,8 @@ from habitat.tasks.rearrange.utils import (
 from habitat.tasks.utils import cartesian_to_polar
 
 from habitat_mas.scene_graph.scene_graph_hssd import SceneGraphHSSD
+from habitat.articulated_agents.utils import get_articulated_agent_camera_transform_from_cam_info
+
 
 class MultiObjSensor(PointGoalSensor):
     """
@@ -1835,7 +1837,8 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
     
         cx = width / 2.0 
         cy = height / 2.0 
-        f = (width / 2.0) / np.tan(hfov / 2.0)
+        # f = (width / 2.0) / np.tan(hfov / 2.0)
+        f = max(width, height) / 2.0 / np.tan(hfov / 2.0)
 
         return {
             "width": width,
@@ -1846,6 +1849,26 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
             "normalize_depth": normalize_depth
         }
 
+    # def _get_camera_extrinsic(self, camera_name)-> np.ndarray:
+    #     """get camera extrinsic from habitat simulator config
+    #     Assume the depth and color sensor are aligned and have the same extrinsic parameters
+    #     Args:
+    #         sim (haibtat_sim.Simulator): simulator config class
+    #         camera_name: name of the camera sensor
+    #     """
+    #     # remove the _depth or _rgb suffix to get the camera key
+    #     camera_key = camera_name.replace("_depth", "")
+    #     cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
+    #     cam_info = cur_articulated_agent.params.cameras[camera_key]
+    #     # Get the camera's attached link
+    #     link_trans = cur_articulated_agent.sim_obj.get_link_scene_node(
+    #         cam_info.attached_link_id
+    #     ).transformation
+    #     # Get the camera offset transformation
+    #     offset_trans = mn.Matrix4.translation(cam_info.cam_offset_pos)
+    #     cam_trans = link_trans @ offset_trans @ cam_info.relative_transform
+    #     return cam_trans
+
     def _get_camera_extrinsic(self, camera_name)-> np.ndarray:
         """get camera extrinsic from habitat simulator config
         Assume the depth and color sensor are aligned and have the same extrinsic parameters
@@ -1853,18 +1876,13 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
             sim (haibtat_sim.Simulator): simulator config class
             camera_name: name of the camera sensor
         """
-        # remove the _depth or _rgb suffix to get the camera key
         camera_key = camera_name.replace("_depth", "")
         cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
         cam_info = cur_articulated_agent.params.cameras[camera_key]
-        # Get the camera's attached link
-        link_trans = cur_articulated_agent.sim_obj.get_link_scene_node(
-            cam_info.attached_link_id
-        ).transformation
-        # Get the camera offset transformation
-        offset_trans = mn.Matrix4.translation(cam_info.cam_offset_pos)
-        cam_trans = link_trans @ offset_trans @ cam_info.relative_transform
+        cam_trans = get_articulated_agent_camera_transform_from_cam_info(
+            cur_articulated_agent, cam_info)
         return cam_trans
+
 
     def _rgbd_to_point_cloud(self, rgb_image, depth_image, camera_info, cam_trans)-> o3d.geometry.PointCloud:
         """
@@ -1929,13 +1947,14 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         # Transform 3D points using the camera transformation matrix
         points_3d_hom = np.hstack((points_3d, np.ones((points_3d.shape[0], 1))))
-        cam_trans = np.asarray(cam_trans)
-        points_3d_transformed = cam_trans @ points_3d_hom.T
+        # cam_trans_inv = np.linalg.inv(np.asarray(cam_trans))
+        cam_trans = np.array(cam_trans)
+        points_3d_transformed = cam_trans @ points_3d_hom.T # transform points to camera frame
 
         # Project the transformed 3D points onto the 2D image plane
         x = points_3d_transformed[0, :]
         y = points_3d_transformed[1, :]
-        z = points_3d_transformed[2, :]
+        z = np.abs(points_3d_transformed[2, :])
 
         u = (x * fx / z) + cx
         v = (y * fy / z) + cy
