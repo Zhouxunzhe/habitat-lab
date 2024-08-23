@@ -72,7 +72,7 @@ habitat:
         must_call_stop: False
       rearrange_cooperate_reward:
         stage_sparse_reward: 5.0
-        end_on_collide: True
+        end_on_collide: False
         collide_penalty: 0.5
     task_spec_base_path: benchmark/multi_agent/
     task_spec: pddl/pddl_spot_fetch_mobility
