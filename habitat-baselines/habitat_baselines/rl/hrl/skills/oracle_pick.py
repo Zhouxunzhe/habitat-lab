@@ -20,8 +20,6 @@ class OraclePickPolicy(NnSkillPolicy):
     """
     Skill to generate a picking motion. Moves the arm next to an object,
     """
-
-    GRAB_ID = 1
     RELEASE_ID = 0
     PICK_ID = 1
 

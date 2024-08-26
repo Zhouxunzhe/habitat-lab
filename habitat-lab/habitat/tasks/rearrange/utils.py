@@ -435,9 +435,6 @@ class IkHelper:
             # residualThreshold=0.01,
             physicsClientId=self.pc_id,
         )
-        # TODO(zxz): fix output index
-        # joint_indices = [self._non_fixed_joints[i] for i in range(self._arm_len)]
-        # return [js[i] for i in joint_indices]
         return js[:self._arm_len]
 
     def is_reachable(self, targ_ee, thresh=0.05):
