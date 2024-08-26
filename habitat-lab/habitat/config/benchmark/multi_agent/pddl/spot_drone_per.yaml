@@ -39,5 +39,5 @@ stage_goals:
       - detected_object(any_targets|1, robot_1)
 
 solution:
-  - nav_to_goal(any_targets|0, robot_1)
+  - nav_to_goal(any_targets|0, robot_0)
   - nav_to_goal(any_targets|1, robot_1)
