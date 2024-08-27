@@ -3,6 +3,7 @@ from tqdm import tqdm
 import magnum as mn
 from habitat.datasets.rearrange.run_episode_generator import get_config_defaults
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode, RearrangeDatasetV0
+from habitat.datasets.rearrange.samplers.receptacle import parse_receptacles_from_user_config
 from habitat.datasets.rearrange.navmesh_utils import (
     get_largest_island_index,
     is_accessible,
@@ -69,7 +70,7 @@ def is_compatible_episode(
 ) -> Union[Tuple[bool, float], Tuple[bool, int]]:
     euclid_dist = np.power(np.power(np.array(s) - np.array(t), 2).sum(0), 0.5)
 
-    #TODO(YCC): In mobility task, s and t may not be on the same floor, 
+    # In mobility task, s and t may not be on the same floor, 
     # we need to check height difference
     height_dist = np.abs(s[1] - t[1])
     found_path, d_separation = geodesic_distance(sim, s, t)
@@ -115,10 +116,10 @@ class MobilityGenerator:
 
 
 
-# TODO(YCC): sample the scene from config and initialize the Simulator
+# sample the scene from config and initialize the Simulator
     def initialize_sim(self, dataset_path: str = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d/") -> None:
         backend_cfg = habitat_sim.SimulatorConfiguration()
-        # TODO(YCC): randomly sample the scene from config
+        # randomly sample the scene from config
         sub_scene_paths = [d for d in os.listdir(dataset_path) if osp.isdir(osp.join(dataset_path, d))]
         if not sub_scene_paths or len(sub_scene_paths) == 1:
             raise ValueError("No sub scene paths found in dataset path.")
@@ -191,7 +192,7 @@ class MobilityGenerator:
 
         return new_pos
 
-# TODO(YCC):generate single episode, return episode as NavigationEpisode
+# generate single episode, return episode as NavigationEpisode
     def generate_single_episode(
         self,
         episode_id: int,
@@ -221,7 +222,7 @@ class MobilityGenerator:
             self.sim.pathfinder, self.sim, allow_outdoor=False
         )
 
-        # TODO(YCC): randomly sample the target receptacles
+        # randomly sample the target receptacles
         target_receptacles: Dict[str, Any] = {}
         expected_list_keys = ["included_object_substrings", "excluded_object_substrings"]
         sampled_target_receptacles = {}
@@ -238,7 +239,7 @@ class MobilityGenerator:
             sampled_target_receptacle = target_receptacles[target_recep_set['name']][np.random.randint(0, len(target_receptacles[target_recep_set['name']]))]
             sampled_target_receptacles[target_recep_set['name']] = sampled_target_receptacle
 
-        # TODO(YCC): randomly sample the goal receptacles
+        # randomly sample the goal receptacles
         goal_receptacles: Dict[str, Any] = {}
         sampled_goal_receptacles = {}
         for goal_recep_set in cfg.receptacle_sets:
@@ -257,7 +258,7 @@ class MobilityGenerator:
             sampled_goal_receptacles[goal_recep_set['name']] = sampled_goal_receptacle
 
 
-        # TODO(YCC): randomly sample the object set
+        # randomly sample the object set
         obj_sets: Dict[str, List[str]] = {}
         sampled_objects = {}
         expected_list_keys = ["included_substrings", "excluded_substrings"]
@@ -293,13 +294,20 @@ class MobilityGenerator:
                     new_tar_recep = rom.add_object_by_template_handle(
                         target_receptacle
                     )
+                height_offset = new_tar_recep.collision_shape_aabb.size_y() * 0.5
                 target_position = np.array(
-                    [target_position[0], target_position[1] + 0.2, target_position[2]])
+                    [target_position[0], target_position[1] + height_offset, target_position[2]])
                 new_tar_recep.translation = target_position
                 new_tar_recep.rotation = mn.Quaternion.rotation(
                     mn.Rad(random.uniform(0, math.pi * 2.0)), mn.Vector3.y_axis()
                 )
                 new_target_receptacles[name] = new_tar_recep
+                target_aabbreceptacle = parse_receptacles_from_user_config(
+                    new_tar_recep.user_attributes,
+                    parent_object_handle=new_tar_recep.handle,
+                    parent_template_directory=new_tar_recep.creation_attributes.file_directory,
+                ) 
+                target_aabb_offset = target_aabbreceptacle[0].bounds.center()              
 
                 if not is_accessible(
                     sim=self.sim,
@@ -343,13 +351,21 @@ class MobilityGenerator:
                     new_goal_recep = rom.add_object_by_template_handle(
                         goal_receptacle
                     )
+                height_offset = new_goal_recep.collision_shape_aabb.size_y() * 0.5
                 goal_position = np.array(
-                    [goal_position[0], goal_position[1] + 0.2, goal_position[2]])
+                    [goal_position[0], goal_position[1] + height_offset, goal_position[2]])
                 new_goal_recep.translation = goal_position
                 new_goal_recep.rotation = mn.Quaternion.rotation(
                     mn.Rad(random.uniform(0, math.pi * 2.0)), mn.Vector3.y_axis()
                 )
                 new_goal_receptacles[name] = new_goal_recep
+                goal_aabbreceptacle = parse_receptacles_from_user_config(
+                    new_goal_recep.user_attributes,
+                    parent_object_handle=new_goal_recep.handle,
+                    parent_template_directory=new_goal_recep.creation_attributes.file_directory,
+                )
+                goal_aabb_offset = goal_aabbreceptacle[0].bounds.center()
+
                 if not is_accessible(
                     sim=self.sim,
                     point=goal_position,
@@ -364,9 +380,9 @@ class MobilityGenerator:
         if height_dist < 2.0 or new_goal_receptacles == {} or new_target_receptacles == {}:
             return None
 
-        # TODO(YCC): try to place the object to target receptacle
+        # try to place the object to target receptacle
         new_object = {}
-        object_position = mn.Vector3([target_position[0], target_position[1] + 0.3, target_position[2]])
+        object_position = mn.Vector3([target_position[0] + target_aabb_offset[0], target_position[1] + target_aabb_offset[1], target_position[2] + target_aabb_offset[2]])
 
         for name, object_handle in sampled_objects.items():
             assert self.sim.get_object_template_manager().get_library_has_handle(
@@ -391,8 +407,8 @@ class MobilityGenerator:
             obj = (object_filename, matrix_list)
             objects.append(obj)
 
-        # TODO(YCC): try to place the object to goal receptacle
-        object_target_position = mn.Vector3([goal_position[0], goal_position[1] + 0.3, goal_position[2]])
+        # try to place the object to goal receptacle
+        object_target_position = mn.Vector3([goal_position[0] + goal_aabb_offset[0], goal_position[1] + goal_aabb_offset[1], goal_position[2] + goal_aabb_offset[2]])
         new_object_target = {}
         for name, object_handle in sampled_objects.items():
             assert self.sim.get_object_template_manager().get_library_has_handle(
@@ -463,7 +479,7 @@ class MobilityGenerator:
                 },
         )
 
-#TODO(YCC):generate HM3D/MP3D episodes
+# generate HM3D/MP3D episodes
     def generate_mobility_episodes(self, output_dir):
 
 
