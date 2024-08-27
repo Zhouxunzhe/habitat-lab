@@ -241,47 +241,14 @@ def observations_to_image(observation: Dict, info: Dict,
     image_filter_list = config.habitat_baselines.eval.get("image_filter_list", ["head_rgb", "arm_workspace_rgb"])
     image_dir = config.habitat_baselines.image_dir
 
-    substrings = ["has_finished_arm_action","obj_pos","target_pos","localization_sensor","ee_pos","ee_global_pos_sensor","has_finished_oracle_nav","robot_trans_martix"]
+    substrings = ["has_finished_arm_action","obj_pos","target_pos",
+                  "localization_sensor","ee_pos","ee_global_pos_sensor",
+                  "has_finished_oracle_nav","robot_trans_martix","camera_extrinsic"]
     #"has_finished_oracle_nav"
     matched_data = {key: value.tolist() for key, value in observation.items() if any(sub in key for sub in substrings)}
+    unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic"]
     for sensor_name in observation:
-        # if(sensor_name=="agent_0_navtemptran_sensor"):
-        #     print(str(frame_id)+"_agent0: navtemptran_sensor:",observation[sensor_name])
-        # if(sensor_name=="agent_1_navtemptran_sensor"):
-        #     print(str(frame_id)+"_agent1: navtemptran_sensor:",observation[sensor_name])
-        # if(sensor_name=="agent_0_has_finished_oracle_nav") and ((observation[sensor_name] == 1.0) or (observation[sensor_name] == -1.0)):
-        #     print(str(frame_id)+"_agent0has_finished_oracle_nav",observation[sensor_name])
-        # if(sensor_name=="agent_1_has_finished_oracle_nav") and ((observation[sensor_name] == 1.0) or (observation[sensor_name] == -1.0)):
-        #     print(str(frame_id)+"_agent1has_finished_oracle_nav",observation[sensor_name])
-        # if(sensor_name=="agent_0_localization_sensor"):
-        #     print(str(frame_id)+'_agent0: location:',observation[sensor_name])
-        # # # if(sensor_name=="agent_0_ee_pos"):
-        #     print(str(frame_id)+'_agent0: ee_pos:',observation[sensor_name])
-        # if(sensor_name=="agent_1_localization_sensor"):
-        #     print(str(frame_id)+'_agent1: location:',observation[sensor_name])
-        # if(sensor_name=="agent_1_ee_pos"):
-        #     print(str(frame_id)+'_agent0: ee_pos:',observation[sensor_name])
-        # if(sensor_name=="agent_0_oracle_nav_target_path"):
-        #     print(str(frame_id)+'_agent0: point_compass:',observation[sensor_name])
-        # if(sensor_name =="agent_0_has_finished_oracle_nav"):
-        #     print(str(frame_id)+'_agent0: hasfinished:',observation[sensor_name])
-        # if(sensor_name =="agent_0_obj_goal_gps_compass"):
-        #     print(str(frame_id)+'_agent0: goalobj:',observation[sensor_name])
-        # if(sensor_name =="agent_1_obj_goal_gps_compass"):
-        #     print(str(frame_id)+'_agent1: goalobj:',observation[sensor_name])
-        # if(sensor_name=="agent_1_oracle_nav_temp"):
-        #     print(str(frame_id)+"_agent1: pathpoint:",observation[sensor_name])
-        # if(sensor_name=="agent_1_localization_sensor"):
-        #     print(str(frame_id)+'_agent1: location:',observation[sensor_name])
-        # # if(sensor_name=="agent_1_oracle_nav_target_path"):
-        #     print(str(frame_id)+'_agent1: point_compass:',observation[sensor_name])
-        # if(sensor_name =="agent_1_has_finished_oracle_nav"):
-        #     print(str(frame_id)+'_agent1: hasfinished:',observation[sensor_name])
-        # # if(sensor_name =="agent_1_obj_goal_gps_compass"):
-        # #     print(str(frame_id)+'_agent1: obj_goal_gps_compass:',observation[sensor_name])
-        
-        # # print(sensor_name)
-        if sensor_name!="agent_0_robot_trans_martix" and sensor_name!="agent_1_robot_trans_martix" and sensor_name!="agent_0_oracle_nav_target_path" and sensor_name!="agent_1_oracle_nav_target_path":
+        if not any(sub in sensor_name for sub in unload_name):
             if len(observation[sensor_name].shape) > 1:
                 obs_k = observation[sensor_name]
                 if not isinstance(obs_k, np.ndarray):

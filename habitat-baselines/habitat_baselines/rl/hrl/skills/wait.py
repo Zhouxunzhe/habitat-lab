@@ -30,7 +30,6 @@ class WaitSkillPolicy(SkillPolicy):
     def _is_skill_done(
         self, observations, rnn_hidden_states, prev_actions, masks, batch_idx
     ) -> torch.BoolTensor:
-        print(f"DEBUG:_wait_time = {self._wait_time}")
         assert self._wait_time > 0
         return (self._cur_skill_step >= self._wait_time)[batch_idx]
 

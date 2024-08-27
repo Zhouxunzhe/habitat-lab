@@ -177,7 +177,8 @@ class HabitatMASEvaluator(Evaluator):
         agent.eval()
         if config.habitat_baselines.eval.vlm_eval:
             vlm_agent = VLMAgent(agent_num = 2,image_dir = './video_dir/image',
-                                 json_dir = './video_dir/image_dir/episode_91/episode_91.json')
+                                 json_dir = './video_dir/image_dir/episode_91/episode_91.json',
+                                 url = "http://10.140.0.143:10022/robot-chat")
 
         
         while (
@@ -235,11 +236,14 @@ class HabitatMASEvaluator(Evaluator):
                     image = [agent_0_image,agent_1_image]
                     agent_trans = [agent_0_trans,agent_1_trans]
                     # print(f"agent_trans:{agent_trans}")
-                    filter_action = vlm_agent.answer(agent_trans,agent_query,image)
+                    filter_action = vlm_agent.answer_vlm(agent_trans_list = agent_trans,
+                                                         agent_query = agent_query,image = image,
+                                                         episode_id = 10)
                     # producer_process = multiprocessing.Process(target=produce_data,args=(queue,filter_action))
                     # producer_process.start()
                     # com.update(filter_action)
                     # print("data:",com.data)
+                    print("agent_query:",agent_query)
                     print("filter_action",filter_action)
                     for agent_id,info in filter_action.items():
                         if info["name"] == "pick":

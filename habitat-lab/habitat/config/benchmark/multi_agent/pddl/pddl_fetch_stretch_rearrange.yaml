@@ -17,12 +17,12 @@ objects:
 goal:
   expr_type: AND
   sub_exprs:
-    # - at(any_targets|1,TARGET_any_targets|1)
-    # - at(any_targets|0,TARGET_any_targets|0)
-    - robot_at(TARGET_any_targets|1, robot_0)
-    - robot_at(TARGET_any_targets|0, robot_1)
-    - holding(any_targets|1, robot_0)
-    - holding(any_targets|0, robot_1)
+    - at(any_targets|1,TARGET_any_targets|1)
+    - at(any_targets|0,TARGET_any_targets|0)
+    # - robot_at(TARGET_any_targets|1, robot_0)
+    # - robot_at(TARGET_any_targets|0, robot_1)
+    # - holding(any_targets|1, robot_0)
+    # - holding(any_targets|0, robot_1)
     # - not_holding(robot_0)
     # - not_holding(robot_1)
 

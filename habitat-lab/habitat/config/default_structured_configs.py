@@ -838,6 +838,10 @@ class ObjectGoalConfig(LabSensorConfig):
     dimensionality: int = 2
 
 @dataclass
+class CameraExtrinsicSensorConfig(LabSensorConfig):
+    type: str = "CameraExtrinsicSensor"
+
+@dataclass
 class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     uuid: str = "arm_workspace_rgb"
     type: str = "ArmWorkspaceRGBSensor"
@@ -1804,8 +1808,8 @@ class HabitatSimFisheyeSemanticSensorConfig(SimulatorFisheyeSensorConfig):
 @dataclass
 class HeadRGBSensorConfig(HabitatSimRGBSensorConfig):
     uuid: str = "head_rgb"
-    width: int = 1024
-    height: int = 1024
+    width: int = 256
+    height: int = 256
 
 
 @dataclass
@@ -2736,6 +2740,12 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="object_goal",
     node=ObjectGoalConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.camera_extrinsic_info",
+    group="habitat/task/lab_sensors",
+    name="camera_extrinsic_info",
+    node=CameraExtrinsicSensorConfig
 )
 cs.store(
     package="habitat.task.lab_sensors.arm_workspace_rgb_sensor",

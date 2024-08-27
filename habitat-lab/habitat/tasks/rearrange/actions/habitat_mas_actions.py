@@ -313,6 +313,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
         ]
+        base_T = self.cur_articulated_agent.base_transformation
         # print(f"agent:{self._action_arg_prefix}_nav_to_target_idx",nav_to_target_idx,flush=True)
         if nav_to_target_idx == -2:
             # from habitat_baselines.rl.multi_agent.habitat_mas_evaluator import get_context
@@ -323,8 +324,23 @@ class OracleNavDiffBaseAction(OracleNavAction):
             with open('./data_temp.json','r') as f:
                 ans = json.load(f)
             agent_name = self._action_arg_prefix.rstrip("_")
-            final_nav_targ = ans[agent_name]['position']
-            obj_targ_pos = final_nav_targ
+            temp = ans[agent_name]['position']
+            if temp == [0,0,0]:
+                forward = np.array([1.0, 0, 0])
+                forward = np.array(base_T.transform_vector(forward))[[0, 2]]
+                theta = -np.pi/4
+                rotation_ma = np.array([
+                    [np.cos(theta),np.sin(theta)],
+                    [-np.sin(theta),np.cos(theta)]
+                ])
+                rotated = np.dot(rotation_ma,forward)
+                rotated_pos = np.insert(rotated,1,0)
+                robot_pos = np.array(self.cur_articulated_agent.base_pos)
+                obj_targ_pos = robot_pos + rotated_pos
+                final_nav_targ = robot_pos
+            else:
+                final_nav_targ = temp
+                obj_targ_pos = final_nav_targ
         else:
             if (nav_to_target_idx <= 0) or nav_to_target_idx > len(
                 self._poss_entities
@@ -336,7 +352,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
                     nav_to_target_idx
                 )
 
-        base_T = self.cur_articulated_agent.base_transformation
+        
         curr_path_points = self._path_to_point(final_nav_targ)
         
         # print("currpathpoint:",curr_path_points)

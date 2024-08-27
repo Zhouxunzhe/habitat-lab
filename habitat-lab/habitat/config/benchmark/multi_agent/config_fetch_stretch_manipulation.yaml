@@ -7,7 +7,7 @@ defaults:
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: FetchRobot_default
 
-  - /habitat/dataset/rearrangement: zxz_manipulation
+  - /habitat/dataset/rearrangement: hssd
 
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_action: oracle_arm_action
   - /habitat/task/actions@habitat.task.actions.agent_0_base_velocity: base_velocity_non_cylinder
@@ -46,6 +46,7 @@ defaults:
     - trans_of_robot
     - obj_list_infomation
     # - arm_workspace_rgb_sensor
+    - camera_extrinsic_info
     - navtemptran_s
     - get_nav_goal_point
     # - arm_workspace_rgb_sensor
@@ -97,7 +98,7 @@ habitat:
     robot_at_thresh: 1.1
 
   environment:
-    max_episode_steps: 250
+    max_episode_steps: 8000
     # iterator_options:
     #   shuffle: True
   simulator:

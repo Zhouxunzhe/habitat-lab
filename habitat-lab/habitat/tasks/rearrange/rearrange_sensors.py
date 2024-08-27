@@ -621,7 +621,7 @@ class LocalizationSensor(UsesArticulatedAgentInterface, Sensor):
 @registry.register_sensor
 class NavTempTranSensor(UsesArticulatedAgentInterface, Sensor):
     """
-    ObjPOint
+    ObjPoint
     """
 
     cls_uuid = "obj_pos"
@@ -1784,8 +1784,45 @@ class DetectedObjectsSensor(UsesArticulatedAgentInterface, Sensor):
         
         return detected_objects
     
-    
+
 @registry.register_sensor
+class CameraExtrinsicSensor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "camera_extrinsic"
+    def __init__(self, sim, config, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+        self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
+
+    def _get_uuid(self, *args, **kwargs):
+        return CameraExtrinsicSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        return spaces.Box(low=0.0, high=np.finfo(np.float64).max, shape=(4, 4), dtype=np.float64)
+    def _get_camera_extrinsic(self, camera_name)-> np.ndarray:
+        """get camera extrinsic from habitat simulator config
+        Assume the depth and color sensor are aligned and have the same extrinsic parameters
+        Args:
+            sim (haibtat_sim.Simulator): simulator config class
+            camera_name: name of the camera sensor
+        """
+        camera_key = camera_name.replace("_depth", "")
+        cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
+        cam_info = cur_articulated_agent.params.cameras[camera_key]
+        cam_trans = get_articulated_agent_camera_transform_from_cam_info(
+            cur_articulated_agent, cam_info)
+        return cam_trans
+
+    def get_observation(self, observations, *args, **kwargs):
+        if self.agent_id is not None:
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+        else:
+            depth_camera_name = self.depth_sensor_name
+        camera_extrinsic = self._get_camera_extrinsic(depth_camera_name)
+        return camera_extrinsic
+
 class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
     """ Sensor to visualize the reachable workspace of an articulated arm """
     cls_uuid: str = "arm_workspace_rgb"
@@ -2016,8 +2053,8 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
             self._get_camera_info(depth_camera_name), 
             self._get_camera_extrinsic(depth_camera_name)
         )
-        # print(f"{self.agent_id}_get_camera_info:{self._get_camera_info(depth_camera_name)}")
-        # print(f"{self.agent_id}_get_camera_info:{self._get_camera_extrinsic(depth_camera_name)}")
+        print(f"{self.agent_id}_get_camera_info:{self._get_camera_info(depth_camera_name)}")
+        print(f"{self.agent_id}_get_camera_extrinsic:{self._get_camera_extrinsic(depth_camera_name)}")
 
         for pixel_coord, color in zip(pixel_coords, colors):
             x, y = pixel_coord.astype(int)

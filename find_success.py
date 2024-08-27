@@ -18,8 +18,6 @@ def datatrans_2_end(process_dir:str) -> list:
                     entity_count = len(data['entities'])
                     if 5< entity_count < 496:
                         find_episode.append(folder_name)
-
-
     temp_q = 0
     sample_info = []
     for name in find_episode:
@@ -360,6 +358,8 @@ def datatrans_2_end(process_dir:str) -> list:
         except:
             print("name",name)
     return sample_info
+
+def datatrans_onerobot(process_dir:str) ->list:
 
     
 if __name__ == "__main__":
