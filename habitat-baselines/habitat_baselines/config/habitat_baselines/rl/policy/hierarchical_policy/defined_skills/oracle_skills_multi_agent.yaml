@@ -91,13 +91,3 @@ move_backward:
   max_skill_steps: 1
   turn_power_x: -1.0
   apply_postconds: True
-  
-move_arm:
-  skill_name: "NoopSkillPolicy"
-  max_skill_steps: 100
-  force_end_on_timeout: False
-  
-move_base:
-  skill_name: "NoopSkillPolicy"
-  max_skill_steps: 100
-  force_end_on_timeout: False

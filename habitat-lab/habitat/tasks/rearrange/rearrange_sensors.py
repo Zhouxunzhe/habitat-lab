@@ -1551,13 +1551,20 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         return np.array(downsampled_points)
 
     def _is_reachable(self, cur_articulated_agent, ik_helper, point, thresh=0.05):
+        cur_base_pos, cur_base_orn = ik_helper.get_base_state()
+
+        base_transformation = cur_articulated_agent.base_transformation
+        orn_quaternion = mn.Quaternion.from_matrix(base_transformation.rotation())
+        base_pos = base_transformation.translation
+        base_orn = list(orn_quaternion.vector)
+        base_orn.append(orn_quaternion.scalar)
+        ik_helper.set_base_state(base_pos, base_orn)
+
+        # point_base = cur_articulated_agent.base_transformation.inverted().transform_vector(point)
+        point_base = point
+
         cur_joint_pos = cur_articulated_agent.arm_joint_pos
 
-        joint_pos = np.array(cur_articulated_agent.arm_joint_pos)
-        joint_vel = np.zeros(joint_pos.shape)
-        ik_helper.set_arm_state(joint_pos, joint_vel)
-
-        point_base = cur_articulated_agent.base_transformation.inverted().transform_vector(point)
         des_joint_pos = ik_helper.calc_ik(point_base)
 
         # temporarily set arm joint position
@@ -1567,17 +1574,18 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
             cur_articulated_agent.arm_joint_pos = des_joint_pos
             cur_articulated_agent.fix_joint_values = des_joint_pos
 
-        des_ee_pos = cur_articulated_agent.ee_transform().translation
-        des_ee_pos_base = cur_articulated_agent.base_transformation.inverted().transform_vector(des_ee_pos)
+        des_ee_pos = ik_helper.calc_fk(des_joint_pos)
 
         # revert arm joint position
         if cur_articulated_agent.sim_obj.motion_type == MotionType.DYNAMIC:
-            cur_articulated_agent.arm_motor_pos = des_joint_pos
+            cur_articulated_agent.arm_motor_pos = cur_joint_pos
         if cur_articulated_agent.sim_obj.motion_type == MotionType.KINEMATIC:
             cur_articulated_agent.arm_joint_pos = cur_joint_pos
             cur_articulated_agent.fix_joint_values = cur_joint_pos
 
-        return np.linalg.norm(np.array(point_base) - np.array(des_ee_pos_base)) < thresh
+        ik_helper.set_base_state(cur_base_pos, cur_base_orn)
+
+        return np.linalg.norm(np.array(point_base) - np.array(des_ee_pos)) < thresh
 
     def get_observation(self, observations, *args, **kwargs):
         """ Get the RGB image with reachable and unreachable points marked """
@@ -1596,6 +1604,38 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
 
+        """add semantic information"""
+        ep_objects = []
+        for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+            ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+        for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
+            ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
+        for key, val in self._sim.ep_info.info['object_labels'].items():
+            ep_objects.append(key)
+
+        objects_info = {}
+        rom = self._sim.get_rigid_object_manager()
+        for i, handle in enumerate(rom.get_object_handles()):
+            if handle in ep_objects:
+                obj = rom.get_object_by_handle(handle)
+                objects_info[obj.object_id] = handle
+        obj_id_offset = self._sim.habitat_config.object_ids_start
+
+        semantic_obs = observations[semantic_camera_name].squeeze()
+
+        mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
+        colored_mask = np.zeros_like(rgb_obs)
+        colored_mask[mask == 1] = [0, 0, 255]
+        rgb_obs = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
+
+        for obj_id in objects_info.keys():
+            positions = np.where(semantic_obs == obj_id + obj_id_offset)
+            if positions[0].size > 0:
+                center_x = int(np.mean(positions[1]))
+                center_y = int(np.mean(positions[0]))
+                cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+
         # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)
         # downsample the 3d-points
@@ -1603,8 +1643,11 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         # Check reachability and color points
         colors = []
-        ik_helper = self._sim.get_agent_data(self.agent_id).ik_helper
-        cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
+
+        articulated_agent_mgr = self._sim.agents_mgr._all_agent_data[self.agent_id if self.agent_id is not None else 0]
+        cur_articulated_agent = articulated_agent_mgr.articulated_agent
+        ik_helper = articulated_agent_mgr.ik_helper
+
         for point in down_sampled_points:
             reachable = self._is_reachable(cur_articulated_agent, ik_helper, point)
             # Green if reachable, red if not
@@ -1633,38 +1676,6 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
                     else:
                         print(f"obj_pos can not be seen: {x}, {y}")
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
-
-        """add semantic information"""
-        # ep_objects = []
-        # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
-        #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
-        # for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
-        #     ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
-        # for key, val in self._sim.ep_info.info['object_labels'].items():
-        #     ep_objects.append(key)
-        #
-        # objects_info = {}
-        # rom = self._sim.get_rigid_object_manager()
-        # for i, handle in enumerate(rom.get_object_handles()):
-        #     if handle in ep_objects:
-        #         obj = rom.get_object_by_handle(handle)
-        #         objects_info[obj.object_id] = handle
-        # obj_id_offset = self._sim.habitat_config.object_ids_start
-        #
-        # semantic_obs = observations[semantic_camera_name].squeeze()
-        #
-        # mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
-        # colored_mask = np.zeros_like(rgb_obs)
-        # colored_mask[mask == 1] = [0, 255, 0]
-        # rgb_obs = cv2.addWeighted(rgb_obs, 0.7, colored_mask, 0.3, 0)
-        #
-        # for obj_id in objects_info.keys():
-        #     positions = np.where(semantic_obs == obj_id + obj_id_offset)
-        #     if positions[0].size > 0:
-        #         center_x = int(np.mean(positions[1]))
-        #         center_y = int(np.mean(positions[0]))
-        #         cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
-        #                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
 
         return rgb_obs
 
@@ -1762,16 +1773,16 @@ class ObjectMasksSensor(UsesArticulatedAgentInterface, Sensor):
 
         mask = np.isin(semantic_obs, np.array(self._sim.scene_obj_ids) + obj_id_offset).astype(np.uint8)
         colored_mask = np.zeros_like(rgb_obs)
-        colored_mask[mask == 1] = [0, 255, 0]
-        masked_rgb = cv2.addWeighted(rgb_obs, 0.7, colored_mask, 0.3, 0)
+        colored_mask[mask == 1] = [0, 0, 255]
+        masked_rgb = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
 
-        for obj_id in objects_info.keys():
+        for obj_id in np.array(self._sim.scene_obj_ids):
             positions = np.where(semantic_obs == obj_id + obj_id_offset)
             if positions[0].size > 0:
                 center_x = int(np.mean(positions[1]))
                 center_y = int(np.mean(positions[0]))
                 cv2.putText(masked_rgb, objects_info[obj_id], (center_x, center_y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         return masked_rgb
 
@@ -1825,6 +1836,38 @@ class NavWorkspaceRGBSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterface
         rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
 
+        """add semantic information"""
+        ep_objects = []
+        for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+            ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+        for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
+            ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
+        for key, val in self._sim.ep_info.info['object_labels'].items():
+            ep_objects.append(key)
+
+        objects_info = {}
+        rom = self._sim.get_rigid_object_manager()
+        for i, handle in enumerate(rom.get_object_handles()):
+            if handle in ep_objects:
+                obj = rom.get_object_by_handle(handle)
+                objects_info[obj.object_id] = handle
+        obj_id_offset = self._sim.habitat_config.object_ids_start
+
+        semantic_obs = observations[semantic_camera_name].squeeze()
+
+        mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
+        colored_mask = np.zeros_like(rgb_obs)
+        colored_mask[mask == 1] = [0, 0, 255]
+        rgb_obs = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
+
+        for obj_id in objects_info.keys():
+            positions = np.where(semantic_obs == obj_id + obj_id_offset)
+            if positions[0].size > 0:
+                center_x = int(np.mean(positions[1]))
+                center_y = int(np.mean(positions[0]))
+                cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+
         # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)
 
@@ -1853,39 +1896,6 @@ class NavWorkspaceRGBSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterface
             x, y = pixel_coord.astype(int)
             if color == [0, 255, 0]:
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
-
-        """add semantic information"""
-        ep_objects = []
-        for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
-            ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
-        for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
-            ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
-        for key, val in self._sim.ep_info.info['object_labels'].items():
-            ep_objects.append(key)
-
-        objects_info = {}
-        rom = self._sim.get_rigid_object_manager()
-        for i, handle in enumerate(rom.get_object_handles()):
-            if handle in ep_objects:
-                obj = rom.get_object_by_handle(handle)
-                objects_info[obj.object_id] = handle
-        obj_id_offset = self._sim.habitat_config.object_ids_start
-
-        semantic_obs = observations[semantic_camera_name].squeeze()
-
-        mask = np.isin(semantic_obs, np.array(
-            list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
-        colored_mask = np.zeros_like(rgb_obs)
-        colored_mask[mask == 1] = [0, 255, 0]
-        rgb_obs = cv2.addWeighted(rgb_obs, 0.7, colored_mask, 0.3, 0)
-
-        for obj_id in objects_info.keys():
-            positions = np.where(semantic_obs == obj_id + obj_id_offset)
-            if positions[0].size > 0:
-                center_x = int(np.mean(positions[1]))
-                center_y = int(np.mean(positions[0]))
-                cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
 
         return rgb_obs
 

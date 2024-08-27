@@ -396,6 +396,12 @@ class IkHelper:
                 physicsClientId=self.pc_id,
             )
 
+    def get_base_state(self):
+        return p.getBasePositionAndOrientation(self.robo_id)
+
+    def set_base_state(self, base_pos, base_orn):
+        p.resetBasePositionAndOrientation(self.robo_id, base_pos, base_orn)
+
     def calc_fk(self, js):
         js = np.array(js)
         self.set_arm_state(js, np.zeros(js.shape))
@@ -446,7 +452,7 @@ class IkHelper:
         if js is None:
             return False
         ee = self.calc_fk(js)
-        return np.linalg.norm(ee - targ_ee) < thresh
+        return np.linalg.norm(np.array(ee) - np.array(targ_ee)) < thresh
 
     def joint_control(self, joint_angles):
         for i, joint_angle in enumerate(joint_angles):
