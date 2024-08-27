@@ -872,18 +872,26 @@ class NavWorkspaceRGBSensorConfig(LabSensorConfig):
     depth_sensor_name: str = "head_depth"
 
 @dataclass
-class ArmWorkspaceRGBArmSensorConfig(LabSensorConfig):
-    uuid: str = "arm_workspace_rgb_arm"
-    type: str = "ArmWorkspaceRGBArmSensor"
+class ArmWorkspacePointsSensorConfig(LabSensorConfig):
+    uuid: str = "arm_workspace_points"
+    type: str = "ArmWorkspacePointsSensor"
     agent_idx: int = 0
     pixel_threshold: int = 10
     height: int = 480
     width: int = 640
-    rgb_sensor_name_arm: str = "articulated_agent_arm_rgb"
-    depth_sensor_name_arm: str = "articulated_agent_arm_depth"
+
+@dataclass
+class NavWorkspacePointsSensorConfig(LabSensorConfig):
+    uuid: str = "nav_workspace_points"
+    type: str = "NavWorkspacePointsSensor"
+    agent_idx: int = 0
+    pixel_threshold: int = 10
+    height: int = 480
+    width: int = 640
 
 @dataclass
 class ObjectMasksSensorConfig(LabSensorConfig):
+    uuid: str = "object_masks"
     type: str = "ObjectMasksSensor"
     rgb_sensor_name: str = "head_rgb"
     semantic_sensor_name: str = "head_semantic"
@@ -2754,10 +2762,16 @@ cs.store(
     node=NavWorkspaceRGBSensorConfig
 )
 cs.store(
-    package="habitat.task.lab_sensors.arm_workspace_rgb_arm_sensor",
+    package="habitat.task.lab_sensors.arm_workspace_points_sensor",
     group="habitat/task/lab_sensors",
-    name="arm_workspace_rgb_arm_sensor",
-    node=ArmWorkspaceRGBArmSensorConfig
+    name="arm_workspace_points_sensor",
+    node=ArmWorkspacePointsSensorConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.nav_workspace_points_sensor",
+    group="habitat/task/lab_sensors",
+    name="nav_workspace_points_sensor",
+    node=NavWorkspacePointsSensorConfig
 )
 cs.store(
     package="habitat.task.lab_sensors.object_masks_sensor",
