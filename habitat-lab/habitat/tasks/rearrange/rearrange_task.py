@@ -314,8 +314,8 @@ class RearrangeTask(NavigationTask):
         )
         return (
             self._sim.grasp_mgr.is_grasped
-            and action_args.get("grip_action", None) is not None
-            and action_args["grip_action"] < 0
+            and action_args.get("grip_pick_action", None) is not None
+            and action_args["grip_pick_action"] < 0
             and min_dist < self._obj_succ_thresh
         )
 
@@ -324,7 +324,7 @@ class RearrangeTask(NavigationTask):
         if self._enable_safe_drop and self._is_violating_safe_drop(
             action_args
         ):
-            action_args["grip_action"] = None
+            action_args["grip_pick_action"] = None
         obs = super().step(action=action, episode=episode)
 
         self.prev_coll_accum = copy.copy(self.coll_accum)

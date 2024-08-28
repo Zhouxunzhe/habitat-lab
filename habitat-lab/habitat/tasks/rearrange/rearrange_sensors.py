@@ -6,26 +6,16 @@
 
 
 from collections import defaultdict, deque
-from habitat.tasks.rearrange.utils import place_agent_at_dist_from_pos
-from typing import Dict, List, Tuple
 import magnum as mn
 import cv2
 import numpy as np
 from gym import spaces
-import open3d as o3d
+import habitat_sim
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression
-import habitat_sim
-from habitat.tasks.rearrange.actions.oracle_nav_action import (
-    OracleNavAction,
-    OracleNavCoordinateAction
-)
-from habitat.tasks.rearrange.actions.actions import (
-    ArticulatedAgentAction,
-    ArmEEAction
-)
+
 from habitat.articulated_agents.humanoids import KinematicHumanoid
 from habitat.core.embodied_task import Measure
 from habitat.core.registry import registry
@@ -43,9 +33,7 @@ from habitat.tasks.rearrange.utils import (
 )
 from habitat.tasks.utils import cartesian_to_polar
 
-from habitat_mas.scene_graph.scene_graph_hssd import SceneGraphHSSD
-from habitat.articulated_agents.utils import get_articulated_agent_camera_transform_from_cam_info
-
+from habitat_sim.physics import MotionType
 
 class MultiObjSensor(PointGoalSensor):
     """
@@ -1461,7 +1449,7 @@ class HasFinishedOracleNavSensor(UsesArticulatedAgentInterface, Sensor):
         #     nav_action = self._task.actions[use_k]
         #     return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
 
-        # TODO(zxz): check if use_k in actions_list
+        # check if use_k in actions_list
         assert use_k in self._task.actions, f"your oracle_nav_action name is not defined..."
         nav_action = self._task.actions[use_k]
         return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
@@ -1906,37 +1894,14 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         return points_world
 
     def _3d_to_2d(self, sensor_name, point_3d):
-        print("sensor:",sensor_name,flush=True)
+        # get the scene render camera and sensor object
         render_camera = self._sim._sensors[sensor_name]._sensor_object.render_camera
         W, H = render_camera.viewport[0], render_camera.viewport[1]
-        print(f"_________________________{self.agent_id}______________________________",flush = True)
-        # print(f"render_camera.viewport:{render_camera.viewport}",flush=True)
-        # print(f"render_camera.projection_matrix:{render_camera.projection_matrix}",flush=True)
-        # print(f"render_camera.camera_matrix:{render_camera.camera_matrix}",flush=True)
-        # print("point3d:",point_3d,flush = True)
-        # print(f"render_camera.projection_size()[0]:{render_camera.projection_size()[0]}",flush=True)
+
         # use the camera and projection matrices to transform the point onto the near plane
-        # print("martix",render_camera.camera_matrix,flush=True)
-        # print("martix",np.array(render_camera.camera_matrix,dtype=np.float32),flush=True)
-        # print("temp",render_camera.camera_matrix.transform_point(point_3d),flush = True)
-        temp = render_camera.camera_matrix.transform_point(point_3d)
-        # print("temp:",temp,flush=True)
-        pro_martix = render_camera.projection_matrix
-        cam_martix = render_camera.camera_matrix
-        # print("howtodo:",render_camera.projection_matrix)
         projected_point_3d = render_camera.projection_matrix.transform_point(
             render_camera.camera_matrix.transform_point(point_3d)
         )
-        try_temp = np.dot(np.append(point_3d,1),np.array(cam_martix).T)
-        import inspect
-        try_ = render_camera.projection_matrix.transform_point(try_temp[:3])
-        print(dir(render_camera.projection_matrix))
-        # print("pro_martix:",pro_martix)
-        # print("numpyL:",np.array(pro_martix))
-        # print("projected_point_3d:",projected_point_3d,flush=True)
-        # print("try_temp",try_temp,flush=True)
-        # print("try_:",try_,flush=True)
-        # print("projected_point_3d:",projected_point_3d,flush= True)
         # convert the 3D near plane point to integer pixel space
         point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
         point_2d = point_2d / render_camera.projection_size()[0]
@@ -1945,8 +1910,6 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         out_bound = 10
         point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
-        print("point_2d:",point_2d)
-        print("_____________________________________________________________________________",flush = True)
         return point_2d.astype(int)
 
     def voxel_grid_filter(self, points, voxel_size):
@@ -2065,12 +2028,12 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         cur_articulated_agent = articulated_agent_mgr.articulated_agent
         ik_helper = articulated_agent_mgr.ik_helper
 
-        # for point in down_sampled_points:
-        #     reachable = self._is_reachable(cur_articulated_agent, ik_helper, point)
-        #     # Green if reachable, red if not
-        #     colors.append([0, 255, 0] if reachable else [255, 0, 0])
+        for point in down_sampled_points:
+            reachable = self._is_reachable(cur_articulated_agent, ik_helper, point)
+            # Green if reachable, red if not
+            colors.append([0, 255, 0] if reachable else [255, 0, 0])
+
         pixel_coords = []
-        print("kwars:",kwargs)
         if self._debug_tf and 'obj_pos' in kwargs:
             if kwargs['obj_pos'] is not None:
                 pixel_coord = self._3d_to_2d(depth_camera_name, np.array(list(kwargs['obj_pos'])))
@@ -2096,106 +2059,48 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         return rgb_obs
 
-# TODO(zxz): there are still some bugs in this sensor
-# TODO(zxz): the issue could be in arm camera transformation in habitat-sim not consistent with that in habitat-lab
 @registry.register_sensor
-class ArmWorkspaceRGBArmSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterface, Sensor):
+class ArmWorkspacePointsSensor(ArmWorkspaceRGBSensor):
     """ Sensor to visualize the reachable workspace of an articulated arm """
-    cls_uuid: str = "arm_workspace_rgb_arm"
+    cls_uuid: str = "arm_workspace_points"
 
-    def __init__(self, sim, config, *args, **kwargs):
-        self._sim = sim
-        # self.agent_idx = config.agent_idx
-        self.pixel_threshold = config.pixel_threshold
-        self.height = config.height
-        self.width = config.width
-        self.rgb_sensor_name = config.get("rgb_sensor_name", "articulated_agent_arm_rgb")
-        self.depth_sensor_name = config.get("depth_sensor_name", "articulated_agent_arm_depth")
-        self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
-        self.ctrl_lim = config.get("down_sample_voxel_size", 0.02)
-
-        UsesArticulatedAgentInterface.__init__(self, config=config, *args, **kwargs)
-        Sensor.__init__(self, config=config, *args, **kwargs)
-
-        self._debug_tf = config.get("debug_tf", False)
-        if self._debug_tf:
-            self.pcl_o3d_list = []
-            self._debug_save_counter = 0
+    def _get_uuid(self, *args, **kwargs):
+        return ArmWorkspacePointsSensor.cls_uuid
 
     def get_observation(self, observations, *args, **kwargs):
         """ Get the RGB image with reachable and unreachable points marked """
 
         if self.agent_id is not None:
             depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
-            rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
-            depth_camera_info_name = f"agent_{self.agent_id}_arm_depth"
-            depth_camera_extrinsic_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
         else:
             depth_obs = observations[self.depth_sensor_name]
-            rgb_obs = observations[self.rgb_sensor_name]
-            depth_camera_info_name = "arm_depth"
-            depth_camera_extrinsic_name = self.depth_sensor_name
+            depth_camera_name = self.depth_sensor_name
 
-        # make rgb_obs and depth_obs contiguous
-        # if not isinstance(rgb_obs, np.ndarray):
-        #     rgb_obs.cpu().numpy()
-        # if not isinstance(depth_obs, np.ndarray):
-        #     depth_obs.cpu().numpy()
-        rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
 
         # Reproject depth pixels to 3D points
-        pcl_o3d = self._rgbd_to_point_cloud(
-            rgb_obs,
-            depth_obs,
-            self._get_camera_info(depth_camera_info_name),
-            self._get_camera_extrinsic(depth_camera_extrinsic_name)
-        )
-        # points_xyz = np.asarray(pcl_o3d.points)
-        # downsample the point cloud
-        down_sampled_points_xyz = np.asarray(
-            pcl_o3d.voxel_down_sample(voxel_size=self.down_sample_voxel_size).points
-        )
-
-        # Check reachability and color points
-        colors = []
-        ik_helper = self._sim.get_agent_data(self.agent_id).ik_helper
-        for point in down_sampled_points_xyz:
-            cur_ee_pos = self._sim.get_agent_data(self.agent_id).articulated_agent.ee_transform().translation
-            reachable = ik_helper.is_reachable(cur_ee_pos, point, self.ctrl_lim)
-            # Green if reachable, red if not
-            colors.append([0, 255, 0] if reachable else [255, 0, 0])
-
-        if 'ee_target' in kwargs:
-            np.append(down_sampled_points_xyz, kwargs['ee_target'])
-            colors.append([0, 0, 255])
+        points_world = self._2d_to_3d(depth_camera_name, depth_obs)
+        # downsample the 3d-points
+        down_sampled_points = self.voxel_grid_filter(points_world, self.down_sample_voxel_size)
 
         # Project the points to the image and color the pixels with circles
-        pixel_coords = self._project_points_to_image(
-            down_sampled_points_xyz,
-            self._get_camera_info(depth_camera_info_name),
-            self._get_camera_extrinsic(depth_camera_extrinsic_name)
-        )
-        for pixel_coord, color in zip(pixel_coords, colors):
-            x, y = pixel_coord.astype(int)
-            cv2.circle(rgb_obs, (x, y), 2, color, -1)
+        pixel_coords = []
+        for point in down_sampled_points:
+            pixel_coords.append(self._3d_to_2d(depth_camera_name, point))
 
+        flat_points = []
+        space_points = []
+        ik_helper = self._sim.get_agent_data(self.agent_id).ik_helper
+        cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
+        for idx, (point_3d, point_2d) in enumerate(zip(down_sampled_points, pixel_coords)):
+            reachable = self._is_reachable(cur_articulated_agent, ik_helper, point_3d)
+            if reachable:
+                point = np.concatenate((point_2d, [idx]), axis=0)
+                flat_points.append(point)
+                space_points.append(point_3d)
 
-        if self._debug_tf:
-            # save accumulated point cloud and clear list
-            self.pcl_o3d_list.append(pcl_o3d)
-            if len(self.pcl_o3d_list) > 5:
-                # merge point clouds
-                pcl_o3d = o3d.geometry.PointCloud()
-                for pcl in self.pcl_o3d_list:
-                    pcl_o3d += pcl
-
-                # save point cloud and clear list
-                o3d.io.write_point_cloud("debug_pcl_{}.ply".format(self._debug_save_counter), pcl_o3d)
-                self.pcl_o3d_list = []
-                self._debug_save_counter += 1
-
-        return rgb_obs
+        return np.array([space_points, flat_points])
 
 
 @registry.register_sensor
@@ -2229,47 +2134,38 @@ class ObjectMasksSensor(UsesArticulatedAgentInterface, Sensor):
         # The observation space is flexible, should not be used as gym input
         return spaces.Box(low=0, high=np.iinfo(np.int64).max, shape=(), dtype=np.int64)
 
-    def _get_objects_info(self, object_ids, object_dict):
-        """ Get the names and handles of objects with given IDs """
-        objects_info = {}
-        for obj_id, obj_dict in zip(object_ids, object_dict.values()):
-            objects_info[obj_id] = obj_dict.full_name
-        return objects_info
-
-    # This method assumes the existence of a method to get the semantic sensor's data
     def get_observation(self, observations, *args, **kwargs):
         """ Get the detected objects from the semantic sensor data """
-
-        assert ('replica' in self._sim.config.sim_cfg.scene_dataset_config_file or 'hssd' in self._sim.config.sim_cfg.scene_dataset_config_file), \
-            f"object masks sensor can only be used in replica or hssd dataset."
-        sg = SceneGraphHSSD()
-        sg.load_gt_scene_graph(self._sim)
-
-        objects_info = self._get_objects_info(self._sim.scene_obj_ids, sg.object_layer.obj_dict)
+        objects_info = {}
+        rom = self._sim.get_rigid_object_manager()
+        for i, handle in enumerate(rom.get_object_handles()):
+            obj = rom.get_object_by_handle(handle)
+            objects_info[obj.object_id] = handle
+        """articulated object not in used for now"""
+        # aom = self._sim.get_articulated_object_manager()
+        # for i, handle in enumerate(aom.get_object_handles()):
+        #     obj = aom.get_object_by_handle(handle)
+        #     objects_info[obj.object_id] = handle
+        obj_id_offset = self._sim.habitat_config.object_ids_start
 
         semantic_obs = observations['head_semantic'].squeeze()
         rgb_obs = observations['head_rgb']
 
-        # all_ids = np.unique(semantic_obs)
-        # all_ids = np.delete(all_ids, [0, 1])
-
-        mask = np.isin(semantic_obs, self._sim.scene_obj_ids).astype(np.uint8)
-        # mask = np.isin(semantic_obs, all_ids).astype(np.uint8)
+        mask = np.isin(semantic_obs, np.array(self._sim.scene_obj_ids) + obj_id_offset).astype(np.uint8)
         colored_mask = np.zeros_like(rgb_obs)
-        colored_mask[mask == 1] = [0, 255, 0]
-        masked_rgb = cv2.addWeighted(rgb_obs, 0.7, colored_mask, 0.3, 0)
+        colored_mask[mask == 1] = [0, 0, 255]
+        masked_rgb = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
 
-        for obj_id in self._sim.scene_obj_ids:
-        # for obj_id in all_ids:
-            positions = np.where(semantic_obs == obj_id)
+        for obj_id in np.array(self._sim.scene_obj_ids):
+            positions = np.where(semantic_obs == obj_id + obj_id_offset)
             if positions[0].size > 0:
                 center_x = int(np.mean(positions[1]))
                 center_y = int(np.mean(positions[0]))
-                cv2.putText(masked_rgb, objects_info[obj_id],
-                            (center_x, center_y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                cv2.putText(masked_rgb, objects_info[obj_id], (center_x, center_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         return masked_rgb
+
 
 @registry.register_sensor
 class NavWorkspaceRGBSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterface, Sensor):
@@ -2382,3 +2278,53 @@ class NavWorkspaceRGBSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterface
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
 
         return rgb_obs
+
+@registry.register_sensor
+class NavWorkspacePointsSensor(NavWorkspaceRGBSensor):
+    """ Sensor to visualize the reachable workspace of an articulated arm """
+    cls_uuid: str = "nav_workspace_points"
+
+    def _get_uuid(self, *args, **kwargs):
+        return NavWorkspacePointsSensor.cls_uuid
+
+    def get_observation(self, observations, *args, **kwargs):
+        """ Get the RGB image with reachable and unreachable points marked """
+
+        if self.agent_id is not None:
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+        else:
+            depth_obs = observations[self.depth_sensor_name]
+            depth_camera_name = self.depth_sensor_name
+
+        depth_obs = np.ascontiguousarray(depth_obs)
+
+        # Reproject depth pixels to 3D points
+        points_world = self._2d_to_3d(depth_camera_name, depth_obs)
+
+        """get the ground points using RANSAC"""
+        # 过滤接近地面高度的点
+        ground_points_mask = np.abs(points_world[:, 1] - points_world[:, 1].min()) < 0.1
+        ground_points = points_world[ground_points_mask]
+        ground_points = self._get_plane_points(ground_points)
+
+        # downsample the 3d-points
+        down_sampled_points = self.voxel_grid_filter(ground_points, self.down_sample_voxel_size)
+
+        # Project the points to the image and color the pixels with circles
+        pixel_coords = []
+        for point in down_sampled_points:
+            pixel_coords.append(self._3d_to_2d(depth_camera_name, point))
+
+        # Check reachability and color points
+        flat_points = []
+        space_points = []
+
+        for idx, (point_3d, point_2d) in enumerate(zip(down_sampled_points, pixel_coords)):
+            reachable = self._is_reachable(point_3d)
+            if reachable:
+                point = np.concatenate((point_2d, [idx]), axis=0)
+                flat_points.append(point)
+                space_points.append(point_3d)
+
+        return np.array([space_points, flat_points])
