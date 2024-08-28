@@ -34,6 +34,7 @@ defaults:
   - /habitat/task/lab_sensors:
     - relative_resting_pos_sensor
     - target_start_sensor
+    - target_goal_gps_compass_sensor
     - goal_sensor
     - joint_sensor
     - is_holding_sensor
@@ -49,7 +50,8 @@ defaults:
     - camera_extrinsic_info
     - navtemptran_s
     - get_nav_goal_point
-    # - arm_workspace_rgb_sensor
+    # - nav_workspace_points_sensor
+    - arm_workspace_rgb_sensor
 
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
@@ -98,7 +100,7 @@ habitat:
     robot_at_thresh: 1.1
 
   environment:
-    max_episode_steps: 8000
+    max_episode_steps: 400
     # iterator_options:
     #   shuffle: True
   simulator:

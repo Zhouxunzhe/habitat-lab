@@ -1,6 +1,6 @@
 # bin/bash
 python -u -m habitat_baselines.run \
-    --config-name=social_rearrange/one_robot_llm.yaml \
+    --config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml \
     habitat.dataset.data_path=data/datasets/policy_test/policy.json.gz
 
 
