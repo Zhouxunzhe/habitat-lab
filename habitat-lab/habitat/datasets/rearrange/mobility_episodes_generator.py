@@ -101,23 +101,23 @@ class MobilityGenerator:
     def __init__(
         self,
         cfg: DictConfig,
-        debug_visualization: bool = False,
         num_episodes: int = 1,
+        scene_dataset_path: str = "data/scene_datasets/mp3d/"
     ) -> None:
 
         # load and cache the config
         self.cfg = cfg
         self.num_episodes = num_episodes
-
+        self.dataset_path = scene_dataset_path
         # hold a habitat Simulator object for efficient re-use
         self.sim: habitat_sim.Simulator = None
         # initialize an empty scene and load the SceneDataset
-        self.initialize_sim()
+        self.initialize_sim(self.dataset_path)
 
 
 
 # sample the scene from config and initialize the Simulator
-    def initialize_sim(self, dataset_path: str = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d/") -> None:
+    def initialize_sim(self, dataset_path: str = "data/scene_datasets/mp3d/") -> None:
         backend_cfg = habitat_sim.SimulatorConfiguration()
         # randomly sample the scene from config
         sub_scene_paths = [d for d in os.listdir(dataset_path) if osp.isdir(osp.join(dataset_path, d))]
@@ -128,7 +128,7 @@ class MobilityGenerator:
             scene_glb_path = osp.join(dataset_path, selected_sub_scene, f"{selected_sub_scene}.glb")
 
         backend_cfg.scene_id = scene_glb_path
-        backend_cfg.scene_dataset_config_file = cfg.dataset_path
+        backend_cfg.scene_dataset_config_file = self.cfg.dataset_path
         # backend_cfg.additional_obj_config_paths = cfg.additional_object_paths
         backend_cfg.enable_physics = True
         backend_cfg.load_semantic_mesh = True
@@ -152,7 +152,7 @@ class MobilityGenerator:
         if self.sim is None:
             self.sim = habitat_sim.Simulator(sim_cfg)
             object_attr_mgr = self.sim.get_object_template_manager()
-            for object_path in cfg.additional_object_paths:
+            for object_path in self.cfg.additional_object_paths:
                 object_attr_mgr.load_configs(osp.abspath(object_path))
         else:
             if self.sim.config.sim_cfg.scene_id != scene_glb_path:
@@ -161,7 +161,7 @@ class MobilityGenerator:
                 # we need to force a reset, so reload the NONE scene
                 proxy_backend_cfg = habitat_sim.SimulatorConfiguration()
                 proxy_backend_cfg.scene_id = "NONE"
-                proxy_backend_cfg.gpu_device_id = cfg.gpu_device_id
+                proxy_backend_cfg.gpu_device_id = self.cfg.gpu_device_id
                 proxy_hab_cfg = habitat_sim.Configuration(
                     proxy_backend_cfg, [agent_cfg]
                 )
@@ -202,7 +202,7 @@ class MobilityGenerator:
         max_placement_tries: int = 100,
     ) -> Optional[RearrangeEpisode]:
         
-        ep_scene_handle = self.initialize_sim()
+        ep_scene_handle = self.initialize_sim(self.dataset_path)
         scene_base_dir = osp.dirname(osp.dirname(ep_scene_handle))
         scene_name = ep_scene_handle.split(".")[0].split("/")[-1]
         navmesh_path = osp.join(
@@ -226,7 +226,7 @@ class MobilityGenerator:
         target_receptacles: Dict[str, Any] = {}
         expected_list_keys = ["included_object_substrings", "excluded_object_substrings"]
         sampled_target_receptacles = {}
-        for target_recep_set in cfg.receptacle_sets:
+        for target_recep_set in self.cfg.receptacle_sets:
             assert "name" in target_recep_set
             for list_key in expected_list_keys:
                 assert list_key in target_recep_set
@@ -242,7 +242,7 @@ class MobilityGenerator:
         # randomly sample the goal receptacles
         goal_receptacles: Dict[str, Any] = {}
         sampled_goal_receptacles = {}
-        for goal_recep_set in cfg.receptacle_sets:
+        for goal_recep_set in self.cfg.receptacle_sets:
             assert "name" in goal_recep_set
             for list_key in expected_list_keys:
                 assert list_key in goal_recep_set
@@ -262,7 +262,7 @@ class MobilityGenerator:
         obj_sets: Dict[str, List[str]] = {}
         sampled_objects = {}
         expected_list_keys = ["included_substrings", "excluded_substrings"]
-        for obj_set in cfg.object_sets:
+        for obj_set in self.cfg.object_sets:
             assert "name" in obj_set
             for list_key in expected_list_keys:
                 assert list_key in obj_set
@@ -458,7 +458,7 @@ class MobilityGenerator:
 
         return RearrangeEpisode(
             scene_dataset_config=self.sim.config.sim_cfg.scene_dataset_config_file,
-            additional_obj_config_paths=cfg.additional_object_paths,
+            additional_obj_config_paths=self.cfg.additional_object_paths,
             episode_id=str(episode_id),
             start_position=[0, 0, 0],
             start_rotation=[0, 0, 0, 1],
@@ -520,10 +520,10 @@ class MobilityGenerator:
         print(f"Episodes saved to {output_path}")
 
 if __name__ == "__main__":
-    config_path = "/home/yuchecheng/habitat-lab/habitat-lab/habitat/datasets/rearrange/configs/mp3d.yaml" 
-    output_dir = "/home/yuchecheng/habitat-lab/data/datasets/mobility"
-    scene_dataset_path = "/home/yuchecheng/habitat-lab/data/scene_datasets/mp3d/"     
-    num_episodes = 100
+    config_path = "habitat-lab/habitat/datasets/rearrange/configs/mp3d.yaml" 
+    output_dir = "data/datasets/mobility"
+    scene_dataset_path = "data/scene_datasets/mp3d/"     
+    num_episodes = 1
 
     assert num_episodes > 0, "Number of episodes must be greater than 0."
     assert osp.exists(
@@ -536,8 +536,8 @@ if __name__ == "__main__":
 
     with MobilityGenerator(
         cfg=cfg,
-        debug_visualization=False,
         num_episodes=num_episodes,
+        scene_dataset_path=scene_dataset_path
     ) as mo_gen:
         mo_gen.generate_mobility_episodes(output_dir)
     pass
