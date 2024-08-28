@@ -419,9 +419,8 @@ class RearrangeTask(NavigationTask):
         return self.n_objs
 
     def get_task_text_context(self) -> dict:
-        if self._dataset.config.mode not in ["perception", "manipulation", "mobility", "hssd"]:
+        if not self._robot_config:
             return {}
-        assert self._robot_config is not None, "robot config not set"
         current_episode_idx = self._sim.ep_info.episode_id
         robot_config = self._robot_config[current_episode_idx]["agents"]
         return get_text_context(self._sim, robot_config)
