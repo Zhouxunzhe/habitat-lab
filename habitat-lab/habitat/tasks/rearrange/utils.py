@@ -345,11 +345,12 @@ class IkHelper:
         # Add this fix to skip the fixed joints in stretch robot arm
         self._non_fixed_joints: List = self._get_non_fixed_joints()
         self.pb_link_idx = pb_link_idx
+        numJoints = p.getNumJoints(self.robo_id)
 
         p.setGravity(0, 0, -9.81, physicsClientId=self.pc_id)
         JOINT_DAMPING = 0.5
 
-        for link_idx in range(15):
+        for link_idx in range(numJoints):
             p.changeDynamics(
                 self.robo_id,
                 link_idx,
@@ -402,15 +403,31 @@ class IkHelper:
     def set_base_state(self, base_pos, base_orn):
         p.resetBasePositionAndOrientation(self.robo_id, base_pos, base_orn)
 
-    def calc_fk(self, js):
+    def calc_fk(self, js, link_id=None):
         js = np.array(js)
         self.set_arm_state(js, np.zeros(js.shape))
-        ls = p.getLinkState(
-            self.robo_id,
-            self.pb_link_idx,
-            computeForwardKinematics=1,
-            physicsClientId=self.pc_id,
-        )
+        if link_id is None:
+            ls = p.getLinkState(
+                self.robo_id,
+                self.pb_link_idx,
+                computeForwardKinematics=1,
+                physicsClientId=self.pc_id,
+            )
+        else:
+            ls = p.getLinkState(
+                self.robo_id,
+                link_id,
+                computeForwardKinematics=1,
+                physicsClientId=self.pc_id,
+            )
+        # # for debug link state
+        # print(self._non_fixed_joints)
+        # print(f"fk: pos: {ls[4]}, orn: {ls[5]}")
+        # num_joints = p.getNumJoints(self.robo_id)
+        # for i in range(num_joints):
+        #     joint_info = p.getJointInfo(self.robo_id, i)
+        #     print(f"{i}: {joint_info[1]}: pos: {joint_info[14]}, orn: {joint_info[15]}")
+
         world_ee = ls[4]
         return world_ee
 
