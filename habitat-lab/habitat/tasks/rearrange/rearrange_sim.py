@@ -400,40 +400,43 @@ class RearrangeSim(HabitatSim):
     def num_articulated_agents(self):
         return len(self.agents_mgr)
 
-    # TODO(YCC): add a write-to-json function to store robot setups
-    def write_to_json(self, start_pos, start_rot, agent_idx: int = 0) -> None:
-        episode_id = self.ep_info.episode_id
+    def parse_agent_info(self, start_pos = np.array([0.0, 0.0, 0.0]), start_rot = 0.0, agent_idx: int = 0):
         sim_config = self.habitat_config
+        agents = sim_config.agents
         
-        assert start_pos is not None and start_rot is not None
-        agent_types, urdf_types = {}, {}
-        for idx in range(len(self.agents_mgr)):
-            agent_key = f"agent_{idx}"
-            if hasattr(self.habitat_config.agents, agent_key):
-                agent_config = sim_config.agents[agent_key]
-                agent_types[idx] = agent_config.articulated_agent_type
-                urdf_types[idx] = agent_config.articulated_agent_urdf
-            else:
-                agent_types[idx] = None
-                urdf_types[idx] = None
-                
-        type_config = {}
-        
-        for idx, urdf_path in urdf_types.items():
-            if urdf_path:
-                if ("arm_only" in urdf_path) or ("armonly" in urdf_path) or ("only_arm" in urdf_path) or ("onlyarm" in urdf_path):
-                    type_config[idx] = agent_types[idx] + "_arm_only"
-                elif ("head_only" in urdf_path) or ("headonly" in urdf_path):
-                    type_config[idx] = agent_types[idx] + "_head_only"
-                else:
-                    type_config[idx] = agent_types[idx] + "_default"
+        assert agent_idx < len(agents), f"agent_idx {agent_idx} out of range {len(agents)}"
+
+        agent_key = f"agent_{agent_idx}"
+        agent = sim_config.agents.get(agent_key, list(sim_config.agents.values())[agent_idx])
+
+        agent_type = agent.articulated_agent_type
+        agent_sensors = agent.sim_sensors
+
+        has_head = any('head' in key for key in agent_sensors.keys())
+        has_arm = any('arm' in key for key in agent_sensors.keys())
+
+        if agent_type == "DJIDrone":
+            agent_type = "DJIDrone_default"
+        elif has_head and not has_arm:
+            agent_type += '_head_only'
+        elif not has_head and has_arm:
+            agent_type += '_arm_only'
+        else:
+            agent_type += '_default'
 
         agent_info = {
             "agent_idx": agent_idx,
-            "agent_type": type_config[agent_idx],
+            "agent_type": agent_type,
             "start_pos": start_pos.tolist(),
             "start_rot": start_rot,
         }
+        return agent_info
+        
+    # add a write-to-json function to store robot setups
+    def write_to_json(self, start_pos = np.array([0.0, 0.0, 0.0]), start_rot = 0.0, agent_idx: int = 0) -> None:
+        episode_id = self.ep_info.episode_id
+        agent_info = self.parse_agent_info(start_pos, start_rot, agent_idx)
+        
         file_path = self.habitat_config.json_path
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         data = {}

@@ -419,10 +419,19 @@ class RearrangeTask(NavigationTask):
         return self.n_objs
 
     def get_task_text_context(self) -> dict:
-        if not self._robot_config:
-            return {}
         current_episode_idx = self._sim.ep_info.episode_id
-        robot_config = self._robot_config[current_episode_idx]["agents"]
+
+        if not self._robot_config or current_episode_idx not in self._robot_config:
+        # load agent with dummy position
+            robot_config = []
+            for agent_idx in range(self._sim.num_articulated_agents):
+                agent_config = self._sim.parse_agent_info(
+                    agent_idx = agent_idx
+                )
+                robot_config.append(agent_config)
+        else:   
+            assert "agents" in self._robot_config[current_episode_idx]
+            robot_config = self._robot_config[current_episode_idx]["agents"]
         return get_text_context(self._sim, robot_config)
 
     @property
