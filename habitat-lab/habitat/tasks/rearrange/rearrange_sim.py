@@ -31,7 +31,7 @@ from habitat.articulated_agents.robots import FetchRobot, FetchRobotNoWheels
 from habitat.config import read_write
 from habitat.core.registry import registry
 from habitat.core.simulator import AgentState, Observations
-from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
+from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index, get_largest_two_island
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode
 from habitat.datasets.rearrange.samplers.receptacle import (
     AABBReceptacle,
@@ -401,9 +401,40 @@ class RearrangeSim(HabitatSim):
         return len(self.agents_mgr)
 
     # TODO(YCC): add a write-to-json function to store robot setups
-    def write_to_json(self, episode_id, agent_info) -> None:
+    def write_to_json(self, start_pos, start_rot, agent_idx: int = 0) -> None:
+        episode_id = self.ep_info.episode_id
+        sim_config = self.habitat_config
+        
+        assert start_pos is not None and start_rot is not None
+        agent_types, urdf_types = {}, {}
+        for idx in range(len(self.agents_mgr)):
+            agent_key = f"agent_{idx}"
+            if hasattr(self.habitat_config.agents, agent_key):
+                agent_config = sim_config.agents[agent_key]
+                agent_types[idx] = agent_config.articulated_agent_type
+                urdf_types[idx] = agent_config.articulated_agent_urdf
+            else:
+                agent_types[idx] = None
+                urdf_types[idx] = None
+                
+        type_config = {}
+        
+        for idx, urdf_path in urdf_types.items():
+            if urdf_path:
+                if ("arm_only" in urdf_path) or ("armonly" in urdf_path) or ("only_arm" in urdf_path) or ("onlyarm" in urdf_path):
+                    type_config[idx] = agent_types[idx] + "_arm_only"
+                elif ("head_only" in urdf_path) or ("headonly" in urdf_path):
+                    type_config[idx] = agent_types[idx] + "_head_only"
+                else:
+                    type_config[idx] = agent_types[idx] + "_default"
 
-        file_path = "data/robots/json/test.json"
+        agent_info = {
+            "agent_idx": agent_idx,
+            "agent_type": type_config[agent_idx],
+            "start_pos": start_pos.tolist(),
+            "start_rot": start_rot,
+        }
+        file_path = self.habitat_config.json_path
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         data = {}
         try:
@@ -414,8 +445,14 @@ class RearrangeSim(HabitatSim):
 
         if episode_id not in data:
             data[episode_id] = {"agents": [agent_info]}
-        else:
+        elif not any(d["agent_idx"] == agent_idx for d in data[episode_id]["agents"]):
             data[episode_id]["agents"].append(agent_info)
+        else:
+            for d in data[episode_id]["agents"]:
+                if d["agent_idx"] == agent_idx:
+                    d["agent_type"] = agent_info["agent_type"]
+                    d["start_pos"] = agent_info["start_pos"]
+                    d["start_rot"] = agent_info["start_rot"]
 
         with open(file_path, "w") as f:
             json.dump(data, f, indent=4)
@@ -439,14 +476,23 @@ class RearrangeSim(HabitatSim):
 
         for attempt_i in range(max_attempts):
 
-            # TODO(YCC): set up the robot pos and rot based on config
+            # TODO(YCC): start pos should be able to navigate to the target
             start_pos = self.pathfinder.get_random_navigable_point(
                 island_index=self._largest_indoor_island_idx
             )
 
             start_pos = self.safe_snap_point(start_pos)
             start_rot = np.random.uniform(0, 2 * np.pi)
-
+            if 'dataset' in self.ep_info.info and self.ep_info.info['dataset'] == 'mp3d':
+                if agent_idx == 0 and not self.navigable_far_to_target(start_pos):
+                    continue
+                # elif agent_idx > 0:
+                #     _, island_idx = get_largest_two_island(self.pathfinder, self)
+                #     start_pos = self.pathfinder.get_random_navigable_point(
+                #         island_index=island_idx
+                #     )
+                #     start_pos = self.snap_point_to_island(start_pos, island_idx)
+                
             if filter_func is not None and not filter_func(
                 start_pos, start_rot
             ):
@@ -466,43 +512,8 @@ class RearrangeSim(HabitatSim):
             )
 
         # TODO(YCC): collect the robot setup   
-        episode_id = self.ep_info.episode_id
-        sim_config = self.habitat_config
-        
-        agent_types, urdf_types = {}, {}
-        for idx in range(len(self.agents_mgr)):
-            agent_key = f"agent_{idx}"
-            if hasattr(self.habitat_config.agents, agent_key):
-                agent_config = sim_config.agents[agent_key]
-                agent_types[idx] = agent_config.articulated_agent_type
-                urdf_types[idx] = agent_config.articulated_agent_urdf
-            else:
-                agent_types[idx] = None
-                urdf_types[idx] = None
-                
-        type_config = {}
-        
-        for idx, urdf_path in urdf_types.items():
-            if urdf_path:
-                if ("arm_only" in urdf_path) or ("armonly" in urdf_path) or ("only_arm" in urdf_path) or ("onlyarm" in urdf_path):
-                    type_config[idx] = agent_types[idx] + "_arm_only"
-                elif ("head_only" in urdf_path) or ("headonly" in urdf_path):
-                    type_config[idx] = agent_types[idx] + "_head_only"
-                else:
-                    type_config[idx] = agent_types[idx] + "_default"
-
-        if agent_idx is None:
-            agent_idx = 0
-        agent_info = {
-            "agent_idx": agent_idx,
-            "agent_type": type_config[agent_idx],
-            "start_pos": start_pos.tolist(),
-            "start_rot": start_rot,
-        }
-        
-        w2j = self.habitat_config.w2j
-        if w2j:
-            self.write_to_json(episode_id, agent_info)
+        if self.habitat_config.w2j:
+            self.write_to_json(start_pos, start_rot, agent_idx)
 
         return start_pos, start_rot
 
@@ -625,10 +636,10 @@ class RearrangeSim(HabitatSim):
             pos, self._largest_indoor_island_idx
         )
 
-        max_iter = 100 # 10
+        max_iter = 10
         offset_distance = 1.5
         distance_per_iter = 0.5
-        num_sample_points = 1000
+        num_sample_points = 2000 # 1000
 
         regen_i = 0
         while np.isnan(new_pos[0]) and regen_i < max_iter:
@@ -1136,7 +1147,8 @@ class RearrangeSim(HabitatSim):
         receptacles, target_receptacles, goal_receptacles = [], [], []
         info = {}
         for i, (tar_recep_handle, tar_tranform, tar_translation) in enumerate(ep_info.target_receptacles):
-            if tar_recep_handle.endswith('_:0000'):
+            tar_recep_name = tar_recep_handle
+            if '_:' in tar_recep_name:
                 tar_recep_name = tar_recep_handle[:-6]
             tar_template = otm.get_templates_by_handle_substring(
                 tar_recep_name
@@ -1167,7 +1179,8 @@ class RearrangeSim(HabitatSim):
             )
         receptacles.extend(target_receptacles)
         for i, (goal_recep_handle, goal_transform, goal_translation) in enumerate(ep_info.goal_receptacles):
-            if goal_recep_handle.endswith('_:0000'):
+            goal_recep_name = goal_recep_handle
+            if '_:' in goal_recep_name:
                 goal_recep_name = goal_recep_handle[:-6]
             goal_template = otm.get_templates_by_handle_substring(
                 goal_recep_name
@@ -1213,3 +1226,55 @@ class RearrangeSim(HabitatSim):
                 np.min(bounds, axis=0), np.max(bounds, axis=0)
             )
         return receps
+   
+    def navigable_far_to_target(self, start_pos):
+        path = habitat_sim.ShortestPath()
+        path.requested_start = start_pos   
+        assert self.ep_info.target_receptacles
+        path.requested_end = np.array(
+            self.ep_info.target_receptacles[0][2],
+            dtype=np.float32).reshape(3, 1)
+
+        found_path = self.pathfinder.find_path(path)
+
+        dist_to_closest_obstacle = self.pathfinder.distance_to_closest_obstacle(
+            start_pos
+        )
+
+        # make sure the agent start pos far from the target and avoid collisions 
+        if not found_path or path.geodesic_distance < 2.0 or dist_to_closest_obstacle < 0.5:
+            return False
+        return True
+
+    def snap_point_to_island(self, pos, island_idx: int = -1):
+        max_iter = 10
+        offset_distance = 1.5
+        distance_per_iter = 0.5
+        num_sample_points = 1000
+        if island_idx == -1:
+            new_pos = self.pathfinder.snap_point(
+                pos, self._largest_indoor_island_idx
+            )
+            
+            regen_i = 0
+            while np.isnan(new_pos[0]) and regen_i < max_iter:
+                # Increase the search radius
+                new_pos = self.pathfinder.get_random_navigable_point_near(
+                    pos,
+                    offset_distance + regen_i * distance_per_iter,
+                    num_sample_points,
+                    island_index=self._largest_indoor_island_idx,
+                )
+                regen_i += 1
+        else:
+            new_pos = self.pathfinder.snap_point(pos, island_idx)
+            regen_i = 0
+            while np.isnan(new_pos[0]) and regen_i < max_iter:
+                new_pos = self.pathfinder.get_random_navigable_point_near(
+                    pos,
+                    offset_distance + regen_i * distance_per_iter,
+                    num_sample_points,
+                    island_index=island_idx,
+                )
+                regen_i += 1
+        return new_pos
