@@ -807,6 +807,10 @@ class NavGoalPointGoalSensorConfig(LabSensorConfig):
 class GlobalPredicatesSensorConfig(LabSensorConfig):
     type: str = "GlobalPredicatesSensor"
 
+@dataclass
+class PddlTextGoalSensorConfig(LabSensorConfig):
+    type: str = "PddlTextGoalSensor"
+    compact_str: bool = False
 
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):
@@ -2830,7 +2834,12 @@ cs.store(
     name="all_predicates",
     node=GlobalPredicatesSensorConfig,
 )
-
+cs.store(
+    package="habitat.task.lab_sensors.pddl_text_goal",
+    group="habitat/task/lab_sensors",
+    name="pddl_text_goal",
+    node=PddlTextGoalSensorConfig,
+)
 
 # Task Measurements
 cs.store(
