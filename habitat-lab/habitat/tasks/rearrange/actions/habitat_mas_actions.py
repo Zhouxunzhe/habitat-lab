@@ -70,6 +70,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         self.config = config
         self.pathfinder = None
         self.step_sum = 0
+        self.ep_id = None
 
     def _create_pathfinder(self, config):
         """
@@ -142,11 +143,13 @@ class OracleNavDiffBaseAction(OracleNavAction):
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
         ]
+
+        nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+
         if nav_to_target_idx <= 0 or nav_to_target_idx > len(
             self._poss_entities
         ):
             return
-        nav_to_target_idx = int(nav_to_target_idx[0]) - 1
 
         final_nav_targ, obj_targ_pos = self._get_target_for_idx(
             nav_to_target_idx
@@ -305,8 +308,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
         return path.points
 
     def step(self, *args, **kwargs):
+        # Get episode id
+        ep_id = self._sim.ep_info.episode_id
+
         # if pathfinder is not created, create it
-        if not self.pathfinder:
+        if self.ep_id != ep_id:
+            self.ep_id = ep_id
             self.pathfinder = self._create_pathfinder(self.config)
 
         self.skill_done = False
@@ -330,9 +337,6 @@ class OracleNavDiffBaseAction(OracleNavAction):
         if DEBUG_SAVE_PATHFINDER_MAP:
             sim_map = self._plot_map_and_path(kwargs, self._sim.pathfinder, save_name="sim")
             agent_map = self._plot_map_and_path(kwargs, self.pathfinder, save_name="agent")
-            
-            # Get episode id
-            ep_id = self._sim.ep_info.episode_id
 
             if not os.path.exists(f'./debug/{ep_id}'):
                 os.makedirs(f'./debug/{ep_id}')
