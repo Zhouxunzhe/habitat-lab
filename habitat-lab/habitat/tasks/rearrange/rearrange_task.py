@@ -112,11 +112,16 @@ class RearrangeTask(NavigationTask):
 
         data_path = dataset.config.data_path.format(split=dataset.config.split)
 
-        # TODO(YCC): robot config path
-        robot_config_path = dataset.config.robot_config.format(mode=dataset.config.mode)
-        with open(robot_config_path, "r") as robot_config_file:
-            robot_config = json.load(robot_config_file)
-        self._robot_config = robot_config
+        # Load robot config file
+        robot_config_path = dataset.config.robot_config
+        if osp.exists(robot_config_path):
+            with open(robot_config_path, "r") as robot_config_file:
+                robot_config = json.load(robot_config_file)
+            self._robot_config = robot_config
+        elif not self._dataset.config.randomize_agent_start:
+            raise FileNotFoundError(f"Robot config not found: {robot_config_path}")
+        else:
+            self._robot_config = None
 
         fname = data_path.split("/")[-1].split(".")[0]
         cache_path = osp.join(
@@ -414,10 +419,19 @@ class RearrangeTask(NavigationTask):
         return self.n_objs
 
     def get_task_text_context(self) -> dict:
-        if 'dataset' in self._sim.ep_info.info and self._sim.ep_info.info['dataset'] == 'mp3d':
-            return {}
         current_episode_idx = self._sim.ep_info.episode_id
-        robot_config = self._robot_config[current_episode_idx]["agents"]
+
+        if not self._robot_config or current_episode_idx not in self._robot_config:
+        # load agent with dummy position
+            robot_config = []
+            for agent_idx in range(self._sim.num_articulated_agents):
+                agent_config = self._sim.parse_agent_info(
+                    agent_idx = agent_idx
+                )
+                robot_config.append(agent_config)
+        else:   
+            assert "agents" in self._robot_config[current_episode_idx]
+            robot_config = self._robot_config[current_episode_idx]["agents"]
         return get_text_context(self._sim, robot_config)
 
     @property

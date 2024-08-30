@@ -33,7 +33,7 @@ class StretchRobot(MobileManipulator):
             ),
             gripper_init_params=np.array([0.0, 0.0], dtype=np.float32),
             ee_offset=[mn.Vector3(0.08, 0, 0)],
-            ee_links=[36],
+            ee_links=[37, 39],
             ee_constraint=np.array(
                 [[[-1.2, 1.2], [-1.5, 1.5], [-1.5, 1.5]]]
             ),

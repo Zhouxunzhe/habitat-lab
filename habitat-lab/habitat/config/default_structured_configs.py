@@ -377,7 +377,14 @@ class BaseVelocityActionConfig(ActionConfig):
     ang_speed: float = 10.0
     allow_dyn_slide: bool = True
     allow_back: bool = True
-
+    animate_leg: bool = True
+    # Leg animation checkpoint file
+    leg_animation_checkpoint: str = (
+        "data/robots/spot_data/spot_walking_trajectory.csv"
+    )
+    # The play step interval of the leg animation
+    play_i_perframe: int = 5
+    use_range: Optional[List[int]] = field(default_factory=lambda: [107, 863])
 
 @dataclass
 class BaseVelocityNonCylinderActionConfig(ActionConfig):
@@ -823,6 +830,12 @@ class NavTempTranSensorConfig(LabSensorConfig):
 @dataclass
 class TargetPointSensorConfig(LabSensorConfig):
     type: str = "TargetPointSensor"
+
+@dataclass
+class PddlTextGoalSensorConfig(LabSensorConfig):
+    type: str = "PddlTextGoalSensor"
+    compact_str: bool = False
+
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):
     type: str = "MultiAgentGlobalPredicatesSensor"
@@ -2122,6 +2135,7 @@ class SimulatorConfig(HabitatBaseConfig):
     
     #TODO(ycc): write to json config
     w2j: bool = False
+    json_path: str = "data/robots/json/test.json"
 
 
 @dataclass
@@ -2208,11 +2222,9 @@ class DatasetConfig(HabitatBaseConfig):
         "habitat-test-scenes/v1/{split}/{split}.json.gz"
     )
     # TODO(YCC): load robot config
-    mode: str = "perception"
+    mode: str = "test"
     randomize_agent_start: int = 1
-    robot_config: str = (
-        "data/robots/json/{mode}.json"
-    )
+    robot_config: str = ""
 
 
 @dataclass
@@ -2929,7 +2941,12 @@ cs.store(
     name="all_predicates",
     node=GlobalPredicatesSensorConfig,
 )
-
+cs.store(
+    package="habitat.task.lab_sensors.pddl_text_goal",
+    group="habitat/task/lab_sensors",
+    name="pddl_text_goal",
+    node=PddlTextGoalSensorConfig,
+)
 
 # Task Measurements
 cs.store(

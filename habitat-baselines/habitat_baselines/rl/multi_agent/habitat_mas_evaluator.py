@@ -201,6 +201,12 @@ class HabitatMASEvaluator(Evaluator):
             if not prev_actions.any():
             
                 envs_text_context = envs.call(["get_task_text_context"] * envs.num_envs)
+                if 'pddl_text_goal' in batch:
+                    envs_pddl_text_goal_np = batch['pddl_text_goal'].cpu().numpy()
+                    for i in range(envs.num_envs):
+                        pddl_text_goal_np = envs_pddl_text_goal_np[i, ...] 
+                        envs_text_context[i]['pddl_text_goal'] = ''.join(str(pddl_text_goal_np, encoding='UTF-8'))
+
 
             space_lengths = {}
             n_agents = len(config.habitat.simulator.agents)
