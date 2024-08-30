@@ -46,7 +46,7 @@ habitat_baselines:
   eval:
     should_load_ckpt: False
     video_option: ["disk"]
-    image_option: ["disk"]
+    image_option: []
     json_option : ["disk"]
     video_option_new: True
     episode_stored: []
@@ -95,17 +95,22 @@ habitat_baselines:
               # action_name: "base_velocity_non_cylinder"
               action_name: "base_velocity"
               obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
-              max_skill_steps: 300
+              max_skill_steps: 1500
             pick:
               skill_name: "OraclePickPolicy"
-              action_name: "arm_action"
+              action_name: "arm_pick_action"
               obs_skill_inputs: ["is_holding"]
               max_skill_steps: 100
-            #place:
-            #  skill_name: "OraclePlacePolicy"
-            #  action_name: "arm_action"
-            #  obs_skill_inputs: []
-            #  max_skill_steps: 100
+            place:
+              skill_name: "OraclePlacePolicy"
+              action_name: "arm_place_action"
+              obs_skill_inputs: []
+              max_skill_steps: 100
+            reset_arm:
+              skill_name: "ResetArmSkill"
+              action_name: "arm_reset_action"
+              obs_skill_inputs: []
+              max_skill_steps: 100
 
           ignore_skills:
             - open_cab
@@ -142,17 +147,22 @@ habitat_baselines:
               # action_name: "base_velocity_non_cylinder"
               action_name: "base_velocity"
               obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
-              max_skill_steps: 300
+              max_skill_steps: 1500
             pick:
               skill_name: "OraclePickPolicy"
-              action_name: "arm_action"
+              action_name: "arm_pick_action"
               obs_skill_inputs: ["is_holding"]
               max_skill_steps: 100
-            #place:
-            #  skill_name: "OraclePlacePolicy"
-            #  action_name: "arm_action"
-            #  obs_skill_inputs: []
-            #  max_skill_steps: 100
+            place:
+              skill_name: "OraclePlacePolicy"
+              action_name: "arm_place_action"
+              obs_skill_inputs: []
+              max_skill_steps: 100
+            reset_arm:
+              skill_name: "ResetArmSkill"
+              action_name: "arm_reset_action"
+              obs_skill_inputs: []
+              max_skill_steps: 100
 
           ignore_skills:
             - open_cab

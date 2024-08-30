@@ -6,6 +6,157 @@ video_dir = './video_dir_TRUE/manipulation_new'  # Path to the directory with mp
 episode_dir = './video_dir_TRUE/image_dir'  # Path to the directory with episode folders
 find_episode = []
 episode_id_sum = []
+from camera_3dto2d import _3d_to_2d
+def datatrans_2_end_single_agent(process_dir:str,skip_len:int) -> list:
+    find_episode = []
+    process_dir_path = os.path.join('./video_dir',process_dir)
+    for folder_name in os.listdir(process_dir_path):
+        json_path = os.path.join(process_dir_path,folder_name,"sum_data.json")
+        if os.path.exists(json_path):
+            with open(json_path,'r',encoding='utf-8') as f:
+                data = json.load(f)
+                if 'entities' in data:
+                    entity_count = len(data['entities'])
+                    if 5< entity_count < 496:
+                        find_episode.append(folder_name)
+    temp_q = 0
+    sample_info = []
+    for name in find_episode:
+
+        with open(os.path.join(process_dir_path,name,"data/data_trans.json"), 'r') as file:
+            data = json.load(file)
+
+        data_final_0 = []
+        action = ["nav_to_point","pick","nav_to_point","place"]
+        action_index = 0
+        i = 0
+        result_agent_0 = []
+        flag = 0
+        while i < len(data):
+            if(flag == 1):
+                break
+            if action_index == 0:
+                if data[i+skip_len]["agent_0_action"] == "pick":
+                    result = {
+                        "step":data[i]["step"],
+                        "action":{
+                            "name":"nav_to_point",
+                            "position":_3d_to_2d(matrix=data[i]["agent_0_martix"],point_3d=data[i]["agent_0_pre_worldloc"])
+                        },
+                        "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+                    }
+                    j = 0
+                    for j in range(i,i+skip_len+1):
+                        if(data[j]["agent_0_action"] == "pick"):
+                            break
+                    i = j
+                    action_index = 1
+                else:
+                    result = {
+                            "step":data[i]["step"],
+                            "action":{
+                                "name":"nav_to_point",
+                                "position":_3d_to_2d(matrix=data[i]["agent_0_martix"],point_3d=data[i]["agent_0_pre_worldloc"])
+                            },
+                            "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+                        }
+                    i+= skip_len
+                data_final_0.append(result)
+                continue
+            if action_index == 1:
+                result = {
+                    "step":data[i]["step"],
+                    "action":{
+                        "name":"pick",
+                        "position":_3d_to_2d(matrix=data[i]["agent_0_martix"],point_3d=data[i]["agent_0_objpos"])
+                    },
+                    "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+                }
+                data_final_0.append(result)
+                j = i
+                while(True):
+                    if(data[j]["agent_0_action"]== "nav_to_point"):
+                        break
+                    j+=1
+                i = j
+                # print("pick_j:",i)
+                action_index = 2
+                continue
+            if action_index == 2:
+                if i +skip_len < len(data):
+                    if data[i+skip_len]["agent_0_action"] == "place":
+                        result = {
+                            "step":data[i]["step"],
+                            "action":{
+                                "name":"nav_to_point",
+                                "position":_3d_to_2d(matrix=data[i]["agent_0_martix"],point_3d=data[i]["agent_0_pre_worldloc"])
+                            },
+                            "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+                        }
+                        j = 0
+                        for j in range(i,i+skip_len+1):
+                            if(data[j]["agent_0_action"] == "place"):
+                                break
+                        i = j
+                        action_index = 3
+                    else:
+                        result = {
+                                "step":data[i]["step"],
+                                "action":{
+                                    "name":"nav_to_point",
+                                    "position":_3d_to_2d(matrix=data[i]["agent_0_martix"],point_3d=data[i]["agent_0_pre_worldloc"])
+                                },
+                                "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+                            }
+                        i+= skip_len
+                else:
+                    result = {
+                                "step":data[i]["step"],
+                                "action":{
+                                    "name":"nav_to_point",
+                                    "position":_3d_to_2d(matrix=data[i]["agent_0_martix"],point_3d=data[i]["agent_0_pre_worldloc"])
+                                },
+                                "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+                            }
+                    j = i
+                    while(True):
+                        j+=1
+                        if(data[j]["agent_0_action"] == "place"):
+                            break
+                    i = j
+                    action_index = 3
+
+                data_final_0.append(result)
+                continue
+            if action_index == 3:
+                result = {
+                    "step":data[i]["step"],
+                    "action":{
+                        "name":"place",
+                        "position":_3d_to_2d(matrix=data[i]["agent_0_martix"],point_3d=data[i]["agent_0_target"])
+                    },
+                    "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+                }
+                data_final_0.append(result)
+                flag = 1
+
+        action_index = 0
+        temp_info = {
+                "episode_id":int(name.replace('episode_', '')),
+                "sample_frame":[],
+            }
+        for i in range(len(data_final_0)):
+            match = re.search(r"frame_(\d+)_agent_(\d+)", data_final_0[i]["image"])
+            if match:
+                frame_number = match.group(1)
+                agent_number = match.group(2)
+            result_0 = [int(frame_number), int(agent_number)]
+            temp_info["sample_frame"].append(result_0)
+            
+        sample_info.append(temp_info)
+        with open(os.path.join(process_dir_path,name,f"{name}.json"), 'w') as file:
+            json.dump(data_final_0, file, indent=2)
+    return sample_info
 def datatrans_2_end(process_dir:str) -> list:
     find_episode = []
     process_dir_path = os.path.join('./video_dir',process_dir)
@@ -251,7 +402,7 @@ def datatrans_2_end(process_dir:str) -> list:
                         data_final_1.append(result_1)
                         data_final_1.append(result_2)
                         break        
-
+                
             # with open(f'./video_dir/manipulation_eval_process_0.json.gz/{name}/agent1.json', 'w') as file:
             #     json.dump(data_final_1, file, indent=2)
             index_0 = 0
@@ -359,8 +510,7 @@ def datatrans_2_end(process_dir:str) -> list:
             print("name",name)
     return sample_info
 
-def datatrans_onerobot(process_dir:str) ->list:
 
     
 if __name__ == "__main__":
-    datatrans_2_end(process_dir="image_dir")
+    print(datatrans_2_end_single_agent(process_dir="image_dir"))

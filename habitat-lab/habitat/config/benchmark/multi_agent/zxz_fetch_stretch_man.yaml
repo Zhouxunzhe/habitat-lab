@@ -5,7 +5,7 @@ defaults:
   - /habitat/task: task_config_base
 
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: StretchRobot_default
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: FetchRobot_default
 
   - /habitat/dataset/embodied_mas: zxz_manipulation
 
@@ -22,7 +22,7 @@ defaults:
   - /habitat/task/actions@habitat.task.actions.agent_1_base_velocity: base_velocity_non_cylinder
   - /habitat/task/actions@habitat.task.actions.agent_1_rearrange_stop: rearrange_stop
   - /habitat/task/actions@habitat.task.actions.agent_1_pddl_apply_action: pddl_apply_action
-  - /habitat/task/actions@habitat.task.actions.agent_1_oracle_nav_action: stretch_oracle_nav_action
+  - /habitat/task/actions@habitat.task.actions.agent_1_oracle_nav_action: fetch_oracle_nav_action
   - /habitat/task/actions@habitat.task.actions.agent_1_arm_reset_action: arm_reset_action
 
   - /habitat/task/measurements:
@@ -118,5 +118,5 @@ habitat:
     data_path: data/datasets/replica_cad/two_agent_manipulation_eval.json.gz
     # new
     randomize_agent_start: 0
-    robot_config: data/robots/json/two_agent_manipulation_eval.json
+    robot_config: data/robots/json/manipulation.json
     mode: manipulation

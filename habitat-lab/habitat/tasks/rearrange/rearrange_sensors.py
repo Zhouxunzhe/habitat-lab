@@ -55,38 +55,38 @@ class MultiObjSensor(PointGoalSensor):
         )
 
 
-@registry.register_sensor
-class TargetCurrentSensor(ArticulatedAgentAction,MultiObjSensor):
-    """
-    This is the ground truth object position sensor relative to the robot end-effector coordinate frame.
-    """
+# @registry.register_sensor
+# class TargetCurrentSensor(ArticulatedAgentAction,MultiObjSensor):
+#     """
+#     This is the ground truth object position sensor relative to the robot end-effector coordinate frame.
+#     """
 
-    cls_uuid: str = "obj_goal_pos_sensor"
+#     cls_uuid: str = "obj_goal_pos_sensor"
         
-    def _get_observation_space(self, *args, **kwargs):
-        return spaces.Box(
-            shape=(3,),
-            low=np.finfo(np.float32).min,
-            high=np.finfo(np.float32).max,
-            dtype=np.float32,
-        )
+#     def _get_observation_space(self, *args, **kwargs):
+#         return spaces.Box(
+#             shape=(3,),
+#             low=np.finfo(np.float32).min,
+#             high=np.finfo(np.float32).max,
+#             dtype=np.float32,
+#         )
 
-    def get_observation(self, observations, episode, *args, **kwargs):
-        self._sim: RearrangeSim
-        T_inv = (
-            self._sim.get_agent_data(self.agent_id)
-            .articulated_agent.ee_transform()
-            .inverted()
-        )
+#     def get_observation(self, observations, episode, *args, **kwargs):
+#         self._sim: RearrangeSim
+#         T_inv = (
+#             self._sim.get_agent_data(self.agent_id)
+#             .articulated_agent.ee_transform()
+#             .inverted()
+#         )
         
-        idxs, _ = self._sim.get_targets()
-        scene_pos = self._sim.get_scene_pos()
-        pos = scene_pos[idxs]
+#         idxs, _ = self._sim.get_targets()
+#         scene_pos = self._sim.get_scene_pos()
+#         pos = scene_pos[idxs]
 
-        for i in range(pos.shape[0]):
-            pos[i] = T_inv.transform_point(pos[i])
+#         for i in range(pos.shape[0]):
+#             pos[i] = T_inv.transform_point(pos[i])
 
-        return pos
+#         return pos
 
 @registry.register_sensor
 class TargetStartSensor(UsesArticulatedAgentInterface, MultiObjSensor):
@@ -174,32 +174,32 @@ class TargetGoalGpsCompassSensor(PositionGpsCompassSensor):
         # print("test:",idx)
         # print("compass_goal",pos)
         _entities = self._task.pddl_problem.get_ordered_entities_list()
-        print("en:",_entities,flush=True)
-        obj_pos_0 = self._task.pddl_problem.sim_info.get_entity_pos(
-            _entities[0]
-        )
-        obj_pos_1 = self._task.pddl_problem.sim_info.get_entity_pos(
-            _entities[1]
-        )
-        obj_pos_2 = self._task.pddl_problem.sim_info.get_entity_pos(
-            _entities[2]
-        )
-        obj_pos_3 = self._task.pddl_problem.sim_info.get_entity_pos(
-            _entities[3]
-        )
-        obj_pos_4 = self._task.pddl_problem.sim_info.get_entity_pos(
-            _entities[4]
-        )
-        obj_pos_5 = self._task.pddl_problem.sim_info.get_entity_pos(
-            _entities[5]
-        )
+        # print("en:",_entities,flush=True)
+        # obj_pos_0 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[0]
+        # )
+        # obj_pos_1 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[1]
+        # )
+        # obj_pos_2 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[2]
+        # )
+        # obj_pos_3 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[3]
+        # )
+        # obj_pos_4 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[4]
+        # )
+        # obj_pos_5 = self._task.pddl_problem.sim_info.get_entity_pos(
+        #     _entities[5]
+        # )
         # print("ordered_action",self._task.pddl_problem.get_ordered_actions())
-        print("obj_pos0::",obj_pos_0,flush=True)
-        print("obj_pos1::",obj_pos_1,flush=True)
-        print("obj_pos2::",obj_pos_2,flush=True)
-        print("obj_pos3::",obj_pos_3,flush=True)
-        print("obj_pos4::",obj_pos_4,flush=True)
-        print("obj_pos5::",obj_pos_5,flush=True)
+        # print("obj_pos0::",obj_pos_0,flush=True)
+        # print("obj_pos1::",obj_pos_1,flush=True)
+        # print("obj_pos2::",obj_pos_2,flush=True)
+        # print("obj_pos3::",obj_pos_3,flush=True)
+        # print("obj_pos4::",obj_pos_4,flush=True)
+        # print("obj_pos5::",obj_pos_5,flush=True)
         entity_pos = {element: self._task.pddl_problem.sim_info.get_entity_pos(element)
                       for element in _entities}
         return scene_pos
@@ -649,9 +649,9 @@ class NavTempTranSensor(UsesArticulatedAgentInterface, Sensor):
         #     return
         # nav_to_target_idx = int(nav_to_target_idx[0]) - 1
         if self.agent_id == 0:
-            nav_to_target_idx = 3
-        else:
             nav_to_target_idx = 2
+        else:
+            nav_to_target_idx = 3
         nav_to_obj = self._entities[nav_to_target_idx]
         obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
             nav_to_obj
@@ -659,7 +659,48 @@ class NavTempTranSensor(UsesArticulatedAgentInterface, Sensor):
         
 
         return obj_pos
+@registry.register_sensor
+class TargetPointSensor(UsesArticulatedAgentInterface,Sensor):
+    cls_uuid = "target_position"
 
+    def __init__(self, sim, config, task, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+        self._task = task
+        self._targets = {}
+        self._entities = self._task.pddl_problem.get_ordered_entities_list()
+    def _get_uuid(self, *args, **kwargs):
+        return TargetPointSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, **kwargs):
+        return spaces.Box(
+            shape=(3,),
+            low=np.finfo(np.float32).min,
+            high=np.finfo(np.float32).max,
+            dtype=np.float32,
+        )
+    def get_observation(self, observations, episode, *args, **kwargs):
+        # nav_to_target_idx = kwargs[
+        #     self._action_arg_prefix + "oracle_nav_action"
+        # ]
+        # if nav_to_target_idx <= 0 or nav_to_target_idx > len(
+        #     self._poss_entities
+        # ):
+        #     return
+        # nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+        #match_with_the_pddl!!!!!
+        if self.agent_id == 0:
+            nav_to_target_idx = 0
+        else:
+            nav_to_target_idx = 1
+        nav_to_obj = self._entities[nav_to_target_idx]
+        obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
+            nav_to_obj
+        )
+        return obj_pos
 @registry.register_sensor
 class IsHoldingSensor(UsesArticulatedAgentInterface, Sensor):
     """
@@ -1803,6 +1844,7 @@ class CameraExtrinsicSensor(UsesArticulatedAgentInterface, Sensor):
         camera_key = camera_name.replace("_depth", "")
         cur_articulated_agent = self._sim.get_agent_data(self.agent_id).articulated_agent
         cam_info = cur_articulated_agent.params.cameras[camera_key]
+        from habitat.articulated_agents.utils import get_articulated_agent_camera_transform_from_cam_info
         cam_trans = get_articulated_agent_camera_transform_from_cam_info(
             cur_articulated_agent, cam_info)
         return cam_trans
@@ -1893,23 +1935,46 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         return points_world
 
-    def _3d_to_2d(self, sensor_name, point_3d):
+    def _3d_to_2d(self, sensor_name, point_3d,isobj = False):
         # get the scene render camera and sensor object
         render_camera = self._sim._sensors[sensor_name]._sensor_object.render_camera
         W, H = render_camera.viewport[0], render_camera.viewport[1]
-
         # use the camera and projection matrices to transform the point onto the near plane
         projected_point_3d = render_camera.projection_matrix.transform_point(
             render_camera.camera_matrix.transform_point(point_3d)
         )
+        
+        anstemp = np.dot(np.array(render_camera.camera_matrix),np.append(point_3d,1))
+        anst = mn.Vector3(anstemp[:3])
+        anstt = mn.Matrix4(np.array(render_camera.projection_matrix)).transform_point(anst)
+        answ = np.dot(np.array(render_camera.projection_matrix),
+                      anstemp)
+        if isobj:
+            print(f"----------------------------------{self.agent_id}-------------",flush = True)
+            print("3dpoint:",point_3d,flush=True)
+            print("camera_matrix:",render_camera.camera_matrix,flush = True)
+            print("temp:",render_camera.camera_matrix.transform_point(point_3d),flush=True)
+            print("trytemp:",anstemp,flush = True)
+            print("projection_matrix:",render_camera.projection_matrix,flush = True)
+            print("answer:",projected_point_3d,flush = True)
         # convert the 3D near plane point to integer pixel space
         point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
+        if isobj:
+            print("2d_1:",point_2d)
         point_2d = point_2d / render_camera.projection_size()[0]
+        if isobj:
+            print("2d_2:",point_2d)
         point_2d += mn.Vector2(0.5)
+        if isobj:
+            print("2d_3:",point_2d)
         point_2d *= render_camera.viewport
-
+        if isobj:
+            print("2d_4:",point_2d)
         out_bound = 10
         point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
+        if isobj:
+            print("2d_5:",point_2d)
+            print(f"----------------------------------{self.agent_id}-------------",flush = True)
         return point_2d.astype(int)
 
     def voxel_grid_filter(self, points, voxel_size):
@@ -2036,7 +2101,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         pixel_coords = []
         if self._debug_tf and 'obj_pos' in kwargs:
             if kwargs['obj_pos'] is not None:
-                pixel_coord = self._3d_to_2d(depth_camera_name, np.array(list(kwargs['obj_pos'])))
+                pixel_coord = self._3d_to_2d(depth_camera_name, np.array(list(kwargs['obj_pos'])),isobj = True)
                 if np.any(np.isnan(pixel_coord)) or np.any(np.isinf(pixel_coord)):
                     print("obj_pos is invalid")
                 else:
@@ -2049,6 +2114,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         for pixel_coord, color in zip(pixel_coords, colors):
             x, y = pixel_coord.astype(int)
+            print(f"final_____________x:{x}_____y:{y}______",flush=True)
             if color == [0, 255, 0]:
                 if self._debug_tf:
                     if x < 256 and y < 256:

@@ -238,7 +238,7 @@ def observations_to_image(observation: Dict, info: Dict,
                               articulated_agent_type)
     image_option = config.habitat_baselines.eval.image_option
     json_option = config.habitat_baselines.eval.json_option
-    image_filter_list = config.habitat_baselines.eval.get("image_filter_list", ["head_rgb", "arm_workspace_rgb"])
+    image_filter_list = config.habitat_baselines.eval.get("image_filter_list", ["head_rgb", "arm_workspace_rgb","nav_workspace_rgb"])
     image_dir = config.habitat_baselines.image_dir
 
     substrings = ["has_finished_arm_action","obj_pos","target_pos",

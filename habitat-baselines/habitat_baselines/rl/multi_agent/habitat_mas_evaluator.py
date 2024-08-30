@@ -95,7 +95,10 @@ class HabitatMASEvaluator(Evaluator):
                 if key in obs:
                     obj_info_item_disk.append(obs[key])
                     obs[key] = np.array([1])
-        obj_info_item = obj_info_item_disk[0]
+        try:
+            obj_info_item = obj_info_item_disk[0]
+        except:
+            print("skip")
         batch = batch_obs(observations, device=device) 
         batch = apply_obs_transforms_batch(batch, obs_transforms)  # type: ignore
         action_shape, discrete_actions = get_action_space_info(

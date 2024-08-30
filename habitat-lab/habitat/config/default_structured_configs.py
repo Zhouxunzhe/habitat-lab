@@ -821,6 +821,9 @@ class GlobalPredicatesSensorConfig(LabSensorConfig):
 class NavTempTranSensorConfig(LabSensorConfig):
     type: str = "NavTempTranSensor"
 @dataclass
+class TargetPointSensorConfig(LabSensorConfig):
+    type: str = "TargetPointSensor"
+@dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):
     type: str = "MultiAgentGlobalPredicatesSensor"
 
@@ -2778,12 +2781,18 @@ cs.store(
     name="get_nav_goal_point",
     node=NavObjPointSensorConfig,
 )
-
 cs.store(
     package="habitat.task.lab_sensors.navtemptran_s",
     group="habitat/task/lab_sensors",
     name="navtemptran_s",
     node=NavTempTranSensorConfig,
+)
+
+cs.store(
+    package="habitat.task.lab_sensors.target_point",
+    group="habitat/task/lab_sensors",
+    name="target_point",
+    node=TargetPointSensorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.trans_of_robot",

@@ -22,11 +22,9 @@ from habitat.tasks.rearrange.utils import (
 )
 from habitat.tasks.rearrange.rearrange_sim import RearrangeSim
 from habitat_sim.physics import MotionType
-from context import ContextManager
-def method_a(context):
-    return context.shared_value
 
-from context import ContextManager
+
+
 @registry.register_task_action
 class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
     """
@@ -157,22 +155,13 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
     def step(self, pick_action, **kwargs):
         object_pick_pddl_idx = pick_action[0]
         should_pick = pick_action[1]
-        if object_pick_pddl_idx == -3:
-            import json
-            with open('./data_temp.json','r') as f:
-                ans = json.load(f)
-            agent_name = self._action_arg_prefix.rstrip("_")
-            object_coord_list = ans[agent_name]['position']
-            import magnum as mn
-            object_coord = mn.Vector3(*object_coord_list)
-            print("object_coord:",object_coord)
-        else:
-            if (object_pick_pddl_idx <= 0) or object_pick_pddl_idx > len(self._entities):
-                return self.ee_target
+
+        if object_pick_pddl_idx > len(self._entities):
+            return self.ee_target
 
         if should_pick == 1:
             # or self.cur_grasp_mgr.snap_idx is None
-                object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
+            object_coord = self._get_coord_for_pddl_idx(object_pick_pddl_idx)
             cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
             # TODO(zxz): 使用ee_transform获得的ee_pos与arm_joint_pos使用calc_fk计算的ee_pos不一样
             if not self.is_reset:
