@@ -58,6 +58,7 @@ class OracleResetArmAction(ArmEEAction, ArticulatedAgentAction):
             self._init_joint_pos = np.array(self.cur_articulated_agent.arm_joint_pos)
             self.is_init = True
 
+
         if should_reset == 3:
             # or self.cur_grasp_mgr.snap_idx is None
             # TODO(zxz): even if is settled initially, the two pos are still not matched

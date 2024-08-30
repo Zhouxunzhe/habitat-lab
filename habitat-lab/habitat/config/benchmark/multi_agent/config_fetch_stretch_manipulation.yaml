@@ -7,7 +7,8 @@ defaults:
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: FetchRobot_default
 
-  - /habitat/dataset/rearrangement: hssd
+  # - /habitat/dataset/rearrangement: hssd
+  - /habitat/dataset/embodied_mas: zxz_manipulation
 
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_pick_action: arm_pick_action
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_place_action: arm_place_action
@@ -94,14 +95,14 @@ habitat:
     task_spec_base_path: benchmark/multi_agent/
     task_spec: pddl/pddl_fetch_stretch_rearrange
     pddl_domain_def: fp
-    actions:
-      agent_0_base_velocity:
-        lin_speed: 40.0
-        ang_speed: 20.0
+    # actions:
+    #   agent_0_base_velocity:
+    #     lin_speed: 40.0
+    #     ang_speed: 20.0
 
-      agent_1_base_velocity:
-        lin_speed: 40.0
-        ang_speed: 20.0
+    #   agent_1_base_velocity:
+    #     lin_speed: 40.0
+    #     ang_speed: 20.0
 
     robot_at_thresh: 1.1
 

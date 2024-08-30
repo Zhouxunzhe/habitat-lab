@@ -87,6 +87,7 @@ habitat_baselines:
               - nav_to_goal_dog
               - pick
               - place
+              - reset_arm
               - nav_to_receptacle_by_name
           # Override to use the oracle navigation skill (which will actually execute navigation).
           defined_skills:
@@ -139,6 +140,7 @@ habitat_baselines:
               - nav_to_goal_dog
               - pick
               - place
+              - reset_arm
               - nav_to_receptacle_by_name
           # Override to use the oracle navigation skill (which will actually execute navigation).
           defined_skills:

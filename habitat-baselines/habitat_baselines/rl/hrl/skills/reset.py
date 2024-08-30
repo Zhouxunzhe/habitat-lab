@@ -102,7 +102,6 @@ class ResetArmSkill(NnSkillPolicy):
         self, observations, rnn_hidden_states, prev_actions, masks, batch_idx
     ):
         current_joint_pos = observations["joint"].cpu().numpy()
-
         return (
             torch.as_tensor(
                 np.abs(current_joint_pos - self._init_joint_pos).max(-1),
