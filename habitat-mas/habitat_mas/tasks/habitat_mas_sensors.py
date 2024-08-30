@@ -112,6 +112,41 @@ class RobotResumeSensor(Sensor):
 
         return robot_resumes
 
+@registry.register_sensor
+class PddlTextGoalSensor(Sensor):
+    def __init__(self, sim, config, *args, task, **kwargs):
+        self._task = task
+        self._sim = sim
+        # By default use verbose string representation
+        self.compact_str = config.get("compact_str", False)
+        super().__init__(config=config)
+
+    def _get_uuid(self, *args, **kwargs):
+        return "pddl_text_goal"
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TEXT
+
+    def _get_observation_space(self, *args, **kwargs):
+        return spaces.Text(max_length=10000)
+
+    def get_observation(self, observations, episode, *args, **kwargs):
+        goal = self._task.pddl_problem.goal
+        goal_description = self._convert_goal_to_text(goal)
+        return np.array(list(goal_description.ljust(1024)[:1024].encode('utf-8')), dtype=np.uint8)
+
+    def _convert_goal_to_text(self, goal):
+        if self.compact_str:
+            goal_str = self._task.pddl_problem.goal.compact_str
+        else:
+            goal_str = self._task.pddl_problem.goal.verbose_str
+        description = f"""
+The task is to have the robots navigate to/ rearrange/ perceive certain objects in the scene. 
+With the following conditions:
+{goal_str}"""
+        return description
+
+
 def get_text_sensors(sim, *args, **kwargs):
     
     # sensor_keys = kwargs.get("sensor_keys", None)
