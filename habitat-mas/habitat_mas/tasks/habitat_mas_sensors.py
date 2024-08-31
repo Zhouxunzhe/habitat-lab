@@ -114,11 +114,15 @@ class RobotResumeSensor(Sensor):
 
 @registry.register_sensor
 class PddlTextGoalSensor(Sensor):
+    
+    max_length = 10000
+    
     def __init__(self, sim, config, *args, task, **kwargs):
         self._task = task
         self._sim = sim
         # By default use verbose string representation
-        self.compact_str = config.get("compact_str", False)
+        self.text_type = config.get("text_type", False)
+        self.task_description = config.get("task_description", "")
         super().__init__(config=config)
 
     def _get_uuid(self, *args, **kwargs):
@@ -128,24 +132,71 @@ class PddlTextGoalSensor(Sensor):
         return SensorTypes.TEXT
 
     def _get_observation_space(self, *args, **kwargs):
-        return spaces.Text(max_length=10000)
+        return spaces.Text(max_length=self.max_length)
+
+    def _predicate_to_text(self, predicate):
+        predicate_name = predicate.name
+        args = predicate._arg_values
+
+        if predicate_name == "in":
+            obj = args[0].name
+            receptacle = args[1].name
+            return f"{obj} is in {receptacle}"
+
+        elif predicate_name == "holding":
+            obj = args[0].name
+            robot_id = args[1].name
+            return f"{robot_id} is holding {obj}"
+
+        elif predicate_name == "not_holding":
+            robot_id = args[0].name
+            return f"{robot_id} is not holding anything"
+
+        elif predicate_name == "robot_at":
+            Y = args[0].name
+            robot_id = args[1].name
+            return f"{robot_id} is at object/receptacle {Y}"
+
+        elif predicate_name == "at":
+            obj = args[0].name
+            at_entity = args[1].name
+            return f"{obj} is at receptacle {at_entity}"
+
+        elif predicate_name == "detected_object":
+            any_targets = args[0].name
+            robot_id = args[1].name
+            return f"{robot_id} has detected objects {any_targets}"
+
+        else:
+            return str(predicate)
+
+    def _get_description(self, goal) -> str:
+        description = f"Goal of this episode is the logical operation {goal._expr_type.value} of the following conditions:\n"
+        for i, predicate in enumerate(goal.sub_exprs):
+            description += f"{i}. {self._predicate_to_text(predicate)}\n"
+        return description
+
+    def _convert_goal_to_text(self, goal):
+        if self.text_type == "compact_str":
+            goal_str = goal.compact_str
+        elif self.text_type == "verbose_str":
+            goal_str = goal.verbose_str
+        elif self.text_type == "description":
+            goal_str = self._get_description(goal)
+        else:
+            raise ValueError(f"Unknown text type {self.text_type}")
+        description = f"""
+{self.task_description}
+{goal_str}"""
+        return description
 
     def get_observation(self, observations, episode, *args, **kwargs):
         goal = self._task.pddl_problem.goal
         goal_description = self._convert_goal_to_text(goal)
-        return np.array(list(goal_description.ljust(1024)[:1024].encode('utf-8')), dtype=np.uint8)
-
-    def _convert_goal_to_text(self, goal):
-        if self.compact_str:
-            goal_str = self._task.pddl_problem.goal.compact_str
-        else:
-            goal_str = self._task.pddl_problem.goal.verbose_str
-        description = f"""
-The task is to have the robots navigate to/ rearrange/ perceive certain objects in the scene. 
-With the following conditions:
-{goal_str}"""
-        return description
-
+        # return goal_description
+        return np.array(
+            list(goal_description.ljust(self.max_length)[:self.max_length].encode('utf-8'))
+            , dtype=np.uint8)
 
 def get_text_sensors(sim, *args, **kwargs):
     

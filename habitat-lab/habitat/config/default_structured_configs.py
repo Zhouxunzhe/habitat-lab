@@ -810,7 +810,10 @@ class GlobalPredicatesSensorConfig(LabSensorConfig):
 @dataclass
 class PddlTextGoalSensorConfig(LabSensorConfig):
     type: str = "PddlTextGoalSensor"
-    compact_str: bool = False
+    text_type: str = "description" # ["compact_str", "verbose_str", "description"]
+    task_description: str = """
+The task is to have the robots navigate to/ rearrange/ perceive certain objects in the scene. 
+With the following conditions:"""
 
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):

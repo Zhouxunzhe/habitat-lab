@@ -46,20 +46,6 @@ class HabitatMASEvaluator(Evaluator):
     ):
         observations = envs.reset()
         observations = envs.post_step(observations)
-
-        # # collect numerical observations and non-numerical observations
-        # numerical_observations = {
-        #     key: value
-        #     for key, value in observations[0].items()
-        #     if isinstance(value, np.ndarray)
-        # }
-        # non_numerical_observations = {
-        #     key: value
-        #     for key, value in observations.items()
-        #     if not isinstance(value, np.ndarray)
-        # }
-
-        # batch = batch_obs(numerical_observations, device=device)
         batch = batch_obs(observations, device=device)
         batch = apply_obs_transforms_batch(batch, obs_transforms)  # type: ignore
 
@@ -153,8 +139,7 @@ class HabitatMASEvaluator(Evaluator):
                     for i in range(envs.num_envs):
                         pddl_text_goal_np = envs_pddl_text_goal_np[i, ...] 
                         envs_text_context[i]['pddl_text_goal'] = ''.join(str(pddl_text_goal_np, encoding='UTF-8'))
-
-
+                        
             space_lengths = {}
             n_agents = len(config.habitat.simulator.agents)
             if n_agents > 1:
