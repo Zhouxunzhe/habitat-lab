@@ -506,12 +506,12 @@ class HierarchicalPolicy(nn.Module, Policy):
                     log_info,
                     **kwargs,
                 )
-            print("_______________________info_________________",flush=True)
-            print("new_skills:",new_skills,flush=True)
-            print("new_skill_args:",new_skill_args,flush=True)
-            print("hl_info:",hl_info,flush=True)
-            print(f"self.agent_name:{self.agent_name}")
-            print("_______________________info_________________",flush=True)
+            # print("_______________________info_________________",flush=True)
+            # print("new_skills:",new_skills,flush=True)
+            # print("new_skill_args:",new_skill_args,flush=True)
+            # print("hl_info:",hl_info,flush=True)
+            # print(f"self.agent_name:{self.agent_name}")
+            # print("_______________________info_________________",flush=True)
             new_skills = new_skills.numpy()
 
             sel_grouped_skills = self._broadcast_skill_ids(

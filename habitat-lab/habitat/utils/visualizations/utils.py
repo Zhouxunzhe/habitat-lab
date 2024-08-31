@@ -241,9 +241,9 @@ def observations_to_image(observation: Dict, info: Dict,
     image_filter_list = config.habitat_baselines.eval.get("image_filter_list", ["head_rgb", "arm_workspace_rgb","nav_workspace_rgb"])
     image_dir = config.habitat_baselines.image_dir
 
-    substrings = ["has_finished_arm_action","obj_pos","target_pos",
-                  "localization_sensor","ee_pos","ee_global_pos_sensor",
-                  "has_finished_oracle_nav","robot_trans_martix","camera_extrinsic"]
+    substrings = ["agent_0_has_finished_arm_action","agent_0_obj_pos","agent_0_target_pos",
+                  "agent_0_localization_sensor","agent_0_ee_pos","ee_global_pos_sensor",
+                  "agent_0_has_finished_oracle_nav","agent_0_robot_trans_martix","agent_0_camera_extrinsic"]
     #"has_finished_oracle_nav"
     matched_data = {key: value.tolist() for key, value in observation.items() if any(sub in key for sub in substrings)}
     unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic"]
