@@ -1,5 +1,5 @@
 import json
-from .crab_core import Action
+from ..agents.crab_core import Action
 from typing import List
 import openai
 
@@ -22,6 +22,9 @@ class OpenAIModel:
         self.window_size = window_size
         self.model = model
         self.client = openai.OpenAI()
+        self.planning_stage = False
+        if not action_space:
+            self.planning_stage = True
 
     def chat(self, content: str):
         new_message = {"role": "user", "content": content}
@@ -38,32 +41,44 @@ class OpenAIModel:
         request.append(new_message)
         self.chat_history.append([new_message])
 
-        response = self.client.chat.completions.create(
-            messages=request,  # type: ignore
-            model=self.model,
-            tools=[{"type": "function", "function": action} for action in self.actions],
-            tool_choice="required",
-        )
+        if self.planning_stage:
+            response = self.client.chat.completions.create(
+                messages=request,  # type: ignore
+                model=self.model,
+            )
+        else:
+            response = self.client.chat.completions.create(
+                messages=request,  # type: ignore
+                model=self.model,
+                tools=[
+                    {"type": "function", "function": action} for action in self.actions
+                ],
+                tool_choice="required",
+            )
 
         response_message = response.choices[0].message
         self.chat_history[-1].append(response_message)
 
-        tool_calls = response_message.tool_calls
-        for tool_call in tool_calls:
-            self.chat_history[-1].append(
-                {
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": tool_call.function.name,
-                    "content": "",
-                }
-            )  # extend conversation with function response
+        if not self.planning_stage:
+            tool_calls = response_message.tool_calls
+            for tool_call in tool_calls:
+                self.chat_history[-1].append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": tool_call.function.name,
+                        "content": "",
+                    }
+                )  # extend conversation with function response
 
-        if len(tool_calls) != 1:
-            raise RuntimeError("agent output more than one action per step.")
-        call = tool_calls[0]
-        parameters = json.loads(call.function.arguments)
-        return (call.function.name, parameters)
+            if len(tool_calls) != 1:
+                raise RuntimeError("agent output more than one action per step.")
+            call = tool_calls[0]
+            parameters = json.loads(call.function.arguments)
+            return (call.function.name, parameters)
+
+        else:
+            return response_message.content
         # function_call_res = []
         # for call in tool_calls:
         #     action_name = call.function.name

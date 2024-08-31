@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from .crab_core import Action
-from .models import OpenAIModel
+from ..utils.models import OpenAIModel
 
 
 REQUEST_TEMPLATE = '"{source_agent}" agent sent you requests: "{request}".'

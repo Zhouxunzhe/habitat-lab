@@ -26,7 +26,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         self._all_actions = self._setup_actions()
         self._n_actions = len(self._all_actions)
         self._active_envs = torch.zeros(self._num_envs, dtype=torch.bool)
-        
+
         environment_action_name_set = set(
             [action._name for action in self._all_actions]
         )
@@ -37,20 +37,20 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             if action.name in environment_action_name_set
         ]
         # Initialize the LLM agent
-        self._llm_agent = self._init_llm_agent(kwargs["agent_name"], llm_actions)
+        self.llm_agent = self._init_llm_agent(kwargs["agent_name"], llm_actions)
 
     def _init_llm_agent(self, agent_name, action_list):
         # Initialize the LLM agent here based on the config
         # This could load a pre-trained model, set up prompts, etc.
         # Return the initialized agent
         action_list.append(send_request)
-        return DummyAgent(agent_name=agent_name, action_list=action_list)
+        # return DummyAgent(agent_name=agent_name, action_list=action_list)
 
-        # return CrabAgent(
-        #     agent_name,
-        #     'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
-        #     action_list,
-        # )
+        return CrabAgent(
+            agent_name,
+            'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
+            action_list,
+        )
 
     def _parse_function_call_args(self, llm_args: Dict) -> str:
         """
@@ -84,7 +84,23 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         # TODO: use these text context to query the LLM agent with function call
         envs_text_context = kwargs.get("envs_text_context", None)
         agent_task_assignments = kwargs.get("agent_task_assignments", None)
-        
+        agent_chat_history = kwargs.get("agent_chat_history", None)
+
+        if (
+            not self.llm_agent.llm_model.chat_history
+            and agent_chat_history is not None
+        ):
+            self.llm_agent.llm_model.chat_history = agent_chat_history
+
+        print("=================env_text_context===================")
+        print(envs_text_context)
+        print("=================agent_task_assignment===================")
+        print(agent_task_assignments)
+        print("=================agent_chat_history===================")
+        print(agent_chat_history)
+        print("====================================================")
+
+
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
         skill_args_data = [None for _ in range(batch_size)]
@@ -96,7 +112,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
 
             # Query the LLM agent with the current observations
             # to get the next action and arguments
-            llm_output = self._llm_agent.chat(observations[batch_idx])
+            llm_output = self.llm_agent.chat(observations[batch_idx])
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["1"]

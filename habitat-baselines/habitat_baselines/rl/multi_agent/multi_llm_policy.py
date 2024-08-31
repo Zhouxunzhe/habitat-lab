@@ -1,3 +1,5 @@
+import json
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
@@ -5,22 +7,187 @@ from typing import Any, Callable, Dict, List, Optional
 import gym.spaces as spaces
 import numpy as np
 import torch
+from habitat_mas.utils.models import OpenAIModel
 
 from habitat_baselines.common.storage import Storage
 from habitat_baselines.common.tensor_dict import TensorDict
+from habitat_baselines.rl.multi_agent.pop_play_wrappers import (
+    MultiAgentPolicyActionData,
+    MultiPolicy,
+    MultiStorage,
+    MultiUpdater,
+    _merge_list_dict,
+)
 from habitat_baselines.rl.multi_agent.utils import (
     add_agent_names,
     add_agent_prefix,
     update_dict_with_agent_prefix,
 )
 
-from habitat_baselines.rl.multi_agent.pop_play_wrappers import (
-    MultiPolicy,
-    MultiAgentPolicyActionData,
-    MultiStorage,
-    MultiUpdater,
-    _merge_list_dict
+LEADER_DISCUSS_TEMPLATE = (
+    "You are a group discussion leader."
+    " Your have to discuss with real robots (agents) to break an overall"
+    " task to smaller subtasks and assign a subtask to each agent."
+    " The task is described below:\n\n"
+    '"""\n{task_description}\n"""\n\n'
+    "All agents are in a scene, the scene description is as follows:\n\n"
+    '"""\n{scene_description}\n"""\n\n'
+    "The agents are described below:\n\n"
+    '"""\n{robot_resume}\n"""\n\n'
 )
+
+ROBOT_RESUME_TEMPLATE = (
+    '"{robot_key}" is a  "{robot_type}" agent.'
+    " It has the following capabilities:\n\n"
+    '"""\n{capabilities}\n"""\n\n'
+)
+
+LEADER_START_MESSAGE = (
+    "Now you should assign subtasks to each agent following this format:\n\n"
+    r"{robot_id|subtask_description}\n\n"
+    'For example, if you want to assign a subtask "Navigate to box_1" to agent_0, you should type:\n'
+    "{agent_0|Navigate to box_1}\n\n"
+    "Remember you must include the brackets and you must include all the robots.\n\n"
+)
+
+
+ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
+    # 'You are a "{robot_type}" robot with id "{robot_id}".'
+    'You are a "{robot_type}" agent called "{robot_key}".'
+    " Your task is to work with other agents to complete the task described below:\n\n"
+    '"""\n{task_description}\n"""\n\n'
+    "You have the following capabilities:\n\n"
+    '"""\n{capabilities}\n"""\n\n'
+    "I will assign you a subtask."
+    r" If you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
+    r' following this format: "{{no|<the reason>}}".'
+    r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
+    r" Example responses: {{no|The task is not well-defined}}, {{yes}}, {{no|I need more information}}."
+)
+
+
+NO_MANIPULATION = "There are no explicit manipulation components"
+NO_MOBILITY = "The provided URDF does not include specific joints"
+NO_PERCEPTION = "UNKNOWN"
+
+
+def get_capabilities(robot: dict):
+    capabilities = ""
+    if not robot["mobility"]["summary"].startswith(NO_MOBILITY):
+        mobility = robot["mobility"]["summary"]
+        capabilities += f"Mobility capbility: {mobility}\n\n"
+    if not robot["perception"]["summary"].startswith(NO_MOBILITY):
+        perception = robot["perception"]["summary"]
+        capabilities += f"Perception capbility: {perception}\n\n"
+    if not robot["manipulation"]["summary"].startswith(NO_MANIPULATION):
+        manipulation = robot["manipulation"]["summary"]
+        capabilities += f"Manipulation capbility: {manipulation}\n\n"
+    return capabilities
+
+
+def get_robot_prompt(robot: dict, task_description: str, robot_key: str):
+    capabilities = get_capabilities(robot)
+    return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
+        robot_type=robot["robot_type"],
+        # robot_id=robot["robot_id"],
+        robot_key=robot_key,
+        task_description=task_description,
+        capabilities=capabilities,
+    )
+
+
+def parse_leader_response(text):
+    # Define the regular expression pattern
+    pattern = r"\{(.*?)\|(.*?)\}"
+
+    # Find all matches in the text
+    matches = re.findall(pattern, text)
+
+    # Create a dictionary from the matches
+    robot_tasks = {
+        robot_id: subtask_description for robot_id, subtask_description in matches
+    }
+
+    return robot_tasks
+
+
+def parse_agent_response(text):
+    # Define the regular expression pattern
+    pattern = r"\{(yes|no)(?:\|(.*?))?\}"
+
+    # Find all matches in the text
+    matches = re.findall(pattern, text)
+
+    response, reason = matches[0]
+    if response == "yes":
+        reason = None  # Use None to indicate no reason
+    elif response == "no":
+        reason = (
+            reason.strip() if reason else ""
+        )  # Store the reason, strip spaces, or empty if none
+
+    return response, reason
+
+
+def group_discussion(robot_resume: str, scene_description, task_description):
+    robot_resume = json.loads(robot_resume)
+    robot_resume_prompt = ""
+    for robot_key in robot_resume:
+        robot_resume_prompt += ROBOT_RESUME_TEMPLATE.format(
+            robot_key=robot_key,
+            robot_type=robot_resume[robot_key]["robot_type"],
+            capabilities=get_capabilities(robot_resume[robot_key]),
+        )
+    leader_prompt = LEADER_DISCUSS_TEMPLATE.format(
+        task_description=task_description,
+        robot_resume=robot_resume_prompt,
+        scene_description=scene_description,
+    )
+    leader = OpenAIModel(leader_prompt, [])
+    agents = {}
+    for robot in robot_resume:
+        robot_prompt = get_robot_prompt(robot_resume[robot], task_description, robot)
+        agents[robot] = OpenAIModel(robot_prompt, [])
+
+    # robot_id_to_model_map = {
+    #     robot_resume[robot]["robot_id"]: agents[robot] for robot in robot_resume
+    # }
+
+    response = leader.chat(LEADER_START_MESSAGE)
+    robot_tasks = parse_leader_response(response)
+
+    agent_response = {}
+    for robot_id in robot_tasks:
+        robot_model = agents[robot_id]
+        response = robot_model.chat(f'You subtask is "{robot_tasks[robot_id]}".')
+        agent_response[robot_id] = parse_agent_response(response)
+        print("===============Robot Response==============")
+        print(f"Robot {robot_id} response: {response}")
+        print("===========================================")
+
+    all_yes = True
+    prompt = ""
+    for robot_id, (response, reason) in agent_response.items():
+        if response == "no":
+            prompt += f"Robot {robot_id} response: {response}, reason: {reason}\n"
+            all_yes = False
+            break
+    if not all_yes:
+        prompt += "Please modify the task and reassign the subtasks."
+        response = leader.chat(prompt)
+        print("===============Leader Response==============")
+        print(response)
+        print("===========================================")
+        robot_tasks = parse_leader_response(response)
+
+    history_messages = {agent: agents[agent].chat_history for agent in agents}
+
+    print("===============Group Discussion Result==============")
+    print(robot_tasks)
+    print("====================================================")
+
+    return robot_tasks, history_messages
+
 
 class MultiLLMPolicy(MultiPolicy):
     """
@@ -50,7 +217,6 @@ class MultiLLMPolicy(MultiPolicy):
         envs_text_context=[{}],
         **kwargs,
     ):
-
         n_agents = len(self._active_policies)
         split_index_dict = self._build_index_split(
             rnn_hidden_states, prev_actions, kwargs
@@ -64,10 +230,13 @@ class MultiLLMPolicy(MultiPolicy):
         agent_masks = masks.split([1] * n_agents, -1)
         n_envs = prev_actions.shape[0]
 
+        text_goal = observations["pddl_text_goal"][0].tolist()
+        text_goal = "".join([chr(code) for code in text_goal]).strip()
         # Stage 1: If all prev_actions are zero, which means it is the first step of the episode, then we need to do group discussion
         # Given: Robot resume + Scene description + task instruction
         # Output: (Subtask decomposition) + task assignment
         envs_task_assignments = []
+        envs_chat_histories = []
         for i in range(n_envs):
             env_prev_actions = prev_actions[i]
             env_text_context = envs_text_context[i]
@@ -77,29 +246,43 @@ class MultiLLMPolicy(MultiPolicy):
                     robot_resume = env_text_context["robot_resume"]
                 if "scene_description" in env_text_context:
                     scene_description = env_text_context["scene_description"]
-                #TODO: Add group discussion here
+                # TODO: Add group discussion here
+                # print("===============Group Discussion===============")
+                # print(robot_resume)
+                # print("=============================================")
+                # print(scene_description)
+                # print("=============================================")
+                # print(text_goal)
+                # print("=============================================")
+                task_assignments, chat_history_messages = group_discussion(
+                    robot_resume, scene_description, text_goal
+                )
                 # task_assignments = group_discussion(robot_resume, scene_description)
                 # {
                 #     "agent_0": "Look for the object xx in the environment",
                 #     "agent_1": "Navigate to object xxx, and pick up it, placing it at receptacle yyy",
                 #     ...
                 # }
-                envs_task_assignments.append({})
-                pass
-
+                envs_task_assignments.append(task_assignments)
+                envs_chat_histories.append(chat_history_messages)
 
         # Stage 2: Individual policy actions
         agent_actions = []
         for agent_i, policy in enumerate(self._active_policies):
             # collect assigned tasks for agent_i across all envs
             agent_i_handle = f"agent_{agent_i}"
-            agent_task_assignments = [task_assignment[agent_i]
-                                      if agent_i_handle in task_assignment else ""
-                                      for task_assignment in envs_task_assignments]
+            agent_task_assignments = [
+                task_assignment[agent_i_handle]
+                if agent_i_handle in task_assignment
+                else ""
+                for task_assignment in envs_task_assignments
+            ]
+            agent_chat_history = [
+                chat_history[agent_i_handle] if agent_i_handle in chat_history else {}
+                for chat_history in envs_chat_histories
+            ]
 
-            agent_obs = self._update_obs_with_agent_prefix_fn(
-                observations, agent_i
-            )
+            agent_obs = self._update_obs_with_agent_prefix_fn(observations, agent_i)
 
             agent_actions.append(
                 policy.act(
@@ -109,12 +292,11 @@ class MultiLLMPolicy(MultiPolicy):
                     agent_masks[agent_i],
                     deterministic,
                     envs_text_context=envs_text_context,
-                    agent_task_assignments=agent_task_assignments # pass the task planning result to the policy
+                    agent_task_assignments=agent_task_assignments,  # pass the task planning result to the policy
+                    agent_chat_history=agent_chat_history,
                 )
             )
-        policy_info = _merge_list_dict(
-            [ac.policy_info for ac in agent_actions]
-        )
+        policy_info = _merge_list_dict([ac.policy_info for ac in agent_actions])
         batch_size = masks.shape[0]
         device = masks.device
 
@@ -133,25 +315,19 @@ class MultiLLMPolicy(MultiPolicy):
             all_dat = [get_dat(ac) for ac in agent_actions]
             # Replace any None with dummy data.
             all_dat = [
-                torch.zeros(
-                    (batch_size, feature_dims[ind]), device=device, dtype=dtype
-                )
+                torch.zeros((batch_size, feature_dims[ind]), device=device, dtype=dtype)
                 if dat is None
                 else dat
                 for ind, dat in enumerate(all_dat)
             ]
             return torch.cat(all_dat, -1)
 
-        rnn_hidden_lengths = [
-            ac.rnn_hidden_states.shape[-1] for ac in agent_actions
-        ]
+        rnn_hidden_lengths = [ac.rnn_hidden_states.shape[-1] for ac in agent_actions]
         return MultiAgentPolicyActionData(
             rnn_hidden_states=torch.cat(
                 [ac.rnn_hidden_states for ac in agent_actions], -1
             ),
-            actions=_maybe_cat(
-                lambda ac: ac.actions, action_dims, prev_actions.dtype
-            ),
+            actions=_maybe_cat(lambda ac: ac.actions, action_dims, prev_actions.dtype),
             values=_maybe_cat(
                 lambda ac: ac.values, [1] * len(agent_actions), torch.float32
             ),
@@ -162,9 +338,7 @@ class MultiLLMPolicy(MultiPolicy):
             ),
             take_actions=torch.cat(
                 [
-                    ac.take_actions
-                    if ac.take_actions is not None
-                    else ac.actions
+                    ac.take_actions if ac.take_actions is not None else ac.actions
                     for ac in agent_actions
                 ],
                 -1,
@@ -214,9 +388,7 @@ class MultiLLMPolicy(MultiPolicy):
             split_index_dict[name_index] = split_indices
         return split_index_dict
 
-    def get_value(
-        self, observations, rnn_hidden_states, prev_actions, masks, **kwargs
-    ):
+    def get_value(self, observations, rnn_hidden_states, prev_actions, masks, **kwargs):
         split_index_dict = self._build_index_split(
             rnn_hidden_states, prev_actions, kwargs
         )
@@ -231,9 +403,7 @@ class MultiLLMPolicy(MultiPolicy):
         agent_masks = torch.split(masks, [1, 1], dim=-1)
         all_value = []
         for agent_i, policy in enumerate(self._active_policies):
-            agent_obs = self._update_obs_with_agent_prefix_fn(
-                observations, agent_i
-            )
+            agent_obs = self._update_obs_with_agent_prefix_fn(observations, agent_i)
             all_value.append(
                 policy.get_value(
                     agent_obs,
@@ -270,10 +440,7 @@ class MultiLLMPolicy(MultiPolicy):
         if all_discrete:
             return spaces.MultiDiscrete(
                 tuple(
-                    [
-                        policy.policy_action_space.n
-                        for policy in self._active_policies
-                    ]
+                    [policy.policy_action_space.n for policy in self._active_policies]
                 )
             )
         else:
@@ -294,8 +461,7 @@ class MultiLLMPolicy(MultiPolicy):
                 lens.append(policy.policy_action_space.shape[0])
             else:
                 raise ValueError(
-                    f"Action distribution {policy.policy_action_space}"
-                    "not supported."
+                    f"Action distribution {policy.policy_action_space}" "not supported."
                 )
         return lens
 
