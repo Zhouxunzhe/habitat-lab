@@ -23,13 +23,13 @@ def run_script(file_path):
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
 
 if __name__ == "__main__":
-    sum_episode = 20000
+    sum_episode = 4
     batch_per_zip = 4
     start_gz = 0
     num_gz = int(sum_episode/batch_per_zip)
     
     zip_files = [f"process_{i}.json.gz" for i in range(start_gz,start_gz+num_gz)]
-    batch_size = 10
+    batch_size = 1
     total_batches = len(zip_files)//batch_size
     with tqdm(total=len(zip_files),desc = "Processing Files") as pbar: 
         for i in range(0, len(zip_files), batch_size):
