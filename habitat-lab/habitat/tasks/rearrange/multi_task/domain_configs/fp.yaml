@@ -76,6 +76,20 @@ predicates:
       robot_states:
         robot_id:
           detected_object: obj
+  
+  - name: is_detected
+    args:
+      - name: obj
+        expr_type: movable_entity_type
+    set_state:
+      is_detected: obj
+    
+  - name: any_at
+    args:
+      - name: obj
+        expr_type: static_obj_type
+    set_state:
+      any_at: obj
 
 actions:
   - name: nav_to_goal
