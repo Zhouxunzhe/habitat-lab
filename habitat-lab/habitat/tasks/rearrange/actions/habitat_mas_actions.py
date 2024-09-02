@@ -418,9 +418,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
                         vel = OracleNavAction._compute_turn(
                             rel_targ, self._config.turn_velocity, robot_forward
                         )
+                    self.prev_nav_done = False
                 else:
                     vel = [0, 0]
                     self.skill_done = True
+                    self.prev_nav_done = True
+                    self.prev_match_target_id = nav_to_target_idx
                 kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
                 BaseVelAction.step(self, *args, **kwargs)
                 return
@@ -464,9 +467,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
                         self.humanoid_controller.calculate_walk_pose(
                             mn.Vector3([rel_targ[0], 0.0, rel_targ[1]])
                         )
+                    self.prev_nav_done = False
                 else:
                     self.humanoid_controller.calculate_stop_pose()
                     self.skill_done = True
+                    self.prev_nav_done = True
+                    self.prev_match_target_id = nav_to_target_idx
 
                 base_action = self.humanoid_controller.get_pose()
                 kwargs[f"{self._action_arg_prefix}human_joints_trans"] = (
