@@ -1229,19 +1229,16 @@ class HasFinishedOracleNavSensor(UsesArticulatedAgentInterface, Sensor):
     def get_observation(self, observations, episode, *args, **kwargs):
         if self.agent_id is not None:
             use_k = f"agent_{self.agent_id}_oracle_nav_action"
+            if use_k not in self._task.actions:
+                use_k = "oracle_nav_action"
         else:
             use_k = "oracle_nav_action"
 
-        # if use_k not in self._task.actions:
-        #     return np.array(False, dtype=np.float32)[..., None]
-        # else:
-        #     nav_action = self._task.actions[use_k]
-        #     return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
-
-        # check if use_k in actions_list
-        assert use_k in self._task.actions, f"your oracle_nav_action name is not defined..."
-        nav_action = self._task.actions[use_k]
-        return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
+        if use_k not in self._task.actions:
+            return np.array(False, dtype=np.float32)[..., None]
+        else:
+            nav_action = self._task.actions[use_k]
+            return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
 
 @registry.register_sensor
 class HasFinishedArmActionSensor(UsesArticulatedAgentInterface, Sensor):
