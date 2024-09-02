@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import re
 from collections import defaultdict
@@ -7,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional
 import gym.spaces as spaces
 import numpy as np
 import torch
+from habitat_mas.utils import AgentArguments
 from habitat_mas.utils.models import OpenAIModel
 
 from habitat_baselines.common.storage import Storage
@@ -129,7 +132,9 @@ def parse_agent_response(text):
     return response, reason
 
 
-def group_discussion(robot_resume: str, scene_description, task_description):
+def group_discussion(
+    robot_resume: str, scene_description, task_description
+) -> dict[str, AgentArguments]:
     robot_resume = json.loads(robot_resume)
     robot_resume_prompt = ""
     for robot_key in robot_resume:
@@ -180,13 +185,21 @@ def group_discussion(robot_resume: str, scene_description, task_description):
         print("===========================================")
         robot_tasks = parse_leader_response(response)
 
-    history_messages = {agent: agents[agent].chat_history for agent in agents}
+    results = {}
+    for agent in agents:
+        results[agent] = AgentArguments(
+            robot_id=agent,
+            robot_type=robot_resume[agent]["robot_type"],
+            task_description=task_description,
+            subtask_description=robot_tasks[agent],
+            chat_history=agents[agent].chat_history,
+        )
 
     print("===============Group Discussion Result==============")
     print(robot_tasks)
     print("====================================================")
 
-    return robot_tasks, history_messages
+    return results
 
 
 class MultiLLMPolicy(MultiPolicy):
@@ -235,8 +248,7 @@ class MultiLLMPolicy(MultiPolicy):
         # Stage 1: If all prev_actions are zero, which means it is the first step of the episode, then we need to do group discussion
         # Given: Robot resume + Scene description + task instruction
         # Output: (Subtask decomposition) + task assignment
-        envs_task_assignments = []
-        envs_chat_histories = []
+        envs_agent_arguments = []
         for i in range(n_envs):
             env_prev_actions = prev_actions[i]
             env_text_context = envs_text_context[i]
@@ -246,7 +258,6 @@ class MultiLLMPolicy(MultiPolicy):
                     robot_resume = env_text_context["robot_resume"]
                 if "scene_description" in env_text_context:
                     scene_description = env_text_context["scene_description"]
-                # TODO: Add group discussion here
                 # print("===============Group Discussion===============")
                 # print(robot_resume)
                 # print("=============================================")
@@ -254,32 +265,19 @@ class MultiLLMPolicy(MultiPolicy):
                 # print("=============================================")
                 # print(text_goal)
                 # print("=============================================")
-                task_assignments, chat_history_messages = group_discussion(
+                agent_arguments = group_discussion(
                     robot_resume, scene_description, text_goal
                 )
-                # task_assignments = group_discussion(robot_resume, scene_description)
-                # {
-                #     "agent_0": "Look for the object xx in the environment",
-                #     "agent_1": "Navigate to object xxx, and pick up it, placing it at receptacle yyy",
-                #     ...
-                # }
-                envs_task_assignments.append(task_assignments)
-                envs_chat_histories.append(chat_history_messages)
+                envs_agent_arguments.append(agent_arguments)
 
         # Stage 2: Individual policy actions
         agent_actions = []
         for agent_i, policy in enumerate(self._active_policies):
             # collect assigned tasks for agent_i across all envs
             agent_i_handle = f"agent_{agent_i}"
-            agent_task_assignments = [
-                task_assignment[agent_i_handle]
-                if agent_i_handle in task_assignment
-                else ""
-                for task_assignment in envs_task_assignments
-            ]
-            agent_chat_history = [
-                chat_history[agent_i_handle] if agent_i_handle in chat_history else {}
-                for chat_history in envs_chat_histories
+            agent_arguments = [
+                agent_arguments[agent_i_handle] if agent_i_handle in arguments else None
+                for arguments in envs_agent_arguments
             ]
 
             agent_obs = self._update_obs_with_agent_prefix_fn(observations, agent_i)
@@ -292,8 +290,7 @@ class MultiLLMPolicy(MultiPolicy):
                     agent_masks[agent_i],
                     deterministic,
                     envs_text_context=envs_text_context,
-                    agent_task_assignments=agent_task_assignments,  # pass the task planning result to the policy
-                    agent_chat_history=agent_chat_history,
+                    agent_arguments=agent_arguments,  # pass the task planning result to the policy
                 )
             )
         policy_info = _merge_list_dict([ac.policy_info for ac in agent_actions])

@@ -1,4 +1,5 @@
 # ruff: noqa
+from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
 import torch
@@ -12,6 +13,7 @@ from habitat_mas.agents.dummy_agent import DummyAgent
 
 from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
 from habitat_baselines.rl.ppo.policy import PolicyActionData
+from habitat_mas.utils import AgentArguments
 
 ACTION_POOL = [get_agents, send_request, nav_to_obj, nav_to_goal, pick, place]
 
@@ -43,19 +45,15 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         # Initialize the LLM agent here based on the config
         # This could load a pre-trained model, set up prompts, etc.
         # Return the initialized agent
-        action_list.append(send_request)
         # return DummyAgent(agent_name=agent_name, action_list=action_list)
 
-        return CrabAgent(
-            agent_name,
-            'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
-            action_list,
-        )
+        return CrabAgent(agent_name, action_list)
 
     def _parse_function_call_args(self, llm_args: Dict) -> str:
         """
         Parse the arguments of a function call from the LLM agent to the policy input argument format.
         """
+        # Tianqi: What does this function do?
         return llm_args
 
     def apply_mask(self, mask):
@@ -83,23 +81,31 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         """
         # TODO: use these text context to query the LLM agent with function call
         envs_text_context = kwargs.get("envs_text_context", None)
-        agent_task_assignments = kwargs.get("agent_task_assignments", None)
-        agent_chat_history = kwargs.get("agent_chat_history", None)
-
-        if (
-            not self.llm_agent.llm_model.chat_history
-            and agent_chat_history is not None
-        ):
-            self.llm_agent.llm_model.chat_history = agent_chat_history
+        agent_arguments: AgentArguments = kwargs.get("agent_arguments", None)
+        if envs_text_context is None:
+            raise ValueError("Environment text context not provided to the policy.")
+        if agent_arguments is None:
+            raise ValueError("Agent arguments not provided to the policy.")
 
         print("=================env_text_context===================")
         print(envs_text_context)
         print("=================agent_task_assignment===================")
-        print(agent_task_assignments)
+        print(agent_arguments)
         print("=================agent_chat_history===================")
-        print(agent_chat_history)
-        print("====================================================")
 
+        semantic_observation = envs_text_context[0]["scene_description"]
+        print(semantic_observation)
+        args = agent_arguments[0]
+
+        if not self.llm_agent.initilized:
+            # Inject chat history from group discussion phase
+            if args.chat_history is not None:
+                self.llm_agent.llm_model.chat_history = args.chat_history
+            self.llm_agent.init_agent(
+                robot_type=args.robot_type,
+                task_description=args.task_description,
+                subtask_description=args.subtask_description,
+            )
 
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
@@ -112,7 +118,11 @@ class LLMHighLevelPolicy(HighLevelPolicy):
 
             # Query the LLM agent with the current observations
             # to get the next action and arguments
-            llm_output = self.llm_agent.chat(observations[batch_idx])
+            llm_output = self.llm_agent.chat(semantic_observation)
+            print("=================llm_output===================")
+            print("Agent: ", self.llm_agent.name)
+            print(llm_output)
+            print("==============================================")
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["1"]

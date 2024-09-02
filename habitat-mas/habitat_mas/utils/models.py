@@ -26,6 +26,9 @@ class OpenAIModel:
         if not action_space:
             self.planning_stage = True
 
+    def set_system_message(self, system_message: str):
+        self.system_message = {"role": "system", "content": system_message}
+
     def chat(self, content: str):
         new_message = {"role": "user", "content": content}
 
