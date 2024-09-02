@@ -244,11 +244,12 @@ def observations_to_image(observation: Dict, info: Dict,
     substrings = ["agent_0_has_finished_arm_action","agent_0_obj_pos","agent_0_target_pos",
                   "agent_0_localization_sensor","agent_0_ee_pos","ee_global_pos_sensor",
                   "agent_0_has_finished_oracle_nav","agent_0_robot_trans_martix",
-                  "agent_0_arm_depth_bbox_sensor","agent_0_camera_extrinsic"]
+                  "agent_0_obj_bounding_box","agent_0_target_bounding_box","agent_0_camera_extrinsic"]
     #"has_finished_oracle_nav"
     matched_data = {key: value.tolist() for key, value in observation.items() if any(sub in key for sub in substrings)}
-    unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic"]
+    unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic","obj_bounding_box","target_bounding_box"]
     for sensor_name in observation:
+        print("sensor_name:",sensor_name)
         if not any(sub in sensor_name for sub in unload_name):
             if len(observation[sensor_name].shape) > 1:
                 obs_k = observation[sensor_name]
@@ -293,7 +294,7 @@ def observations_to_image(observation: Dict, info: Dict,
                                             bbox_inches='tight', pad_inches=0)
                                 break
                     else:
-                        if sensor_name[:7] == "agent_0":
+                        if sensor_name[:7] == "agent_0": #当存单agent的图片的时候
                             image_name = ('frame_' + str(frame_id) + '_' +sensor_name+
                                 robot_names[sensor_name[:7]] + sensor_name[7:])
                             plt.imshow(obs_k)

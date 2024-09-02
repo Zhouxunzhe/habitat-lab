@@ -986,7 +986,6 @@ class EndEffectorToRestDistance(Measure):
 
         self._metric = rest_dist
 
-
 @registry.register_measure
 class ReturnToRestDistance(UsesArticulatedAgentInterface, Measure):
     """
@@ -1857,7 +1856,160 @@ class CameraExtrinsicSensor(UsesArticulatedAgentInterface, Sensor):
         render_camera = self._sim._sensors[f"agent_{self.agent_id}_head_depth"]._sensor_object.render_camera
     
         return np.array(render_camera.camera_matrix)
+@registry.register_sensor
+class ObjBBoxSenor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "obj_bounding_box"
+    def __init__(self, sim, config, *args, **kwargs):
+        self._sim = sim
+        # self.agent_idx = config.agent_idx
+        self.height = config.height
+        self.width = config.width
+        self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
+        self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
+        self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
+        self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
+        self.n = 1
 
+        super().__init__(config=config)
+                
+        # self._debug_tf = config.get("debug_tf", False)
+        self._debug_tf = True
+        if self._debug_tf:
+            self.pcl_o3d_list = []
+            self._debug_save_counter = 0
+            
+    def _get_uuid(self, *args, **kwargs):
+        # return f"agent_{self.agent_idx}_{ArmWorkspaceRGBSensor.cls_uuid}"
+        return ObjBBoxSenor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.COLOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        return spaces.Box(low=0.0, 
+                          high=np.finfo(np.float64).max, shape=(self.n,4), dtype=np.float64)
+    
+    def get_observation(self, observations, *args, **kwargs):
+        """ Get the RGB image with reachable and unreachable points marked """
+        
+        if self.agent_id is not None:
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+            semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
+        else:
+            depth_obs = observations[self.depth_sensor_name]
+            rgb_obs = observations[self.rgb_sensor_name]
+            depth_camera_name = self.depth_sensor_name
+            semantic_camera_name = f"head_semantic"
+
+        rgb_obs = np.ascontiguousarray(rgb_obs)
+        depth_obs = np.ascontiguousarray(depth_obs)
+
+        """add semantic information"""
+        ep_objects = []
+        # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+        #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+        # for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
+        #     ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
+        for key, val in self._sim.ep_info.info['object_labels'].items():
+            ep_objects.append(key)
+        #only add obj semantic
+        objects_info = {}
+        rom = self._sim.get_rigid_object_manager()
+        for i, handle in enumerate(rom.get_object_handles()):
+            if handle in ep_objects:
+                obj = rom.get_object_by_handle(handle)
+                objects_info[obj.object_id] = handle
+        obj_id_offset = self._sim.habitat_config.object_ids_start
+        semantic_obs = observations[semantic_camera_name].squeeze()
+        mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
+        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        bounding_box = []
+        for contour in contours:
+            if cv2.contourArea(contour) > 0:
+                rect = cv2.minAreaRect(contour)
+                bound = cv2.boxPoints(rect)
+                x, y, w, h = cv2.boundingRect(contour)
+                # x,y,w,h = bound
+                bounding_box.append((x, y, w, h))
+            
+        if bounding_box:
+            self.n = len(bounding_box)
+            return bounding_box
+        else:
+            return np.array([[-1,-1,-1,-1]])
+    
+@registry.register_sensor
+class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "target_bounding_box"
+    def __init__(self, sim, config, *args, **kwargs):
+        self._sim = sim
+        # self.agent_idx = config.agent_idx
+        self.height = config.height
+        self.width = config.width
+        self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
+        self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
+        self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
+        self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
+        self.n = 1
+        super().__init__(config=config)
+            
+    def _get_uuid(self, *args, **kwargs):
+        # return f"agent_{self.agent_idx}_{ArmWorkspaceRGBSensor.cls_uuid}"
+        return TargetBBoxSenor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.COLOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        return spaces.Box(low=0.0, 
+                          high=np.finfo(np.float64).max, shape=(self.n,4), dtype=np.float64)
+    
+    def get_observation(self, observations, *args, **kwargs):
+        if self.agent_id is not None:
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+            semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
+        else:
+            depth_obs = observations[self.depth_sensor_name]
+            rgb_obs = observations[self.rgb_sensor_name]
+            depth_camera_name = self.depth_sensor_name
+            semantic_camera_name = f"head_semantic"
+
+        rgb_obs = np.ascontiguousarray(rgb_obs)
+        depth_obs = np.ascontiguousarray(depth_obs)
+
+        """add semantic information"""
+        ep_objects = []
+        # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+        #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+        for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
+            ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
+        objects_info = {}
+        rom = self._sim.get_rigid_object_manager()
+        for i, handle in enumerate(rom.get_object_handles()):
+            if handle in ep_objects:
+                obj = rom.get_object_by_handle(handle)
+                objects_info[obj.object_id] = handle
+        obj_id_offset = self._sim.habitat_config.object_ids_start
+        semantic_obs = observations[semantic_camera_name].squeeze()
+        mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
+        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        bounding_box = []
+        for contour in contours:
+            if cv2.contourArea(contour) > 0:
+                rect = cv2.minAreaRect(contour)
+                bound = cv2.boxPoints(rect)
+                x, y, w, h = cv2.boundingRect(contour)
+                # x,y,w,h = bound
+                bounding_box.append((x, y, w, h))
+        if bounding_box:
+            self.n = len(bounding_box)
+            return bounding_box
+        else:
+            return np.array([[-1,-1,-1,-1]])
 @registry.register_sensor
 class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
     """ Sensor to visualize the reachable workspace of an articulated arm """
@@ -2050,8 +2202,8 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         """add semantic information"""
         ep_objects = []
-        for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
-            ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+        # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+        #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
         for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
             ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
         for key, val in self._sim.ep_info.info['object_labels'].items():
@@ -2068,17 +2220,24 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         semantic_obs = observations[semantic_camera_name].squeeze()
 
         mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
+        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        bounding_box = []
         colored_mask = np.zeros_like(rgb_obs)
         colored_mask[mask == 1] = [0, 0, 255]
         rgb_obs = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
-
-        for obj_id in objects_info.keys():
-            positions = np.where(semantic_obs == obj_id + obj_id_offset)
-            if positions[0].size > 0:
-                center_x = int(np.mean(positions[1]))
-                center_y = int(np.mean(positions[0]))
-                cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+        for contour in contours:
+            if cv2.contourArea(contour) > 0:  # 过滤掉面积为0的轮廓
+                x, y, w, h = cv2.boundingRect(contour)
+                bounding_box.append((x, y, w, h))
+                # 可选：在原始图像上绘制边界框
+                cv2.rectangle(rgb_obs, (x, y), (x + w, y + h), (255, 0, 0), 1)
+        # for obj_id in objects_info.keys():
+        #     positions = np.where(semantic_obs == obj_id + obj_id_offset)
+        #     if positions[0].size > 0:
+        #         center_x = int(np.mean(positions[1]))
+        #         center_y = int(np.mean(positions[0]))
+        #         cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
+        #                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)

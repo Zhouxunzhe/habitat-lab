@@ -892,7 +892,24 @@ class ObjectGoalConfig(LabSensorConfig):
 @dataclass
 class CameraExtrinsicSensorConfig(LabSensorConfig):
     type: str = "CameraExtrinsicSensor"
-
+@dataclass
+class ObjBBoxSenorConfig(LabSensorConfig):
+    agent_idx: int = 0
+    pixel_threshold: int = 10
+    height: int = 480
+    width: int = 640
+    rgb_sensor_name: str = "head_rgb"
+    depth_sensor_name: str = "head_depth"
+    type: str = "ObjBBoxSenor"
+@dataclass
+class TargetBBoxSenorConfig(LabSensorConfig):
+    agent_idx: int = 0
+    pixel_threshold: int = 10
+    height: int = 480
+    width: int = 640
+    rgb_sensor_name: str = "head_rgb"
+    depth_sensor_name: str = "head_depth"
+    type: str = "TargetBBoxSenor"
 @dataclass
 class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     uuid: str = "arm_workspace_rgb"
@@ -1886,22 +1903,22 @@ class HabitatSimFisheyeSemanticSensorConfig(SimulatorFisheyeSensorConfig):
 @dataclass
 class HeadRGBSensorConfig(HabitatSimRGBSensorConfig):
     uuid: str = "head_rgb"
-    width: int = 256
-    height: int = 256
+    width: int = 1024
+    height: int = 1024
 
 
 @dataclass
 class HeadDepthSensorConfig(HabitatSimDepthSensorConfig):
     uuid: str = "head_depth"
-    width: int = 256
-    height: int = 256
+    width: int = 1024
+    height: int = 1024
 
 
 @dataclass
 class HeadSemanticSeonsorConfig(HabitatSimSemanticSensorConfig):
     uuid: str = "head_semantic"
-    width: int = 256
-    height: int = 256
+    width: int = 1024
+    height: int = 1024
 
 
 @dataclass
@@ -2623,6 +2640,18 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="arm_depth_bbox_sensor",
     node=ArmDepthBBoxSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.obj_bbox_sensor",
+    group="habitat/task/lab_sensors",
+    name="obj_bbox_sensor",
+    node=ObjBBoxSenorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.target_bbox_sensor",
+    group="habitat/task/lab_sensors",
+    name="target_bbox_sensor",
+    node=TargetBBoxSenorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.spot_head_stereo_depth_sensor",

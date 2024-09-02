@@ -113,11 +113,12 @@ for i in range(0,len(data['entities'])-skip_len):
     agent_0_eepos = step_data['data']['agent_0_ee_pos']
     # agent_1_eepos = step_data['data']['agent_1_ee_pos'] #末端执行器在机器人坐标系下的坐标
     agent_0_cam = step_data['data']['agent_0_camera_extrinsic']
-    
+    agent_0_obj_ = step_data['data']['agent_0_obj_bounding_box']
+    agent_0_target_ = step_data['data']['agent_0_target_bounding_box']
     # agent_1_cam = step_data['data']['agent_1_camera_extrinsic'] #当前step的camera_extrinsic
     # print("agent_1_cam:",np.array(agent_1_cam))
     # agent_0_prepix = _3d_to_2d(matrix = agent_0_cam,point_3d = agent_0_objpos)
-    agent_0_prepix = _3d_to_2d(matrix = agent_0_cam,point_3d = agent_0_eeglobal[:3])
+    agent_0_prepix = _3d_to_2d(matrix = agent_0_cam,point_3d = agent_0_pre_worldloc[:3])
     # agent_0_prepix = _project_points_to_image(points_3d =agent_0_eeglobal,camera_info=camera_info,cam_trans=agent_0_cam)
     # agent_1_prepix = _project_points_to_image(points_3d =agent_1_eeglobal, camera_info=camera_info,cam_trans=agent_1_cam) 
     #3D投影到2D,想要更改投影点为目标物体的话改points_3d为agent_0_objpos
@@ -130,6 +131,7 @@ for i in range(0,len(data['entities'])-skip_len):
     }
     data_trans.append(result)
     point = agent_0_prepix
+    
     step_name = i+1
     picture_name = ("frame_"+str(step_name)+"_agent_0_head_rgbFetchRobot_head_rgb.png")
     image = Image.open(os.path.join(data_path,picture_name))
@@ -137,15 +139,19 @@ for i in range(0,len(data['entities'])-skip_len):
     image = image.convert('RGB')
     rgb_matrix = np.array(image)
     bgr = cv2.cvtColor(rgb_matrix,cv2.COLOR_RGB2BGR)
-    try:
-        cv2.circle(bgr, point,2,(0, 0, 255),-1)
-        output_image_path = os.path.join(data_path,'point')
-        if not os.path.exists(output_image_path):
-                        os.makedirs(output_image_path)
-        output_image_name = os.path.join(output_image_path,"frame_"+str(step_name)+".png")
-        cv2.imwrite(output_image_name, bgr)
-    except:
-         print("skip")
+
+    cv2.circle(bgr, point,2,(0, 0, 255),-1)
+    if agent_0_target_!= [[-1,-1,-1,-1]]:
+            x,y,w,h = list(map(lambda t: int((t*256)/1024),agent_0_target_[0]))
+            
+            cv2.rectangle(bgr,(x,y),(x+w,y+h),(255,0,0),1)
+    output_image_path = os.path.join(data_path,'point')
+    if not os.path.exists(output_image_path):
+                    os.makedirs(output_image_path)
+    output_image_name = os.path.join(output_image_path,"frame_"+str(step_name)+".png")
+    cv2.imwrite(output_image_name, bgr)
+    # except:
+    #      print("skip")
     
 
 with open(os.path.join(data_path,'data_trans.json'), 'w') as file:
