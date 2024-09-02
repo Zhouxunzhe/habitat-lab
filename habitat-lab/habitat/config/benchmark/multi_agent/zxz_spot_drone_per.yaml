@@ -82,7 +82,7 @@ habitat:
     task_spec_base_path: benchmark/multi_agent/
     task_spec: pddl/zxz_spot_drone_per
     pddl_domain_def: fp
-    robot_at_thresh: 3.0
+    robot_at_thresh: 1.0
 
   environment:
     max_episode_steps: 750
