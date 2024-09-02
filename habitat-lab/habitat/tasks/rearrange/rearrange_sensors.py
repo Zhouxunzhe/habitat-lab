@@ -648,16 +648,15 @@ class NavTempTranSensor(UsesArticulatedAgentInterface, Sensor):
         # ):
         #     return
         # nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+        # print("nav_to_target_idx:",nav_to_target_idx)
         if self.agent_id == 0:
-            nav_to_target_idx = 2
+            nav_to_target_idx = 1
         else:
             nav_to_target_idx = 3
         nav_to_obj = self._entities[nav_to_target_idx]
         obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
             nav_to_obj
         )
-        
-
         return obj_pos
 @registry.register_sensor
 class TargetPointSensor(UsesArticulatedAgentInterface,Sensor):
@@ -1949,32 +1948,32 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         anstt = mn.Matrix4(np.array(render_camera.projection_matrix)).transform_point(anst)
         answ = np.dot(np.array(render_camera.projection_matrix),
                       anstemp)
-        if isobj:
-            print(f"----------------------------------{self.agent_id}-------------",flush = True)
-            print("3dpoint:",point_3d,flush=True)
-            print("camera_matrix:",render_camera.camera_matrix,flush = True)
-            print("temp:",render_camera.camera_matrix.transform_point(point_3d),flush=True)
-            print("trytemp:",anstemp,flush = True)
-            print("projection_matrix:",render_camera.projection_matrix,flush = True)
-            print("answer:",projected_point_3d,flush = True)
+        # if isobj:
+        #     print(f"----------------------------------{self.agent_id}-------------",flush = True)
+        #     print("3dpoint:",point_3d,flush=True)
+        #     print("camera_matrix:",render_camera.camera_matrix,flush = True)
+        #     print("temp:",render_camera.camera_matrix.transform_point(point_3d),flush=True)
+        #     print("trytemp:",anstemp,flush = True)
+        #     print("projection_matrix:",render_camera.projection_matrix,flush = True)
+        #     print("answer:",projected_point_3d,flush = True)
         # convert the 3D near plane point to integer pixel space
         point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
-        if isobj:
-            print("2d_1:",point_2d)
+        # if isobj:
+        #     print("2d_1:",point_2d)
         point_2d = point_2d / render_camera.projection_size()[0]
-        if isobj:
-            print("2d_2:",point_2d)
+        # if isobj:
+        #     print("2d_2:",point_2d)
         point_2d += mn.Vector2(0.5)
-        if isobj:
-            print("2d_3:",point_2d)
+        # if isobj:
+        #     print("2d_3:",point_2d)
         point_2d *= render_camera.viewport
-        if isobj:
-            print("2d_4:",point_2d)
+        # if isobj:
+        #     print("2d_4:",point_2d)
         out_bound = 10
         point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
-        if isobj:
-            print("2d_5:",point_2d)
-            print(f"----------------------------------{self.agent_id}-------------",flush = True)
+        # if isobj:
+        #     print("2d_5:",point_2d)
+        #     print(f"----------------------------------{self.agent_id}-------------",flush = True)
         return point_2d.astype(int)
 
     def voxel_grid_filter(self, points, voxel_size):

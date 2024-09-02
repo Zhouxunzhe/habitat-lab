@@ -65,35 +65,27 @@ viewport = [256,256]
 def _3d_to_2d(matrix, point_3d):
         # get the scene render camera and sensor object
         W, H = viewport[0], viewport[1]
-        print("point:",point_3d)
         # use the camera and projection matrices to transform the point onto the near plane
         project_mar = projection_matrix
         # print("mar:",np.append(point_3d,1),np.array(matrix).reshape(4, 4))s
         cam_mat = mn.Matrix4(matrix)
         # point_transform = cam_mat.transform_point(point_3d)
         point_transform = np.dot(matrix,np.append(point_3d,1))
-        print("temp:",point_transform)
         point_transs = mn.Vector3(point_transform[:3])
         point_mat = mn.Matrix4(project_mar)
         projected_point_3d = point_mat.transform_point(point_transs)
-        print("3dpro:",projected_point_3d)
         # convert the 3D near plane point to integer pixel space
         point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
-        print("2d_1:",point_2d)
         point_2d = point_2d / 2.0
-        print("2d_2:",point_2d)
         point_2d += mn.Vector2(0.5)
-        print("2d_3:",point_2d)
         point_2d *= mn.Vector2(256,256)
-        print("2d_4:",point_2d)
         out_bound = 10
         point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
-        print("2d_5:",point_2d)
         return point_2d.astype(int)
 
-data_path = './video_dir/image_dir/episode_73'
+data_path = './video_dir/image_dir/episode_159'
 data_trans = []
-skip_len = 30
+skip_len = 60
 with open(os.path.join(data_path,'sum_data.json'), 'r') as file:
     data = json.load(file)
 
@@ -103,29 +95,29 @@ for i in range(0,len(data['entities'])-skip_len):
     next_step_data = data['entities'][i + skip_len] #取当前step的20步后的info，用于预测导航目标信息
 
     agent_0_trans_matrix = step_data['data']['agent_0_robot_trans_martix']
-    agent_1_trans_matrix = step_data['data']['agent_1_robot_trans_martix'] #获取agent当前step的转换矩阵信息
+    # agent_1_trans_matrix = step_data['data']['agent_1_robot_trans_martix'] #获取agent当前step的转换矩阵信息
     # agent_0_nowloc = step_data['data']['agent_0_localization_sensor']
     # agent_1_nowloc = step_data['data']['agent_1_localization_sensor']
     agent_0_pre_worldloc = next_step_data['data']['agent_0_localization_sensor']
-    agent_1_pre_worldloc = next_step_data['data']['agent_1_localization_sensor']
+    # agent_1_pre_worldloc = next_step_data['data']['agent_1_localization_sensor']
 
     # agent_0_pre_robotloc = trans_worldloc_to_robotloc(np.array(agent_0_trans_matrix), agent_0_pre_worldloc[:3])
     # agent_1_pre_robotloc = trans_worldloc_to_robotloc(np.array(agent_1_trans_matrix), agent_1_pre_worldloc[:3])
     agent_0_objpos = step_data['data']['agent_0_obj_pos']
-    agent_1_objpos = step_data['data']['agent_1_obj_pos'] #获取当前目标物体在世界坐标系下的坐标
+    # agent_1_objpos = step_data['data']['agent_1_obj_pos'] #获取当前目标物体在世界坐标系下的坐标
     agent_0_obj_ro = trans_worldloc_to_robotloc(np.array(agent_0_trans_matrix), agent_0_objpos[:3])
-    agent_1_obj_ro = trans_worldloc_to_robotloc(np.array(agent_1_trans_matrix), agent_1_objpos[:3]) #转移到机器人坐标系下
+    # agent_1_obj_ro = trans_worldloc_to_robotloc(np.array(agent_1_trans_matrix), agent_1_objpos[:3]) #转移到机器人坐标系下
     
     agent_0_eeglobal = step_data['data']['agent_0_ee_global_pos_sensor']
-    agent_1_eeglobal = step_data['data']['agent_1_ee_global_pos_sensor']
+    # agent_1_eeglobal = step_data['data']['agent_1_ee_global_pos_sensor']
     agent_0_eepos = step_data['data']['agent_0_ee_pos']
-    agent_1_eepos = step_data['data']['agent_1_ee_pos'] #末端执行器在机器人坐标系下的坐标
+    # agent_1_eepos = step_data['data']['agent_1_ee_pos'] #末端执行器在机器人坐标系下的坐标
     agent_0_cam = step_data['data']['agent_0_camera_extrinsic']
     
-    agent_1_cam = step_data['data']['agent_1_camera_extrinsic'] #当前step的camera_extrinsic
-    print("agent_1_cam:",np.array(agent_1_cam))
+    # agent_1_cam = step_data['data']['agent_1_camera_extrinsic'] #当前step的camera_extrinsic
+    # print("agent_1_cam:",np.array(agent_1_cam))
     # agent_0_prepix = _3d_to_2d(matrix = agent_0_cam,point_3d = agent_0_objpos)
-    agent_0_prepix = _3d_to_2d(matrix = agent_0_cam,point_3d = agent_0_pre_worldloc[:3])
+    agent_0_prepix = _3d_to_2d(matrix = agent_0_cam,point_3d = agent_0_eeglobal[:3])
     # agent_0_prepix = _project_points_to_image(points_3d =agent_0_eeglobal,camera_info=camera_info,cam_trans=agent_0_cam)
     # agent_1_prepix = _project_points_to_image(points_3d =agent_1_eeglobal, camera_info=camera_info,cam_trans=agent_1_cam) 
     #3D投影到2D,想要更改投影点为目标物体的话改points_3d为agent_0_objpos
@@ -148,6 +140,8 @@ for i in range(0,len(data['entities'])-skip_len):
     try:
         cv2.circle(bgr, point,2,(0, 0, 255),-1)
         output_image_path = os.path.join(data_path,'point')
+        if not os.path.exists(output_image_path):
+                        os.makedirs(output_image_path)
         output_image_name = os.path.join(output_image_path,"frame_"+str(step_name)+".png")
         cv2.imwrite(output_image_name, bgr)
     except:

@@ -55,7 +55,9 @@ defaults:
     - camera_extrinsic_info
     - navtemptran_s
     - get_nav_goal_point
-    # - target_point
+    - target_point
+    - detected_objects_sensor
+    - arm_depth_bbox_sensor
     # - nav_workspace_rgb_sensor
     # - nav_workspace_points_sensor
     # - arm_workspace_rgb_sensor
