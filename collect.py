@@ -9,15 +9,15 @@ directory = './video_dir'
 num_step = 0
 num_id = -1
 meta = {    "robotdata_demo":{
-        "root":"/mnt/hwfile/gveval/dulingxiao/single_agent_train",
-        "annotation":"/mnt/hwfile/gveval/dulingxiao/single_agent_train/robotdata_demo.jsonl",
+        "root":"/mnt/hwfile/gveval/lianghaotian/data/single_agent_train_waypoint",
+        "annotation":"/mnt/hwfile/gveval/lianghaotian/data/single_agent_train_waypoint/robotdata_demo.jsonl",
         "data_augment":False,
         "repeat_time":1,
         "length":0
     }
 }
 combined_data = []
-output_path = os.path.join('./single_agent_train', 'robotdata_demo.jsonl')
+output_path = os.path.join('./single_agent_train_waypoint', 'robotdata_demo.jsonl')
 folder_list = glob.glob(os.path.join(directory, '*.json'))
 # 获取目录中所有 JSON 文件
 file_list = glob.glob(os.path.join(directory, '*.json'))
@@ -54,12 +54,13 @@ for process_folder in os.listdir(directory):
                             item = {}
                             item['id'] = f"episode_{num_id}_{sup['step']}"
                             agent_0_action = sup["action"]["name"]
+                            figure_history = agent_0_action if agent_0_action!="turn" else "nav_to_point"
                             if action_before == "pick":
                                 flag_ifpick = 1
-                            if action_before != agent_0_action:
+                            if action_before != figure_history:
                                 if action_before == "nav_to_point":
                                     if flag_ifpick:
-                                        action_has_finished+=f"navigate to the sofa,"
+                                        action_has_finished+=f"navigate to the table,"
                                     else:
                                         action_has_finished+=f"navigate to the box,"
                                 else:
@@ -90,15 +91,17 @@ for process_folder in os.listdir(directory):
                                 name_finished = f"The robot has finished:{action_has_finished}"
                             else:
                                 name_finished = ""
-                            x,y= agent_0_pos
+                            
                             if agent_0_action == "nav_to_point":
+                                x,y= agent_0_pos
                                 if not (0<=x<=256 and 0<=y<=256):
                                     agent_0_action = "turn"
-                                    agent_0_pos = [0,0]
-                            elif(agent_0_action == "place"):
-                                if not (0<=x<=256 and 0<=y<=256):
-                                    agent_0_pos = [max(2,min(x,254)),max(2,min(y,254))]
-                            question = f"""You are now managing single robot. The actions it can perform are \"nav_to_point\", \"turn\",\"pick\" and \"place\".The robot's view is <image>\n.The robot need to locate the box in the scene, pick them up, and place them on the table next to the sofa in the living room.If you can not know what action to do next from the current robot's view,you can let the robot \"turn_[0,0]\".{name_finished}Please output the next action for the robot in the format like \"robot:pick_[100,100]\".Your output should include the task coordinates."""
+                                    agent_0_pos = None
+                                else:
+                                    agent_0_pos = [[x,y,10 if x+10<256 else 255-x,10 if y+10<256 else 255-y]]
+                            if "pick"  in action_has_finished and agent_0_action == "pick":
+                                agent_0_action = "place"
+                            question = f"""You are now managing single robot. The actions it can perform are \"nav_to_point\", \"turn\",\"pick\" and \"place\".The robot's view is <image>\n.The robot need to navigate to the shelf where the box is located, pick it up,navigate to the table next to the sofa in the living room and place the box.If you can not know what action to do next from the current robot's view,you can let the robot \"turn\".{name_finished}Please output the next action for the robot in the format like \"robot:place<box>[[100,100,50,50]]</box>\".Your output should include the task bounding box."""
                             conversations = [
                                 {
                                     "from":"human",
@@ -106,7 +109,7 @@ for process_folder in os.listdir(directory):
                                 },
                                 {
                                     "from":"gpt",
-                                    "value":f"robot:{agent_0_action}_{agent_0_pos}\n"
+                                    "value":f"robot:{agent_0_action}<box>{agent_0_pos}</box>\n" if agent_0_action != "turn" else "robot:turn"
                                 }
                             ]
                             item["conversations"] = conversations
@@ -119,14 +122,14 @@ for process_folder in os.listdir(directory):
                                     destination_file = os.path.join(destination_folder, file_name)
                                     shutil.copy(source_file, destination_file)
                             num_step+=1
-                            action_before = sup["action"]["name"]
+                            action_before = figure_history
                             combined_data.append(item)
                         
 meta["robotdata_demo"]["length"] = num_step            
 with jsonlines.open(output_path,mode='w') as writer:
      writer.write_all(combined_data)
 
-with open(os.path.join('./single_agent_train','robotdemo_meta.json'),'w') as file:
+with open(os.path.join('./single_agent_train_waypoint','robotdemo_meta.json'),'w') as file:
     json.dump(meta,file,indent=4)
                     
 

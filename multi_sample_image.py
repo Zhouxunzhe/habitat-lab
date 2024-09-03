@@ -15,10 +15,10 @@ def run_script(args):
     print("finish_trans")
     sample_info = datatrans_2_end_single_agent_waypoint(process_dir=file_path,skip_len = skip_len)
     if not sample_info:
-        print("no sample_info,Exiting porcess.")
+        print("no sample_info,Exiting process.")
         return 
     sample = str(sample_info)
-    print("sample:",sample)
+    print(f"{file_path}'s sample:",sample)
     llm_yaml_path = './habitat-baselines/habitat_baselines/config/social_rearrange/llm_fetch_stretch_manipulation.yaml'
     with open(llm_yaml_path,'r') as file:
         data = yaml.load(file)
@@ -41,17 +41,17 @@ def run_script(args):
     log_file = f"./log/example_new_{file_path}.log"
     with open(log_file, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
-    time.sleep(0.5)
+    time.sleep(2)
 
 if __name__ == "__main__":
     sum_episode = 1500
     batch_per_zip = 2
-    start_gz = 0
+    start_gz = 64
     num_gz = int(sum_episode/batch_per_zip-start_gz)
     skip_len = 40
     base_directory = './video_dir/'
     zip_files = [f"process_{i}.json.gz" for i in range(start_gz,start_gz+num_gz)]
-    batch_size = 8
+    batch_size = 6
     total_batches = len(zip_files)//batch_size
     with multiprocessing.Pool(processes=batch_size) as pool:
         args = [(file_path, skip_len, base_directory) for file_path in zip_files]

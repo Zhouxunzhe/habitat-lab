@@ -225,7 +225,6 @@ class RearrangeTask(NavigationTask):
                     return np.all(distances > self._min_distance_start_agents)
 
                 filter_agent_position = _filter_agent_position
-            
             if self._dataset.config.randomize_agent_start:
             
                 (

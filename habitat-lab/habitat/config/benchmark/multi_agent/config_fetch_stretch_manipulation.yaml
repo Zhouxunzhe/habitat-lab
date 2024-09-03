@@ -113,7 +113,7 @@ habitat:
     #   shuffle: True
   simulator:
     type: RearrangeSim-v0
-    seed: 100
+    seed: 500
     additional_object_paths:
       - "data/objects/ycb/configs/"
       - "data/objects/amazon_berkeley/configs/"
@@ -137,6 +137,6 @@ habitat:
   dataset:
     data_path: data/datasets/policy_test/policy.json.gz
     # new
-    randomize_agent_start: 2
+    randomize_agent_start: 1
     robot_config: data/robots/json/manipulation.json
     mode: manipulation

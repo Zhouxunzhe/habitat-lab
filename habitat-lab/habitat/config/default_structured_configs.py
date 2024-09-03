@@ -1903,9 +1903,8 @@ class HabitatSimFisheyeSemanticSensorConfig(SimulatorFisheyeSensorConfig):
 @dataclass
 class HeadRGBSensorConfig(HabitatSimRGBSensorConfig):
     uuid: str = "head_rgb"
-    width: int = 1024
-    height: int = 1024
-
+    width: int = 512
+    height: int = 512
 
 @dataclass
 class HeadDepthSensorConfig(HabitatSimDepthSensorConfig):

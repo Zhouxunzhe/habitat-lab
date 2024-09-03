@@ -111,7 +111,7 @@ def datatrans_2_end_single_agent_objectcentric(process_dir:str,skip_len:int,pick
                     place_temp = {
                         "step":data[place_skip+action_point_index[4]]["step"],
                         "action":{
-                            "name":"pick",
+                            "name":"place",
                             "position":data[place_skip+action_point_index[4]]["agent_0_target"]
                         },
                         "image":f"frame_"+str(data[place_skip+action_point_index[4]]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
