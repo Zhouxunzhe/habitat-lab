@@ -28,25 +28,13 @@ def process_directory(base_dir,skip_len):
                         i+=1
                     for i in range(0, len(data['entities'])):
                         step_data = data['entities'][i]
-                        if(agent_0_action == 0):
-                            if i + skip_len > nav_slide[0]:
-                                next_step_data = data['entities'][nav_slide[0]]
-                            else:
-                                next_step_data = data['entities'][i + skip_len]
-                        elif(agent_0_action == 2):
-                            if i + skip_len > nav_slide[1]:
-                                next_step_data = data['entities'][nav_slide[1]]
-                            else:
-                                next_step_data = data['entities'][i + skip_len]
-                        else:
-                            next_step_data = data['entities'][i]
+
                         # agent_0_trans_matrix = step_data['data']['agent_0_robot_trans_martix']
                         agent_0_nowloc = step_data['data']['agent_0_localization_sensor']
                         # agent_1_nowloc = step_data['data']['agent_1_localization_sensor']
                         # agent_1_trans_matrix = step_data['data']['agent_1_robot_trans_martix']
                         # agent_0_eeglobal = step_data['data']['agent_0_ee_global_pos_sensor']
                         # agent_1_eeglobal = step_data['data']['agent_1_ee_global_pos_sensor']
-                        agent_0_pre_worldloc = next_step_data['data']['agent_0_localization_sensor']
                         # agent_1_pre_worldloc = next_step_data['data']['agent_1_localization_sensor']
                         agent_0_obj = step_data['data']['agent_0_obj_bounding_box']
                         # agent_1_objpos = step_data['data']['agent_1_obj_pos']
