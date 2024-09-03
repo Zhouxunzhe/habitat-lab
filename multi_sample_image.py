@@ -36,10 +36,10 @@ def run_script(file_path,skip_len):
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
 
 if __name__ == "__main__":
-    sum_episode = 600
-    batch_per_zip = 4
+    sum_episode = 1500
+    batch_per_zip = 2
     num_gz = int(sum_episode/batch_per_zip)
-    start_gz = 50 
+    start_gz = 0
     skip_len = 20
     base_directory = './video_dir/'
     zip_files = [f"process_{i}.json.gz" for i in range(start_gz,start_gz+num_gz)]

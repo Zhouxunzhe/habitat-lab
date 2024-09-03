@@ -47,15 +47,14 @@ defaults:
     # - target_start_gps_compass_sensor
     # - target_goal_gps_compass_sensor
     - localization_sensor
-    - other_agent_gps
-    - detected_objects_sensor
-    - trans_of_robot
+    # - detected_objects_sensor
+    # - trans_of_robot
     # - obj_list_infomation
     # - arm_workspace_rgb_sensor
     - camera_extrinsic_info
-    - navtemptran_s
-    - get_nav_goal_point
-    - target_point
+    # - navtemptran_s
+    # - get_nav_goal_point
+    # - target_point
     # - nav_workspace_rgb_sensor
     # - nav_workspace_points_sensor
     # - arm_workspace_rgb_sensor

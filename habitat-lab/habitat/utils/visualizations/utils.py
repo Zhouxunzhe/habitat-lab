@@ -249,7 +249,6 @@ def observations_to_image(observation: Dict, info: Dict,
     matched_data = {key: value.tolist() for key, value in observation.items() if any(sub in key for sub in substrings)}
     unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic","obj_bounding_box","target_bounding_box"]
     for sensor_name in observation:
-        print("sensor_name:",sensor_name)
         if not any(sub in sensor_name for sub in unload_name):
             if len(observation[sensor_name].shape) > 1:
                 obs_k = observation[sensor_name]

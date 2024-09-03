@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import os
 import magnum
-
+#可以与第一遍采数据合并！
 def process_directory(base_dir,skip_len):
     for root, dirs, files in os.walk(base_dir):
         for dir_name in dirs:
@@ -48,10 +48,10 @@ def process_directory(base_dir,skip_len):
                         # agent_1_eeglobal = step_data['data']['agent_1_ee_global_pos_sensor']
                         agent_0_pre_worldloc = next_step_data['data']['agent_0_localization_sensor']
                         # agent_1_pre_worldloc = next_step_data['data']['agent_1_localization_sensor']
-                        agent_0_objpos = step_data['data']['agent_0_obj_pos']
+                        agent_0_obj = step_data['data']['agent_0_obj_bounding_box']
                         # agent_1_objpos = step_data['data']['agent_1_obj_pos']
                         agent_0_camera = step_data['data']['agent_0_camera_extrinsic']
-                        agent_0_targetpos = step_data['data']['agent_0_target_pos']
+                        agent_0_target = step_data['data']['agent_0_target_bounding_box']
                         # agent_0_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_0_eeglobal)
                         # agent_1_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_1_eeglobal)
                         # agent_0_pre_robotloc = trans_worldloc_to_robotloc(np.array(agent_0_trans_matrix), agent_0_pre_worldloc[:3])
@@ -73,9 +73,9 @@ def process_directory(base_dir,skip_len):
 
                         result = {
                             "step": i + 1,
-                            "agent_0_objpos": agent_0_objpos[:3],
-                            "agent_0_pre_worldloc":agent_0_pre_worldloc[:3],
-                            "agent_0_target":agent_0_targetpos,
+                            "agent_0_obj": agent_0_obj,
+                            "agent_0_now_worldloc":agent_0_nowloc,
+                            "agent_0_target":agent_0_target,
                             "agent_0_martix":agent_0_camera,
                             # "agent_1_pre_worldloc":agent_1_pre_worldloc,
                             # "agent_0_pre_robotloc": agent_0_pre_robotloc.tolist(),
@@ -105,4 +105,4 @@ def process_directory(base_dir,skip_len):
 # num_gz = 50
 # for i in range(0,num_gz):
 #     process_directory(os.path.join(base_directory,f"process_{i}.json.gz"))
-process_directory('./video_dir/image_dir',30)
+process_directory('./video_dir/process_1.json.gz',30)
