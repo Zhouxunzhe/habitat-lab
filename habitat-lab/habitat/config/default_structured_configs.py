@@ -810,7 +810,10 @@ class GlobalPredicatesSensorConfig(LabSensorConfig):
 @dataclass
 class PddlTextGoalSensorConfig(LabSensorConfig):
     type: str = "PddlTextGoalSensor"
-    compact_str: bool = False
+    text_type: str = "description" # ["compact_str", "verbose_str", "description"]
+    task_description: str = """
+The task is to have the robots navigate to/ rearrange/ perceive certain objects in the scene. 
+With the following conditions:"""
 
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):
@@ -911,6 +914,10 @@ class ObjectMasksSensorConfig(LabSensorConfig):
 @dataclass
 class HSSDSceneDescriptionSensorConfig(LabSensorConfig):
     type: str = "HSSDSceneDescriptionSensor"
+
+@dataclass
+class MP3DSceneDescriptionSensorConfig(LabSensorConfig):
+    type: str = "MP3DSceneDescriptionSensor"
 
 @dataclass
 class RobotResumeSensorConfig(LabSensorConfig):
@@ -2796,6 +2803,12 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="hssd_scene_description",
     node=HSSDSceneDescriptionSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.mp3d_scene_description",
+    group="habitat/task/lab_sensors",
+    name="mp3d_scene_description",
+    node=MP3DSceneDescriptionSensorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.robot_resume",

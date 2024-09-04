@@ -1175,6 +1175,10 @@ class RearrangeSim(HabitatSim):
             target_receptacle = rom.add_object_by_template_handle(
                 tar_path
             )
+            if self._kinematic_mode:
+                target_receptacle.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                target_receptacle.collidable = False
+
             target_receptacle.transformation = mn.Matrix4(
                 [[tar_tranform[j][i] for j in range(4)] for i in range(4)]
             )
@@ -1207,6 +1211,9 @@ class RearrangeSim(HabitatSim):
             goal_receptacle = rom.add_object_by_template_handle(
                 goal_path
             )
+            if self._kinematic_mode:
+                goal_receptacle.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                goal_receptacle.collidable = False
             goal_receptacle.transformation = mn.Matrix4(
                 [[goal_transform[j][i] for j in range(4)] for i in range(4)]
             )

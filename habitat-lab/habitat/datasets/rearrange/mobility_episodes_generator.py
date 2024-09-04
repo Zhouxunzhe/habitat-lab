@@ -309,7 +309,7 @@ class MobilityGenerator:
                     target_aabbreceptacle.sample_uniform_global(
                         self.sim, 1.0
                     )
-                    + 0.8 * rec_up_global
+                    + 0.08 * rec_up_global
                 )            
 
                 if not is_accessible(
@@ -323,6 +323,7 @@ class MobilityGenerator:
                     new_target_receptacles = {}
                     continue
                 break
+        
         
         # try to place the goal receptacles to goal position
         num_placement_tries = 0
@@ -378,7 +379,7 @@ class MobilityGenerator:
                     goal_aabbreceptacle.sample_uniform_global(
                         self.sim, 1.0
                     )
-                    + 0.8 * rec_up_global
+                    + 0.08 * rec_up_global
                 )
 
                 if not is_accessible(
