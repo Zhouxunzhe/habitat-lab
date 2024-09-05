@@ -301,13 +301,13 @@ class ArmActionConfig(ActionConfig):
 class ArmPickActionConfig(ArmActionConfig):
     type: str = "ArmPickAction"
     arm_controller: str = "OraclePickAction"
-    grip_controller: str = "SuctionGraspAction"
+    grip_controller: str = "MagicGraspAction"
 
 @dataclass
 class ArmPlaceActionConfig(ArmActionConfig):
     type: str = "ArmPlaceAction"
     arm_controller: str = "OraclePlaceAction"
-    grip_controller: str = "SuctionGraspAction"
+    grip_controller: str = "MagicGraspAction"
 
 @dataclass
 class OraclePickActionConfig(ArmActionConfig):
@@ -317,8 +317,8 @@ class OraclePickActionConfig(ArmActionConfig):
     """
     type: str = "ArmPickAction"
     arm_controller: str = "OraclePickAction"
-    grip_controller: str = "SuctionGraspAction"
-    grasp_thresh_dist: float = 0.0
+    grip_controller: str = "MagicGraspAction"
+    grasp_thresh_dist: float = 0.05
     render_ee_target: bool = True
 
 @dataclass
@@ -329,8 +329,8 @@ class OraclePlaceActionConfig(ArmActionConfig):
     """
     type: str = "ArmPlaceAction"
     arm_controller: str = "OraclePlaceAction"
-    grip_controller: str = "SuctionGraspAction"
-    grasp_thresh_dist: float = 0.0
+    grip_controller: str = "MagicGraspAction"
+    grasp_thresh_dist: float = 0.05
     render_ee_target: bool = True
 
 @dataclass
@@ -341,8 +341,8 @@ class ResetArmActionConfig(ArmActionConfig):
     """
     type: str = "ResetArmAction"
     arm_controller: str = "OracleResetArmAction"
-    grip_controller: str = "SuctionGraspAction"
-    grasp_thresh_dist: float = 0.0
+    grip_controller: str = "MagicGraspAction"
+    grasp_thresh_dist: float = 0.05
     render_ee_target: bool = True
 
 @dataclass
@@ -353,7 +353,7 @@ class StretchOraclePickActionConfig(ArmActionConfig):
     """
     type: str = "ArmAction"
     arm_controller: str = "StretchOraclePickAction"
-    grip_controller: str = "SuctionGraspAction"
+    grip_controller: str = "MagicGraspAction"
     render_ee_target: bool = True
     arm_joint_mask: Optional[List[int]] = field(default_factory=lambda: [1, 0, 0, 0, 1, 1, 1, 1])
     # arm_joint_dimensionality: int = 10

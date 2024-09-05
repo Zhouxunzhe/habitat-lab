@@ -420,13 +420,15 @@ class IkHelper:
                 computeForwardKinematics=1,
                 physicsClientId=self.pc_id,
             )
-        # # for debug link state
-        # print(self._non_fixed_joints)
-        # print(f"fk: pos: {ls[4]}, orn: {ls[5]}")
-        # num_joints = p.getNumJoints(self.robo_id)
-        # for i in range(num_joints):
-        #     joint_info = p.getJointInfo(self.robo_id, i)
-        #     print(f"{i}: {joint_info[1]}: pos: {joint_info[14]}, orn: {joint_info[15]}")
+        # for debug link state
+        debug_ik = False
+        if debug_ik:
+            print(self._non_fixed_joints)
+            print(f"fk: pos: {ls[4]}, orn: {ls[5]}")
+            num_joints = p.getNumJoints(self.robo_id)
+            for i in range(num_joints):
+                joint_info = p.getJointInfo(self.robo_id, i)
+                print(f"{i}: {joint_info[1]}: pos: {joint_info[14]}, orn: {joint_info[15]}")
 
         world_ee = ls[4]
         return world_ee
