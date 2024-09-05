@@ -98,10 +98,15 @@ for process_folder in os.listdir(directory):
                                     agent_0_action = "turn"
                                     agent_0_pos = None
                                 else:
-                                    agent_0_pos = [[x,y,10 if x+10<256 else 255-x,10 if y+10<256 else 255-y]]
+                                    agent_0_pos = [[int(x*1000/256),int(y*1000/256),int(10*1000/256) if x+10<256 else 255-x,10 if y+10<256 else 255-y]]
+                            elif agent_0_action == "pick" or agent_0_action == "place":
+                                x,y,w,h = agent_0_pos[0]
+                                agent_0_pos = [[int(x*1000/256),int(y*1000/256),int(w*1000/256),int(h*1000/256)]]
                             if "pick"  in action_has_finished and agent_0_action == "pick":
                                 agent_0_action = "place"
-                            question = f"""You are now managing single robot. The actions it can perform are \"nav_to_point\", \"turn\",\"pick\" and \"place\".The robot's view is <image>\n.The robot need to navigate to the shelf where the box is located, pick it up,navigate to the table next to the sofa in the living room and place the box.If you can not know what action to do next from the current robot's view,you can let the robot \"turn\".{name_finished}Please output the next action for the robot in the format like \"robot:place<box>[[100,100,50,50]]</box>\".Your output should include the task bounding box."""
+                            question = f"""You are an AI visual assistant that can manage a single robot. You receive the robot's task, one image representing the robot's current view and what the robot has completed so far. You need to output the robot's next action. Actions the robot can perform are "nav_to_point", "turn", "pick" and "place". If you cannot determine the next action based on the robot's current view, you can command the robot to "turn". Your output format should be either "turn" or "action_name<box>[[x1, y1, x2, y2]]</box>".Robot's Task: The robot need to navigate to the shelf where the box is located, pick it up,navigate to the table next to the sofa in the living room and place the box.
+Robot's current view: <image>
+{name_finished}."""
                             conversations = [
                                 {
                                     "from":"human",
@@ -117,7 +122,7 @@ for process_folder in os.listdir(directory):
                                 # if sup['image_0'] in file_name or sup['image_1'] in file_name:
                                 if sup['image'] in file_name:
                                     source_file = os.path.join(episode_path, file_name)
-                                    destination_folder = f'./single_agent_train/image/{num_id}'
+                                    destination_folder = f'./single_agent_train_waypoint/image/{num_id}'
                                     os.makedirs(destination_folder, exist_ok=True)
                                     destination_file = os.path.join(destination_folder, file_name)
                                     shutil.copy(source_file, destination_file)

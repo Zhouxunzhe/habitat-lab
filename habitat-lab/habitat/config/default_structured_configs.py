@@ -911,6 +911,15 @@ class TargetBBoxSenorConfig(LabSensorConfig):
     depth_sensor_name: str = "head_depth"
     type: str = "TargetBBoxSenor"
 @dataclass
+class RecBBoxSenorConfig(LabSensorConfig):
+    agent_idx: int = 0
+    pixel_threshold: int = 10
+    height: int = 480
+    width: int = 640
+    rgb_sensor_name: str = "head_rgb"
+    depth_sensor_name: str = "head_depth"
+    type: str = "RecBBoxSenor"
+@dataclass
 class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     uuid: str = "arm_workspace_rgb"
     type: str = "ArmWorkspaceRGBSensor"
@@ -2651,6 +2660,12 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="target_bbox_sensor",
     node=TargetBBoxSenorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.rec_bbox_sensor",
+    group="habitat/task/lab_sensors",
+    name="rec_bbox_sensor",
+    node=RecBBoxSenorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.spot_head_stereo_depth_sensor",

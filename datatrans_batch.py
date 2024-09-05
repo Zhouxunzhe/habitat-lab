@@ -28,7 +28,6 @@ def process_directory(base_dir,skip_len):
                         i+=1
                     for i in range(0, len(data['entities'])):
                         step_data = data['entities'][i]
-
                         # agent_0_trans_matrix = step_data['data']['agent_0_robot_trans_martix']
                         agent_0_nowloc = step_data['data']['agent_0_localization_sensor']
                         # agent_1_nowloc = step_data['data']['agent_1_localization_sensor']
@@ -40,6 +39,11 @@ def process_directory(base_dir,skip_len):
                         # agent_1_objpos = step_data['data']['agent_1_obj_pos']
                         agent_0_camera = step_data['data']['agent_0_camera_extrinsic']
                         agent_0_target = step_data['data']['agent_0_target_bounding_box']
+                        agent_0_rec_old = step_data['data']['agent_0_rec_bounding_box']
+                        agent_0_rec = [[min(b[0] for b in agent_0_rec_old),
+                                       min(b[1] for b in agent_0_rec_old),
+                                       max(b[2] for b in agent_0_rec_old),
+                                       max(b[3] for b in agent_0_rec_old)]]
                         # agent_0_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_0_eeglobal)
                         # agent_1_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_1_eeglobal)
                         # agent_0_pre_robotloc = trans_worldloc_to_robotloc(np.array(agent_0_trans_matrix), agent_0_pre_worldloc[:3])
@@ -61,10 +65,11 @@ def process_directory(base_dir,skip_len):
 
                         result = {
                             "step": i + 1,
-                            "agent_0_obj": agent_0_obj,
                             "agent_0_now_worldloc":agent_0_nowloc,
-                            "agent_0_target":agent_0_target,
-                            "agent_0_martix":agent_0_camera,
+                            "agent_0_obj": agent_0_obj,
+                            "agent_0_rec": agent_0_rec,
+                            "agent_0_target": agent_0_target,
+                            "agent_0_martix": agent_0_camera,
                             # "agent_1_pre_worldloc":agent_1_pre_worldloc,
                             # "agent_0_pre_robotloc": agent_0_pre_robotloc.tolist(),
                             # "agent_0_trans_matrix": agent_0_trans_matrix,
@@ -77,7 +82,6 @@ def process_directory(base_dir,skip_len):
                             # "agent_1_action": action[agent_1_action]
                         }
                         data_trans.append(result)
-                    
                     data_dir_path = os.path.join(dir_path, 'data')
                     if not os.path.exists(data_dir_path):
                         os.makedirs(data_dir_path)

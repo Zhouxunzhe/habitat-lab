@@ -44,9 +44,9 @@ def run_script(args):
     time.sleep(2)
 
 if __name__ == "__main__":
-    sum_episode = 1500
+    sum_episode = 13020
     batch_per_zip = 2
-    start_gz = 64
+    start_gz = 5000
     num_gz = int(sum_episode/batch_per_zip-start_gz)
     skip_len = 40
     base_directory = './video_dir/'
