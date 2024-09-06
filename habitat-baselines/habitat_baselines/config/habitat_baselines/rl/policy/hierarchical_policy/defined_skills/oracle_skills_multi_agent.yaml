@@ -34,7 +34,7 @@ pick:
   skill_name: "NoopSkillPolicy"
   obs_skill_inputs: ["obj_start_sensor"]
   max_skill_steps: 1
-  apply_postconds: True
+  apply_postconds: False
   force_end_on_timeout: False
 
 place:

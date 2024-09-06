@@ -3,7 +3,7 @@ from tqdm import tqdm
 import magnum as mn
 from habitat.datasets.rearrange.run_episode_generator import get_config_defaults
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode, RearrangeDatasetV0
-from habitat.datasets.rearrange.samplers.receptacle import parse_receptacles_from_user_config
+from habitat.datasets.rearrange.samplers.receptacle import Receptacle, AABBReceptacle, parse_receptacles_from_user_config
 from habitat.datasets.rearrange.navmesh_utils import (
     get_largest_island_index,
     is_accessible,
@@ -38,13 +38,6 @@ def _ratio_sample_rate(ratio: float, ratio_threshold: float) -> float:
     """
     assert ratio < ratio_threshold
     return 20 * (ratio - 0.98) ** 2
-
-def get_sample_region_ratios(load_dict) -> Dict[str, float]:
-    sample_region_ratios: Dict[str, float] = defaultdict(lambda: 1.0)
-    sample_region_ratios.update(
-        load_dict["params"].get("sample_region_ratio", {})
-    )
-    return sample_region_ratios
 
 
 # function in HabitatSim class for finding geodesic distance
@@ -113,8 +106,6 @@ class MobilityGenerator:
         self.sim: habitat_sim.Simulator = None
         # initialize an empty scene and load the SceneDataset
         self.initialize_sim(self.dataset_path)
-
-
 
 # sample the scene from config and initialize the Simulator
     def initialize_sim(self, dataset_path: str = "data/scene_datasets/mp3d/") -> None:
@@ -298,16 +289,28 @@ class MobilityGenerator:
                 target_position = np.array(
                     [target_position[0], target_position[1] + height_offset, target_position[2]])
                 new_tar_recep.translation = target_position
+                rot = random.uniform(0, math.pi * 2.0)
                 new_tar_recep.rotation = mn.Quaternion.rotation(
-                    mn.Rad(random.uniform(0, math.pi * 2.0)), mn.Vector3.y_axis()
+                    mn.Rad(rot), mn.Vector3.y_axis()
                 )
                 new_target_receptacles[name] = new_tar_recep
-                target_aabbreceptacle = parse_receptacles_from_user_config(
+                target_aabbreceptacles = parse_receptacles_from_user_config(
                     new_tar_recep.user_attributes,
                     parent_object_handle=new_tar_recep.handle,
                     parent_template_directory=new_tar_recep.creation_attributes.file_directory,
                 ) 
-                target_aabb_offset = target_aabbreceptacle[0].bounds.center()              
+                target_aabbreceptacle = random.choice(target_aabbreceptacles)
+                rec_up_global = (
+                    target_aabbreceptacle.get_global_transform(self.sim)
+                    .transform_vector(target_aabbreceptacle.up)
+                    .normalized()
+                )
+                target_object_position = (
+                    target_aabbreceptacle.sample_uniform_global(
+                        self.sim, 1.0
+                    )
+                    + 0.8 * rec_up_global
+                )            
 
                 if not is_accessible(
                     sim=self.sim,
@@ -355,16 +358,28 @@ class MobilityGenerator:
                 goal_position = np.array(
                     [goal_position[0], goal_position[1] + height_offset, goal_position[2]])
                 new_goal_recep.translation = goal_position
+                rot = random.uniform(0, math.pi * 2.0)
                 new_goal_recep.rotation = mn.Quaternion.rotation(
-                    mn.Rad(random.uniform(0, math.pi * 2.0)), mn.Vector3.y_axis()
+                    mn.Rad(rot), mn.Vector3.y_axis()
                 )
                 new_goal_receptacles[name] = new_goal_recep
-                goal_aabbreceptacle = parse_receptacles_from_user_config(
+                goal_aabbreceptacles = parse_receptacles_from_user_config(
                     new_goal_recep.user_attributes,
                     parent_object_handle=new_goal_recep.handle,
                     parent_template_directory=new_goal_recep.creation_attributes.file_directory,
                 )
-                goal_aabb_offset = goal_aabbreceptacle[0].bounds.center()
+                goal_aabbreceptacle = random.choice(goal_aabbreceptacles)
+                rec_up_global = (
+                    goal_aabbreceptacle.get_global_transform(self.sim)
+                    .transform_vector(goal_aabbreceptacle.up)
+                    .normalized()
+                )
+                goal_object_position = (
+                    goal_aabbreceptacle.sample_uniform_global(
+                        self.sim, 1.0
+                    )
+                    + 0.8 * rec_up_global
+                )
 
                 if not is_accessible(
                     sim=self.sim,
@@ -382,7 +397,7 @@ class MobilityGenerator:
 
         # try to place the object to target receptacle
         new_object = {}
-        object_position = mn.Vector3([target_position[0] + target_aabb_offset[0], target_position[1] + target_aabb_offset[1], target_position[2] + target_aabb_offset[2]])
+        object_position = mn.Vector3(target_object_position[0], target_object_position[1], target_object_position[2])
 
         for name, object_handle in sampled_objects.items():
             assert self.sim.get_object_template_manager().get_library_has_handle(
@@ -408,7 +423,7 @@ class MobilityGenerator:
             objects.append(obj)
 
         # try to place the object to goal receptacle
-        object_target_position = mn.Vector3([goal_position[0] + goal_aabb_offset[0], goal_position[1] + goal_aabb_offset[1], goal_position[2] + goal_aabb_offset[2]])
+        object_target_position = mn.Vector3(goal_object_position[0], goal_object_position[1], goal_object_position[2])
         new_object_target = {}
         for name, object_handle in sampled_objects.items():
             assert self.sim.get_object_template_manager().get_library_has_handle(
