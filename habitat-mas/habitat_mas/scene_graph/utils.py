@@ -172,6 +172,22 @@ def generate_objects_description(object_layer):
     
     return description
 
+def generate_mp3d_objects_description(object_layer):
+    """
+    Generate description of objects, used when region layer is not empty
+    """
+    description = "There are {} objects in the scene.\n".format(len(object_layer.obj_ids))
+    for obj_id in object_layer.obj_ids:
+        obj = object_layer.obj_dict[obj_id]
+        assert obj.parent_region, f"{obj.full_name} has no parent region"
+        parent_region = obj.parent_region
+        obj_name = obj.label
+        if not obj.label:
+            obj_name = obj.full_name
+        description += f"{obj_name} is at position {obj.center}, in {parent_region.class_name} on {parent_region.parent_level} floor. \n"
+
+    return description
+
 def generate_agents_description(agent_layer, region_layer, nav_mesh):
     agent_description = ""
     
@@ -180,17 +196,43 @@ def generate_agents_description(agent_layer, region_layer, nav_mesh):
         agent_description = "There are {} agents in the scene.\n".format(len(agent_layer.agent_ids))
         for agent_id in agent_layer.agent_ids:
             agent = agent_layer.agent_dict[agent_id]
-            agent_name = agent.agent_name + "_" + str(agent_id)
+            agent_name = agent.agent_name
             agent_description += f"{agent_name} is at position {agent.position}.\n"
             
     else:
         agents_region_ids = agent_layer.get_agents_region_ids(nav_mesh)
         for agent_id, region_id in agents_region_ids.items():
-            agent_name = agent_layer.agent_dict[agent_id].agent_name + "_" + str(agent_id)
+            agent_name = agent_layer.agent_dict[agent_id].agent_name
             region_name = region_layer.region_dict[region_id].class_name + "_" + str(region_id)
             agent_description += f"{agent_name} is in {region_name}.\n"
     
     return agent_description
+
+def generate_mp3d_agents_description(agent_layer, region_layer):
+    agent_description = "There are {} agents in the scene.\n".format(len(agent_layer.agent_ids))
+    for agent_id in agent_layer.agent_ids:
+        agent = agent_layer.agent_dict[agent_id]
+        agent_name = agent.agent_name
+        agent_pos = agent.position
+
+        find_agent_in_region = False
+        for region_id in region_layer.region_ids:
+            region_node = region_layer.region_dict[region_id]
+            region_bb = region_node.bbox
+
+            if np.all(agent_pos >= region_bb[0]) and np.all(agent_pos <= region_bb[1]):
+                region_name = region_node.class_name + "_" + str(region_id)
+                parent_level = region_node.parent_level
+                find_agent_in_region = True
+                break
+
+        if not find_agent_in_region:
+            agent_description += f"{agent_name} is at position {agent_pos}.\n"
+        else:
+            agent_description += f"{agent_name} is at position {agent_pos}, in {region_name} on {parent_level} floor.\n"
+        
+    return agent_description
+
 
 ############ Visualization ############################
 

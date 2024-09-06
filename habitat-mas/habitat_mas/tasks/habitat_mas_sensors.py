@@ -11,7 +11,12 @@ from habitat.core.simulator import Sensor, SensorTypes
 from habitat_mas.dataset.defaults import habitat_mas_data_dir
 from habitat_mas.scene_graph.scene_graph_hssd import SceneGraphHSSD
 from habitat_mas.scene_graph.scene_graph_mp3d import SceneGraphMP3D
-from habitat_mas.scene_graph.utils import generate_objects_description, generate_agents_description    
+from habitat_mas.scene_graph.utils import (
+    generate_objects_description, 
+    generate_agents_description, 
+    generate_mp3d_objects_description, 
+    generate_mp3d_agents_description
+)    
 
 @registry.register_sensor
 class HSSDSceneDescriptionSensor(Sensor):
@@ -80,8 +85,8 @@ class MP3DSceneDescriptionSensor(Sensor):
         sg.load_gt_scene_graph(self._sim)
         
         # Generate scene descriptions
-        objects_description = generate_objects_description(sg.object_layer)
-        agent_description = generate_agents_description(sg.agent_layer, sg.region_layer, sg.nav_mesh)
+        objects_description = generate_mp3d_objects_description(sg.object_layer)
+        agent_description = generate_mp3d_agents_description(sg.agent_layer, sg.region_layer)
         
         scene_description = {
             "objects_description": objects_description,

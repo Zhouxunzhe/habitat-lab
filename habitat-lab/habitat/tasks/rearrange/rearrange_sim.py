@@ -600,6 +600,10 @@ class RearrangeSim(HabitatSim):
                     continue
                 rom.remove_object_by_id(scene_obj_id)
             self._scene_obj_ids = []
+        
+        if 'dataset' in self.ep_info.info and self.ep_info.info['dataset'] == 'mp3d':
+            for obj_handle in rom.get_object_handles():
+                rom.remove_object_by_handle(obj_handle)
 
         # Reset all marker visualization points
         for obj_id in self.viz_ids.values():
@@ -742,10 +746,6 @@ class RearrangeSim(HabitatSim):
             self._receptacles = self._create_recep_info(
                 ep_info.scene_id, list(self._handle_to_object_id.keys())
             )
-            if 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d':
-                receps = self.set_receptacle_in_scene(ep_info)
-                self._receptacles_cache[ep_info.scene_id] = receps
-                self._receptacles = receps
     
             ao_mgr = self.get_articulated_object_manager()
             # Make all articulated objects (including the robots) kinematic
@@ -757,6 +757,11 @@ class RearrangeSim(HabitatSim):
                     for motor_id in ao.existing_joint_motor_ids:
                         ao.remove_joint_motor(motor_id)
                 self.art_objs.append(ao)
+
+        if 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d':
+            receps = self.set_receptacle_in_scene(ep_info)
+            self._receptacles_cache[ep_info.scene_id] = receps
+            self._receptacles = receps
 
     def _create_recep_info(
         self, scene_id: str, ignore_handles: List[str]
