@@ -165,7 +165,11 @@ def generate_objects_description(sim, object_layer):
     description = "There are {} objects in the scene.\n".format(len(object_layer.obj_ids))
     for obj_id in object_layer.obj_ids:
         obj = object_layer.obj_dict[obj_id]
-        obj_name = sim._handle_to_goal_name[obj.full_name]
+
+        if obj.full_name in sim._handle_to_goal_name:
+            obj_name = sim._handle_to_goal_name[obj.full_name]
+        elif obj.label:
+            obj_name = obj.label
         if obj.full_name is None:
             obj_name = "any_targets|" + str(obj_id)
         description += f"{obj_name} is at position {np.array(obj.center)}. "

@@ -496,7 +496,7 @@ class RearrangeSim(HabitatSim):
 
         for attempt_i in range(max_attempts):
 
-            # TODO(YCC): start pos should be able to navigate to the target
+            # start pos should be able to navigate to the target
             start_pos = self.pathfinder.get_random_navigable_point(
                 island_index=self._largest_indoor_island_idx
             )
@@ -525,7 +525,7 @@ class RearrangeSim(HabitatSim):
                 f"Could not find a collision free start for {self.ep_info.episode_id}"
             )
 
-        # TODO(YCC): collect the robot setup   
+        # collect the robot setup   
         if self.habitat_config.w2j:
             self.write_to_json(start_pos, start_rot, agent_idx)
 
