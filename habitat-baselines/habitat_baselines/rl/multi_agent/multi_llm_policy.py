@@ -50,7 +50,8 @@ LEADER_START_MESSAGE = (
     r"{robot_id|subtask_description}\n\n"
     'For example, if you want to assign a subtask "Navigate to box_1" to agent_0, you should type:\n'
     "{agent_0|Navigate to box_1}\n\n"
-    "Remember you must include the brackets and you must include all the robots.\n\n"
+    "Remember you must include the brackets and you MUST include all the robots in your response.\n"
+    'If you think a robot should not have a subtask, you can assign it "Nothing to do".\n'
 )
 
 
@@ -61,11 +62,12 @@ ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
     '"""\n{task_description}\n"""\n\n'
     "You have the following capabilities:\n\n"
     '"""\n{capabilities}\n"""\n\n'
-    "I will assign you a subtask."
+    "I will assign you a subtask. If you don't have any task to do, you will receive \"Nothing to do\". "
+    "You should just wait until you receive message from other agents."
     r" If you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
     r' following this format: "{{no|<the reason>}}".'
     r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
-    r" Example responses: {{no|The task is not well-defined}}, {{yes}}, {{no|I need more information}}."
+    r" Example responses: {{no|The task is unclear}}, {{yes}}, {{no|I have no moving ability}}."
 )
 
 
@@ -160,6 +162,9 @@ def group_discussion(
 
     response = leader.chat(LEADER_START_MESSAGE)
     robot_tasks = parse_leader_response(response)
+    print("===============Leader Response==============")
+    print(response)
+    print("===========================================")
 
     agent_response = {}
     for robot_id in robot_tasks:
@@ -275,7 +280,7 @@ class MultiLLMPolicy(MultiPolicy):
         for agent_i, policy in enumerate(self._active_policies):
             # collect assigned tasks for agent_i across all envs
             agent_i_handle = f"agent_{agent_i}"
-            agent_arguments = [
+            select_agent_arguments = [
                 agent_arguments[agent_i_handle] if agent_i_handle in arguments else None
                 for arguments in envs_agent_arguments
             ]
@@ -290,7 +295,7 @@ class MultiLLMPolicy(MultiPolicy):
                     agent_masks[agent_i],
                     deterministic,
                     envs_text_context=envs_text_context,
-                    agent_arguments=agent_arguments,  # pass the task planning result to the policy
+                    agent_arguments=select_agent_arguments,  # pass the task planning result to the policy
                 )
             )
         policy_info = _merge_list_dict([ac.policy_info for ac in agent_actions])

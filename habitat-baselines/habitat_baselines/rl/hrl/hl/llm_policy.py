@@ -15,7 +15,7 @@ from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
 from habitat_baselines.rl.ppo.policy import PolicyActionData
 from habitat_mas.utils import AgentArguments
 
-ACTION_POOL = [get_agents, send_request, nav_to_obj, nav_to_goal, pick, place]
+ACTION_POOL = [get_agents, send_request, nav_to_obj, pick, place, reset_arm, wait, open_fridge, close_fridge, open_cab]
 
 
 class LLMHighLevelPolicy(HighLevelPolicy):
@@ -29,17 +29,17 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         self._n_actions = len(self._all_actions)
         self._active_envs = torch.zeros(self._num_envs, dtype=torch.bool)
 
-        environment_action_name_set = set(
-            [action._name for action in self._all_actions]
-        )
+        # environment_action_name_set = set(
+        #     [action._name for action in self._all_actions]
+        # )
 
-        llm_actions = [
-            action
-            for action in ACTION_POOL
-            if action.name in environment_action_name_set
-        ]
+        # llm_actions = [
+        #     action
+        #     for action in ACTION_POOL
+        #     if action.name in environment_action_name_set
+        # ]
         # Initialize the LLM agent
-        self.llm_agent = self._init_llm_agent(kwargs["agent_name"], llm_actions)
+        self.llm_agent = self._init_llm_agent(kwargs["agent_name"], ACTION_POOL)
 
     def _init_llm_agent(self, agent_name, action_list):
         # Initialize the LLM agent here based on the config
@@ -87,17 +87,18 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         if agent_arguments is None:
             raise ValueError("Agent arguments not provided to the policy.")
 
-        print("=================env_text_context===================")
-        print(envs_text_context)
-        print("=================agent_task_assignment===================")
-        print(agent_arguments)
-        print("=================agent_chat_history===================")
+        # print("=================env_text_context===================")
+        # print(envs_text_context)
+        # print("==================================================")
 
         semantic_observation = envs_text_context[0]["scene_description"]
-        print(semantic_observation)
-        args = agent_arguments[0]
+        # print(semantic_observation)
 
         if not self.llm_agent.initilized:
+            print("=================agent_task_assignment===================")
+            print(agent_arguments)
+            print("======================================================")
+            args = agent_arguments[0]
             # Inject chat history from group discussion phase
             if args.chat_history is not None:
                 self.llm_agent.llm_model.chat_history = args.chat_history

@@ -20,7 +20,7 @@ def pick(target_obj: str):
 @action
 def place(target_obj: str, target_location: str):
     """
-    Place an object.
+    Place an object. Only when you are holding an object.
     
     Args:
         target_obj: The object to place.

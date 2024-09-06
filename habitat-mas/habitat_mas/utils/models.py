@@ -75,6 +75,7 @@ class OpenAIModel:
                 )  # extend conversation with function response
 
             if len(tool_calls) != 1:
+                print(tool_calls)
                 raise RuntimeError("agent output more than one action per step.")
             call = tool_calls[0]
             parameters = json.loads(call.function.arguments)
