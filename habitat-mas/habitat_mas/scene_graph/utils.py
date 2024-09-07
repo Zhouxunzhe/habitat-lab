@@ -172,9 +172,11 @@ def generate_objects_description(sim, object_layer):
             obj_name = obj.label
         if obj.full_name is None:
             obj_name = "any_targets|" + str(obj_id)
-        description += f"{obj_name} is at position {np.array(obj.center)}. "
+        
+        position = np.array(obj.center)
+        description += f"{obj_name} is at position {[f'{p:.1f}' for p in position]}. "
         # add height and distance information
-        description += f"The height of the object is {obj.center[1]}.\n"
+        description += f"The height of the object is {position[1]:.1f}.\n"
         island_areas = [
             (island_ix, sim.pathfinder.island_area(island_index=island_ix))
             for island_ix in range(sim.pathfinder.num_islands)
@@ -187,7 +189,7 @@ def generate_objects_description(sim, object_layer):
                     np.array(snap_pos)[[0, 2]] - np.array(obj.center)[[0, 2]]
                 )
                 break
-        description += f"The horizontal distance of {obj_name} to the nearest navigable point is {horizontal_dist}.\n"
+        description += f"The horizontal distance of {obj_name} to the nearest navigable point is {horizontal_dist:.1f}.\n"
         if horizontal_dist == np.inf:
             description += f"`inf` means the pathfinder cannot find any navigable point near the object.\n"
 
@@ -205,7 +207,9 @@ def generate_mp3d_objects_description(object_layer):
         obj_name = obj.label
         if not obj.label:
             obj_name = obj.full_name
-        description += f"{obj_name} is at position {obj.center}, in {parent_region.class_name} on {parent_region.parent_level} floor. \n"
+        
+        position = np.array(obj.center)
+        description += f"{obj_name} is at position {[f'{p:.1f}' for p in position]}, in {parent_region.class_name} on {parent_region.parent_level} floor. \n"
 
     return description
 
@@ -218,7 +222,8 @@ def generate_agents_description(agent_layer, region_layer, nav_mesh):
         for agent_id in agent_layer.agent_ids:
             agent = agent_layer.agent_dict[agent_id]
             agent_name = agent.agent_name
-            agent_description += f"{agent_name} is at position {agent.position}.\n"
+            agent_pos = agent.position
+            agent_description += f"{agent_name} is at position {[f'{p:.1f}' for p in agent_pos]}.\n"
             
     else:
         agents_region_ids = agent_layer.get_agents_region_ids(nav_mesh)
@@ -246,7 +251,8 @@ def generate_mp3d_agents_description(agent_layer, region_layer):
                 parent_level = region_node.parent_level
                 find_agent_in_region = True
                 break
-
+        
+        agent_pos = [f'{p:.1f}' for p in agent_pos]
         if not find_agent_in_region:
             agent_description += f"{agent_name} is at position {agent_pos}.\n"
         else:

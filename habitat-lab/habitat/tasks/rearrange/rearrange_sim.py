@@ -282,7 +282,9 @@ class RearrangeSim(HabitatSim):
         self._handle_to_goal_name = ep_info.info["object_labels"]
 
         self.ep_info = ep_info
-        new_scene = self.prev_scene_id != ep_info.scene_id
+        mp3d = 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d'
+
+        new_scene = self.prev_scene_id != ep_info.scene_id or mp3d
         if new_scene:
             self._prev_obj_names = None
 
@@ -290,7 +292,7 @@ class RearrangeSim(HabitatSim):
         ep_info.rigid_objs = sorted(ep_info.rigid_objs, key=lambda x: x[0])
         obj_names = [x[0] for x in ep_info.rigid_objs]
         # Only remove and re-add objects if we have a new set of objects.
-        should_add_objects = self._prev_obj_names != obj_names
+        should_add_objects = self._prev_obj_names != obj_names or mp3d
         self._prev_obj_names = obj_names
 
         self.agents_mgr.pre_obj_clear()
@@ -599,11 +601,12 @@ class RearrangeSim(HabitatSim):
                 if not rom.get_library_has_id(scene_obj_id):
                     continue
                 rom.remove_object_by_id(scene_obj_id)
+
+            if 'dataset' in self.ep_info.info and self.ep_info.info['dataset'] == 'mp3d':
+                for obj_handle in rom.get_object_handles():
+                    rom.remove_object_by_handle(obj_handle)
+
             self._scene_obj_ids = []
-        
-        if 'dataset' in self.ep_info.info and self.ep_info.info['dataset'] == 'mp3d':
-            for obj_handle in rom.get_object_handles():
-                rom.remove_object_by_handle(obj_handle)
 
         # Reset all marker visualization points
         for obj_id in self.viz_ids.values():
