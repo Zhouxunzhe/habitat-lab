@@ -116,7 +116,8 @@ class SceneGraphMP3D(SceneGraphBase):
                         region_node.add_object(object_node)
                 
                 if self.sim.ep_info.goal_receptacles and len(self.sim.ep_info.goal_receptacles):
-                    for target_id, (goal_recep_handle, _, translation) in enumerate(self.sim.ep_info.goal_receptacles):
+                    for target_id, goal_recep in enumerate(self.sim.ep_info.goal_receptacles):
+                        goal_recep_handle = goal_recep[0]
                         assert goal_recep_handle in all_object_handles
                         obj = rom.get_object_by_handle(goal_recep_handle)
                         abs_obj_id = obj.semantic_id

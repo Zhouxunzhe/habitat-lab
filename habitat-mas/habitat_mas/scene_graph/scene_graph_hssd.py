@@ -89,7 +89,8 @@ class SceneGraphHSSD(SceneGraphBase):
                 targets[target_id]  = trans
 
             if self.sim.ep_info.goal_receptacles and len(self.sim.ep_info.goal_receptacles):
-                for target_id, (goal_recep_handle, _) in enumerate(self.sim.ep_info.goal_receptacles):
+                for target_id, goal_recep in enumerate(self.sim.ep_info.goal_receptacles):
+                    goal_recep_handle = goal_recep[0]
                     assert target_id in targets
                     target = targets[target_id]
                     target_pos = target.translation
