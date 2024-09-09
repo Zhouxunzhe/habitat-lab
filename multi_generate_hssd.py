@@ -8,7 +8,7 @@ def run_episode_generator():
     process_name = multiprocessing.current_process().name
     
     # 生成基于进程名称的输出文件名
-    output_file = f"data/datasets/sample/{process_name}.json.gz"
+    output_file = f"data/datasets/hssd_demo/{process_name}.json.gz"
     command = [
         "python",
         "/home/lht/habitat-lab/habitat-lab/habitat/datasets/rearrange/run_episode_generator.py",
@@ -24,9 +24,9 @@ def run_episode_generator():
         subprocess.run(command, stdout=f, stderr=subprocess.STDOUT)
 
 if __name__ == '__main__':
-    sum_episode = 10000
-    process_num = 10
-    batch_num = 4
+    sum_episode = 4
+    process_num = 4
+    batch_num = 1
     num = int(sum_episode / (process_num * batch_num))
     with tqdm(total=num,desc="Sample_Episode") as pbar:
         for j in range(0,num):

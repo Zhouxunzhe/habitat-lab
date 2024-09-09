@@ -6,18 +6,22 @@ def process_array(arr):
     return '[' + ','.join(processed_arr) + ']'
 # 设定文件所在的目录
 directory = './video_dir'
+output_dir_name = 'single_agent_train_obc_2'
+
 num_step = 0
 num_id = -1
 meta = {    "robotdata_demo":{
-        "root":"/mnt/hwfile/gveval/lianghaotian/data/single_agent_train_waypoint",
-        "annotation":"/mnt/hwfile/gveval/lianghaotian/data/single_agent_train_waypoint/robotdata_demo.jsonl",
+        "root":f"/mnt/hwfile/gveval/lianghaotian/data/{output_dir_name}",
+        "annotation":f"/mnt/hwfile/gveval/lianghaotian/data/{output_dir_name}/robotdata_demo.jsonl",
         "data_augment":False,
         "repeat_time":1,
         "length":0
     }
 }
 combined_data = []
-output_path = os.path.join('./single_agent_train_waypoint', 'robotdata_demo.jsonl')
+output_dir = os.path.join('./',output_dir_name)
+output_path = os.path.join('./',output_dir_name, 'robotdata_demo.jsonl')
+
 folder_list = glob.glob(os.path.join(directory, '*.json'))
 # 获取目录中所有 JSON 文件
 file_list = glob.glob(os.path.join(directory, '*.json'))
@@ -93,12 +97,16 @@ for process_folder in os.listdir(directory):
                                 name_finished = ""
                             
                             if agent_0_action == "nav_to_point":
-                                x,y= agent_0_pos
-                                if not (0<=x<=256 and 0<=y<=256):
-                                    agent_0_action = "turn"
-                                    agent_0_pos = None
+                                if len(agent_0_pos) == 2:
+                                    x,y= agent_0_pos
+                                    if not (0<=x<=256 and 0<=y<=256):
+                                        agent_0_action = "turn"
+                                        agent_0_pos = None
+                                    else:
+                                        agent_0_pos = [[int(x*1000/256),int(y*1000/256),int(10*1000/256) if x+10<256 else 255-x,10 if y+10<256 else 255-y]]
                                 else:
-                                    agent_0_pos = [[int(x*1000/256),int(y*1000/256),int(10*1000/256) if x+10<256 else 255-x,10 if y+10<256 else 255-y]]
+                                    x,y,w,h = agent_0_pos[0]
+                                    agent_0_pos = [[int(x*1000/256),int(y*1000/256),int(w*1000/256),int(h*1000/256)]]
                             elif agent_0_action == "pick" or agent_0_action == "place":
                                 x,y,w,h = agent_0_pos[0]
                                 agent_0_pos = [[int(x*1000/256),int(y*1000/256),int(w*1000/256),int(h*1000/256)]]
@@ -122,7 +130,7 @@ Robot's current view: <image>
                                 # if sup['image_0'] in file_name or sup['image_1'] in file_name:
                                 if sup['image'] in file_name:
                                     source_file = os.path.join(episode_path, file_name)
-                                    destination_folder = f'./single_agent_train_waypoint/image/{num_id}'
+                                    destination_folder = f'./{output_dir_name}/image/{num_id}'
                                     os.makedirs(destination_folder, exist_ok=True)
                                     destination_file = os.path.join(destination_folder, file_name)
                                     shutil.copy(source_file, destination_file)
@@ -134,7 +142,7 @@ meta["robotdata_demo"]["length"] = num_step
 with jsonlines.open(output_path,mode='w') as writer:
      writer.write_all(combined_data)
 
-with open(os.path.join('./single_agent_train_waypoint','robotdemo_meta.json'),'w') as file:
+with open(os.path.join(f'./{output_dir_name}','robotdemo_meta.json'),'w') as file:
     json.dump(meta,file,indent=4)
                     
 

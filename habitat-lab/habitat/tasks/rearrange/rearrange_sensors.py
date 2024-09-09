@@ -2283,11 +2283,10 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         """add semantic information"""
         ep_objects = []
         # print("self._sim.ep_info:",self._sim.ep_info)
-        # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
-        #     print("step:",self._sim.ep_info.target_receptacles[0][i])
-        ep_objects.append(self._sim.ep_info.target_receptacles[0][0])
-        # for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
-        #     ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
+        for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+            ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+        for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
+            ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
         for key, val in self._sim.ep_info.info['object_labels'].items():
             ep_objects.append(key)
 

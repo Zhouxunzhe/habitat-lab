@@ -57,7 +57,7 @@ defaults:
     # - target_point
     # - nav_workspace_rgb_sensor
     # - nav_workspace_points_sensor
-    # - arm_workspace_rgb_sensor
+    - arm_workspace_rgb_sensor
     - obj_bbox_sensor
     - target_bbox_sensor
     - rec_bbox_sensor
@@ -109,7 +109,7 @@ habitat:
     robot_at_thresh: 1.1
 
   environment:
-    max_episode_steps: 750
+    max_episode_steps: 450
     # iterator_options:
     #   shuffle: True
   simulator:
