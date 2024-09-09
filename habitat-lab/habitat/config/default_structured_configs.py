@@ -916,6 +916,10 @@ class HSSDSceneDescriptionSensorConfig(LabSensorConfig):
     type: str = "HSSDSceneDescriptionSensor"
 
 @dataclass
+class MP3DSceneDescriptionSensorConfig(LabSensorConfig):
+    type: str = "MP3DSceneDescriptionSensor"
+
+@dataclass
 class RobotResumeSensorConfig(LabSensorConfig):
     type: str = "RobotResumeSensor"
     robot_resume_dir: str = "robot_resume"
@@ -2799,6 +2803,12 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="hssd_scene_description",
     node=HSSDSceneDescriptionSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.mp3d_scene_description",
+    group="habitat/task/lab_sensors",
+    name="mp3d_scene_description",
+    node=MP3DSceneDescriptionSensorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.robot_resume",

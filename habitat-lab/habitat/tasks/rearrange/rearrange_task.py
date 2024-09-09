@@ -422,10 +422,18 @@ class RearrangeTask(NavigationTask):
         current_episode_idx = self._sim.ep_info.episode_id
 
         if not self._robot_config or current_episode_idx not in self._robot_config:
-        # load agent with dummy position
+        # load agent with new sampled position
             robot_config = []
             for agent_idx in range(self._sim.num_articulated_agents):
+                (
+                    articulated_agent_pos,
+                    articulated_agent_rot,
+                ) = self._sim.set_articulated_agent_base_to_random_point(
+                    agent_idx=agent_idx
+                )
                 agent_config = self._sim.parse_agent_info(
+                    start_pos=articulated_agent_pos,
+                    start_rot=articulated_agent_rot,
                     agent_idx = agent_idx
                 )
                 robot_config.append(agent_config)

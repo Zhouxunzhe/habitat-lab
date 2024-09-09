@@ -31,6 +31,7 @@ def send_request(request: str, target_agent: str) -> str:
     """
     pass
 
+# TODO(YCC): add description for this action
 @action
 def wait():
     """
@@ -69,19 +70,19 @@ def close_cab():
 @action
 def nav_to_obj(target_obj: str):
     """
-    Navigate to an object.
+    Navigate to a TARGET_any_target object, after which the agent will be at the TARGET_any_target position.
     
     Args:
-        target_obj: The object to navigate to.
+        target_obj: The TARGET_any_targets object to navigate to.
     """
     pass
 
 @action
 def nav_to_goal(goal: str):
     """
-    Navigate to a goal.
+    Navigate to an any_targets object, after which the agent will be at the any_targets position, can only be called if the agent is not holding the any_targets object or hasn't pick the any_targets object.
     
     Args:
-        goal: The goal to navigate to.
+        goal: The any_targets object to navigate to.
     """
     pass

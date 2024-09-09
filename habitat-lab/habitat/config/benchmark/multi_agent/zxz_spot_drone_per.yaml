@@ -4,7 +4,7 @@ defaults:
   - /habitat: habitat_config_base
   - /habitat/task: task_config_base
 
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: SpotRobot_head_only
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: SpotRobot_head_jaw
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: DJIDrone_default
 
   - /habitat/dataset/embodied_mas: zxz_perception
