@@ -114,7 +114,7 @@ class RearrangeTask(NavigationTask):
 
         # Load robot config file
         robot_config_path = dataset.config.robot_config
-        if osp.exists(robot_config_path):
+        if osp.exists(robot_config_path) and not self._dataset.config.randomize_agent_start:
             with open(robot_config_path, "r") as robot_config_file:
                 robot_config = json.load(robot_config_file)
             self._robot_config = robot_config
