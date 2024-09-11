@@ -55,6 +55,7 @@ __all__ = [
     "HumanoidJointActionConfig",
     "HumanoidPickActionConfig",
     "RearrangeStopActionConfig",
+    "WaitActionConfig",
     "OracleNavActionConfig",
     "SelectBaseOrArmActionConfig",
     # REARRANGEMENT LAB SENSORS
@@ -344,6 +345,14 @@ class ResetArmActionConfig(ArmActionConfig):
     grip_controller: str = "MagicGraspAction"
     grasp_thresh_dist: float = 0.05
     render_ee_target: bool = True
+
+@dataclass
+class WaitActionConfig(ActionConfig):
+    r"""
+    WaitAction config for Rearrangement tasks.
+    """
+    type: str = "WaitAction"
+    wait_steps: int = 1
 
 @dataclass
 class StretchOraclePickActionConfig(ArmActionConfig):
@@ -2375,6 +2384,12 @@ cs.store(
     group="habitat/task/actions",
     name="rearrange_stop",
     node=RearrangeStopActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.wait",
+    group="habitat/task/actions",
+    name="wait",
+    node=WaitActionConfig,
 )
 cs.store(
     package="habitat.task.actions.a_selection_of_base_or_arm",
