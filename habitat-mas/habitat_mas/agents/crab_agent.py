@@ -14,7 +14,7 @@ ROBOT_EXECUTION_SYSTEM_PROMPT_TEMPLATE = (
     '"""\n{subtask_description}\n"""\n\n'
     # "You have the following capabilities:\n\n"
     # '"""\n{capabilities}\n"""\n\n'
-    "You MUST take one and only one action using function call."
+    "You MUST take one and only one action using function call in each step."
     " If you think the task definitely cannot be done by yourself, you can use `send_request` function to ask other agents for help."
 )
 
