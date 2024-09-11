@@ -52,7 +52,9 @@ place:
 
 wait:
   skill_name: "WaitSkillPolicy"
-  max_skill_steps: -1
+  action_name: "wait"
+  obs_skill_inputs: []
+  max_skill_steps: 50
   ignore_grip: True
 
 nav_to_obj:

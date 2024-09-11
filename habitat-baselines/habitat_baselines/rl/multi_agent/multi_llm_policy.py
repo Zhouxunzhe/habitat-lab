@@ -47,9 +47,9 @@ ROBOT_RESUME_TEMPLATE = (
 
 LEADER_START_MESSAGE = (
     "Now you should assign subtasks to each agent following this format:\n\n"
-    r"{robot_id|subtask_description}\n\n"
+    r"{robot_id||subtask_description}\n\n"
     'For example, if you want to assign a subtask "Navigate to box_1" to agent_0, you should type:\n'
-    "{agent_0|Navigate to box_1}\n\n"
+    "{agent_0||Navigate to box_1}\n\n"
     "Remember you must include the brackets and you MUST include all the robots in your response.\n"
     'If you think a robot should not have a subtask, you can assign it "Nothing to do".\n'
 )
@@ -65,9 +65,9 @@ ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
     "I will assign you a subtask. If you don't have any task to do, you will receive \"Nothing to do\". "
     "You should just wait until you receive message from other agents."
     r" If you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
-    r' following this format: "{{no|<the reason>}}".'
+    r' following this format: "{{no||<the reason>}}".'
     r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
-    r" Example responses: {{no|The task is unclear}}, {{yes}}, {{no|I have no moving ability}}."
+    r" Example responses: {{no||The task is unclear}}, {{yes}}, {{no||I have no moving ability}}."
 )
 
 
@@ -103,7 +103,7 @@ def get_robot_prompt(robot: dict, task_description: str, robot_key: str):
 
 def parse_leader_response(text):
     # Define the regular expression pattern
-    pattern = r"\{(.*?)\|(.*?)\}"
+    pattern = r"\{(.*?)\|\|(.*?)\}"
 
     # Find all matches in the text
     matches = re.findall(pattern, text)
@@ -118,7 +118,7 @@ def parse_leader_response(text):
 
 def parse_agent_response(text):
     # Define the regular expression pattern
-    pattern = r"\{(yes|no)(?:\|(.*?))?\}"
+    pattern = r"\{(yes|no)(?:\|\|(.*?))?\}"
 
     # Find all matches in the text
     matches = re.findall(pattern, text)
@@ -162,6 +162,8 @@ def group_discussion(
 
     response = leader.chat(LEADER_START_MESSAGE)
     robot_tasks = parse_leader_response(response)
+    print("===============Task Description==============")
+    print(task_description)
     print("===============Leader Response==============")
     print(response)
     print("===========================================")

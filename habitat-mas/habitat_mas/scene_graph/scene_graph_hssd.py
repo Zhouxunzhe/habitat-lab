@@ -72,11 +72,16 @@ class SceneGraphHSSD(SceneGraphBase):
                 abs_obj_id
             ).transformation.rotation
 
+            obj_label = None
+            if object_handle in sim._handle_to_goal_name:
+                obj_label = sim._handle_to_goal_name[object_handle]
+            
             self.object_layer.add_object(
                 cur_pos,
                 cur_rot,
                 # size,
                 id=obj_id,
+                label=obj_label,
                 full_name=object_handle,
                 # class_name=obj.category.name(),
                 # bbox=node_bbox,

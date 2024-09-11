@@ -15,7 +15,7 @@ from ..crab_core import action
 @action
 def get_agents() -> List[str]:
     """
-    Get the list of agents in the environment.
+    Retrieve the list of agents currently present in the environment.
     """
     pass
 
@@ -31,11 +31,10 @@ def send_request(request: str, target_agent: str) -> str:
     """
     pass
 
-# TODO(YCC): add description for this action
 @action
 def wait():
     """
-    Wait if you don't have to take any action.
+    Wait if no immediate action is required from you.
     """
     pass
 
@@ -70,7 +69,7 @@ def close_cab():
 @action
 def nav_to_obj(target_obj: str):
     """
-    Navigate to a TARGET_any_target object, after which the agent will be at the TARGET_any_target position.
+    Navigate to the specified TARGET_any_target object. Upon successfully completing this action, you should be positioned at the exact location of the TARGET_any_target.
     
     Args:
         target_obj: The TARGET_any_targets object to navigate to.
@@ -78,11 +77,11 @@ def nav_to_obj(target_obj: str):
     pass
 
 @action
-def nav_to_goal(goal: str):
+def nav_to_goal(target_obj: str):
     """
-    Navigate to an any_targets object, after which the agent will be at the any_targets position, can only be called if the agent is not holding the any_targets object or hasn't pick the any_targets object.
+    Navigate to the specified any_targets object. This action can only be executed if you are not currently holding or have not previously picked up the any_targets object. Upon successful completion, you should be positioned at the exact location of the any_targets.
     
     Args:
-        goal: The any_targets object to navigate to.
+        target_obj: The any_targets object to navigate to.
     """
     pass
