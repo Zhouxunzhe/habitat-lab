@@ -39,34 +39,6 @@ def wait():
     pass
 
 @action
-def open_fridge():
-    """
-    Open the fridge. Only when you are near the fridge.
-    """
-    pass
-
-@action
-def close_fridge():
-    """
-    Close the fridge. Only when you are near the fridge.
-    """
-    pass
-
-@action
-def open_cab():
-    """
-    Open the cabinet. Only when you are near the cabinet.
-    """
-    pass
-
-@action
-def close_cab():
-    """
-    Close the cabinet. Only when you are near the cabinet.
-    """
-    pass
-
-@action
 def nav_to_obj(target_obj: str):
     """
     Navigate to the specified TARGET_any_target object. Upon successfully completing this action, you should be positioned at the exact location of the TARGET_any_target.
