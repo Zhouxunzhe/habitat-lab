@@ -64,19 +64,21 @@ class OpenAIModel:
 
         if not self.planning_stage:
             tool_calls = response_message.tool_calls
-            for tool_call in tool_calls:
+            for idx, tool_call in enumerate(tool_calls):
                 self.chat_history[-1].append(
                     {
                         "tool_call_id": tool_call.id,
                         "role": "tool",
                         "name": tool_call.function.name,
-                        "content": "",
+                        "content": "Success"
+                        if idx == 0
+                        else "Didn't execute because only the first tool call is executed",
                     }
                 )  # extend conversation with function response
 
-            if len(tool_calls) != 1:
-                print(tool_calls)
-                raise RuntimeError("agent output more than one action per step.")
+            # if len(tool_calls) != 1:
+            #     print(tool_calls)
+            #     raise RuntimeError("agent output more than one action per step.")
             call = tool_calls[0]
             parameters = json.loads(call.function.arguments)
             return (call.function.name, parameters)
