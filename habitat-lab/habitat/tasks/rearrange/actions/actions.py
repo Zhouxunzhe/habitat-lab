@@ -267,10 +267,10 @@ class ResetArmAction(ArmAction):
             "a_selection_of_base_or_arm" in self._task.actions
             and not self._task.actions["a_selection_of_base_or_arm"].select_arm
         ):
-            return self.ee_target
+            return
         else:
-            self.ee_target = self.arm_ctrlr.step(arm_action)
-            return self.ee_target
+            self.arm_ctrlr.step(arm_action)
+            return
 
 
 @registry.register_task_action
@@ -593,7 +593,7 @@ class BaseVelAction(ArticulatedAgentAction):
                 )
             }
         )
-    
+
     def _load_animation(self):
         """
         The function loads the leg animation data from a csv file.
@@ -721,7 +721,7 @@ class BaseVelAction(ArticulatedAgentAction):
             self.cur_articulated_agent.leg_joint_pos = (
                 self.cur_articulated_agent.params.leg_init_params
             )
-            
+
     def vel_ctrl(self, lin_vel, ang_vel):
         self.base_vel_ctrl.linear_velocity = mn.Vector3(lin_vel, 0, 0)
         self.base_vel_ctrl.angular_velocity = mn.Vector3(0, ang_vel, 0)
@@ -806,7 +806,7 @@ class BaseVelNonCylinderAction(ArticulatedAgentAction):
                     )
                 }
             )
-        
+
     def _load_animation(self):
         """
         The function loads the leg animation data from a csv file.

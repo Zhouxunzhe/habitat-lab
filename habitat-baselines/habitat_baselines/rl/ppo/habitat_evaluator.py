@@ -125,6 +125,7 @@ class HabitatEvaluator(Evaluator):
         envs_text_context = {}
         pbar = tqdm.tqdm(total=number_of_eval_episodes * evals_per_ep)
         agent.eval()
+        cur_ep_id = -1
         while (
             len(stats_episodes) < (number_of_eval_episodes * evals_per_ep)
             and envs.num_envs > 0
@@ -134,6 +135,8 @@ class HabitatEvaluator(Evaluator):
             # If all prev_actions are zero, meaning this is the start of an episode
             # Then collect the context of the episode
             if not prev_actions.any():
+            if current_episodes_info[0].episode_id != cur_ep_id:
+                cur_ep_id = current_episodes_info[0].episode_id
                 envs_text_context = envs.call(["get_task_text_context"] * envs.num_envs)
                 if 'pddl_text_goal' in batch:
                     envs_pddl_text_goal_np = batch['pddl_text_goal'].cpu().numpy()

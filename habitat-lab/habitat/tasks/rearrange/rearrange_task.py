@@ -75,6 +75,7 @@ class RearrangeTask(NavigationTask):
         self.n_objs = len(dataset.episodes[0].targets)
 
         super().__init__(sim=sim, dataset=dataset, **kwargs)
+        self._physics_target_sps = kwargs['config'].physics_target_sps
         self.is_gripper_closed = False
         self._sim: RearrangeSim = sim
         self._ignore_collisions: List[Any] = []
@@ -114,7 +115,7 @@ class RearrangeTask(NavigationTask):
 
         # Load robot config file
         robot_config_path = dataset.config.robot_config
-        if osp.exists(robot_config_path):
+        if osp.exists(robot_config_path) and not self._dataset.config.randomize_agent_start:
             with open(robot_config_path, "r") as robot_config_file:
                 robot_config = json.load(robot_config_file)
             self._robot_config = robot_config
