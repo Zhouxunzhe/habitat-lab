@@ -285,7 +285,7 @@ class MP3DGenerator:
             pos[2]
         ])
         receptacle.rotation = mn.Quaternion.rotation(
-            mn.Rad(random.uniform(0, math.pi * 2.0)), mn.Vector3(0, 1, 0)
+            mn.Rad(math.pi), mn.Vector3(0, 1, 0)
         )
 
         return receptacle
@@ -326,8 +326,8 @@ class MP3DGenerator:
             if len(target_receptacles):
                 is_valid = True
                 for _, _, rec_pos in target_receptacles + goal_receptacles:
-                    if eucilidean_distance(target_pos, rec_pos) < 2.0 or \
-                        eucilidean_distance(goal_pos, rec_pos) < 2.0:
+                    if eucilidean_distance(target_pos, rec_pos) < 1.0 or \
+                        eucilidean_distance(goal_pos, rec_pos) < 1.0:
                         is_valid = False
                         break
                 
