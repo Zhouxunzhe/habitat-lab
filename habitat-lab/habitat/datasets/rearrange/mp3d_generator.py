@@ -26,6 +26,9 @@ from habitat.datasets.rearrange.navmesh_utils import (
     is_accessible,
 )
 
+def eucilidean_distance(pos1, pos2):
+    return np.linalg.norm(pos1 - pos2)
+
 # function in HabitatSim class for finding geodesic distance
 def geodesic_distance(
         sim: RearrangeSim,
@@ -47,7 +50,6 @@ def is_compatible_episode(
     far_dist: float,
     min_height_dist: float,
 ) -> Union[Tuple[bool, float], Tuple[bool, int]]:
-    euclid_dist = np.power(np.power(np.array(s) - np.array(t), 2).sum(0), 0.5)
 
     # In mobility task, s and t may not be on the same floor, 
     # we need to check height difference
@@ -116,8 +118,8 @@ class MP3DGenerator:
             self.object_set = []
             self.receptacle_set = []
 
-        assert self.num_objects <= len(self.object_set)
-        assert self.num_objects <= len(self.receptacle_set)
+        if self.num_objects > len(self.object_set):
+            raise ValueError("Object number exceeds object set size.")
 
 
     def initialize_sim(self, dataset_path: str = "data/scene_datasets/mp3d/") -> str:
@@ -299,7 +301,7 @@ class MP3DGenerator:
             goal_receptacles,
             targets,
             name_to_receptacle,
-            num_max_tries: int = 100,
+            num_max_tries: int = 200,
             closest_dist_limit: float = 3.0,
             furthest_dist_limit: float = 100.0,
         ):
@@ -319,6 +321,19 @@ class MP3DGenerator:
             goal_pos = self.safe_snap_point(goal_pos, self.largest_island_idx)
             if np.isnan(goal_pos[0]):
                 continue
+
+            # check new pos dist from existed receptacles
+            if len(target_receptacles):
+                is_valid = True
+                for _, _, rec_pos in target_receptacles + goal_receptacles:
+                    if eucilidean_distance(target_pos, rec_pos) < 2.0 or \
+                        eucilidean_distance(goal_pos, rec_pos) < 2.0:
+                        is_valid = False
+                        break
+                
+                if not is_valid:
+                    num_tries += 1
+                    continue
 
             is_compatible, geo_dist, height_dist = is_compatible_episode(
                 s=goal_pos,
@@ -480,25 +495,24 @@ class MP3DGenerator:
         for obj_id, obj_name in enumerate(targets):
             object_labels[obj_name] = f"any_targets|{obj_id}"
 
-
-            return RearrangeEpisode(
-            episode_id=episode_id,
-            additional_obj_config_paths=self.cfg.additional_object_paths,
-            start_position=[0, 0, 0],
-            start_rotation=[0, 0, 0, 1],
-            scene_id=ep_scene_handle,
-            rigid_objs=rigid_objects,
-            ao_states={},
-            target_receptacles=target_receptacles,
-            targets=targets,
-            goal_receptacles=goal_receptacles,
-            name_to_receptacle=name_to_receptacle,
-            markers={},
-            info={
-                "object_labels": object_labels,
-                "dataset": "mp3d",
-            },
-        )
+        return RearrangeEpisode(
+        episode_id=episode_id,
+        additional_obj_config_paths=self.cfg.additional_object_paths,
+        start_position=[0, 0, 0],
+        start_rotation=[0, 0, 0, 1],
+        scene_id=ep_scene_handle,
+        rigid_objs=rigid_objects,
+        ao_states={},
+        target_receptacles=target_receptacles,
+        targets=targets,
+        goal_receptacles=goal_receptacles,
+        name_to_receptacle=name_to_receptacle,
+        markers={},
+        info={
+            "object_labels": object_labels,
+            "dataset": "mp3d",
+        },
+    )
 
     def generate_mobility_episodes(self, output_dir):
 
