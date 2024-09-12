@@ -11,6 +11,7 @@ class OpenAIModel:
         action_space: List[Action],
         model="gpt-4o",
         window_size=None,
+        discussion_stage=False,
     ) -> None:
         self.system_message = {
             "role": "system",
@@ -22,12 +23,14 @@ class OpenAIModel:
         self.window_size = window_size
         self.model = model
         self.client = openai.OpenAI()
-        self.planning_stage = False
-        if not action_space:
-            self.planning_stage = True
+        self.planning_stage = discussion_stage
 
     def set_system_message(self, system_message: str):
         self.system_message = {"role": "system", "content": system_message}
+
+    def execute_action(self, action_name: str, parameters: dict) -> str:
+        print("Internal action: ", action_name, parameters)
+        return str(self.action_map[action_name].run(**parameters))
 
     def chat(self, content: str):
         new_message = {"role": "user", "content": content}
@@ -45,10 +48,34 @@ class OpenAIModel:
         self.chat_history.append([new_message])
 
         if self.planning_stage:
-            response = self.client.chat.completions.create(
-                messages=request,  # type: ignore
-                model=self.model,
-            )
+            while True:
+                response = self.client.chat.completions.create(
+                    messages=request,  # type: ignore
+                    model=self.model,
+                    tools=[
+                        {"type": "function", "function": action}
+                        for action in self.actions
+                    ],
+                )
+                response_message = response.choices[0].message
+                self.chat_history[-1].append(response_message)
+                request.append(response_message)
+
+                tool_calls = response_message.tool_calls
+                if tool_calls is None or not tool_calls:
+                    return response_message.content
+                for tool_call in tool_calls:
+                    tool_call_result = {
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": tool_call.function.name,
+                        "content": self.execute_action(
+                            tool_call.function.name,
+                            json.loads(tool_call.function.arguments),
+                        ),
+                    }
+                    self.chat_history[-1].append(tool_call_result)
+                    request.append(tool_call_result)
         else:
             response = self.client.chat.completions.create(
                 messages=request,  # type: ignore
@@ -59,10 +86,8 @@ class OpenAIModel:
                 tool_choice="required",
             )
 
-        response_message = response.choices[0].message
-        self.chat_history[-1].append(response_message)
-
-        if not self.planning_stage:
+            response_message = response.choices[0].message
+            self.chat_history[-1].append(response_message)
             tool_calls = response_message.tool_calls
             for idx, tool_call in enumerate(tool_calls):
                 self.chat_history[-1].append(
@@ -83,8 +108,6 @@ class OpenAIModel:
             parameters = json.loads(call.function.arguments)
             return (call.function.name, parameters)
 
-        else:
-            return response_message.content
         # function_call_res = []
         # for call in tool_calls:
         #     action_name = call.function.name
