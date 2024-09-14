@@ -327,7 +327,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         nav_to_target_idx = int(nav_action[0]) - 1
         has_nav_action = nav_action[1]
         if self.prev_nav_done and nav_to_target_idx == self.prev_match_target_id:
-            nav_to_target_idx = 0
+            nav_to_target_idx = -1
         if nav_to_target_idx < 0 or nav_to_target_idx > len(
             self._poss_entities
         ):
