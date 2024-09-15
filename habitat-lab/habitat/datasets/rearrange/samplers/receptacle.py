@@ -989,8 +989,7 @@ def get_navigable_receptacles(
                     sim=sim,
                     point=point,
                     height=max_access_height,
-                    # nav_to_min_distance=nav_to_min_distance,
-                    nav_to_min_distance=-1,
+                    nav_to_min_distance=nav_to_min_distance,
                     nav_island=nav_island,
                     target_object_id=receptacle_obj.object_id,
                 )

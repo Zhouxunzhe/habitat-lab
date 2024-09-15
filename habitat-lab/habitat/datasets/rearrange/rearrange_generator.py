@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os.path
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -532,10 +532,11 @@ class RearrangeEpisodeGenerator:
         )
         # add wall cabinet to the origin place of the sampled receptacle
         otm = self.sim.get_object_template_manager()
-        recep_path_to_add = f"/home/lgtm/zhouxunzhe/habitat-zxz/data/replica_cad/configs/objects/frl_apartment_wall_cabinet_01.object_config.json"
+        recep_path_to_add = f"data/replica_cad/configs/objects/frl_apartment_wall_cabinet_01.object_config.json"
+        recep_path_to_add = os.path.abspath(recep_path_to_add)
         assert otm.get_library_has_handle(recep_path_to_add), "recep not loaded"
         receptacle_to_add = rom.add_object_by_template_handle(recep_path_to_add)
-        translation_to_move[1] = receptacle_to_add.collision_shape_aabb.size_y() * 0.5
+        translation_to_move[1] = receptacle_to_add.com.y - recep_path_to_add.collision_shape_aabb.min.y
         receptacle_to_add.rotation = rotation_to_move
         receptacle_to_add.translation = translation_to_move
 
