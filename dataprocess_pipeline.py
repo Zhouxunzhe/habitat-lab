@@ -21,7 +21,7 @@ def clear_directory(path):
             print(f'Failed to delete {file_path}. Reason: {e}')
 
 def run_script(args):
-    file_path,skip_len, base_directory = args
+    file_path,skip_len, base_directory,gpu_id = args
     a = ["disk"]
     cmd = [
         "python", "-u", "-m", "habitat_baselines.run",
@@ -29,10 +29,12 @@ def run_script(args):
         "habitat_baselines.evaluate=True",
         "habitat_baselines.num_environments=1",
         f"habitat_baselines.eval.json_option={a}",
+        f"habitat.simulator.habitat_sim_v0.gpu_device_id={gpu_id}",
+        f"habitat_baselines.torch_gpu_id={gpu_id}",
         f"habitat_baselines.eval.video_option={a}",
         f"habitat_baselines.eval.video_option_new=False",
         f"habitat_baselines.image_dir=video_dir/{file_path}",
-        f"habitat.dataset.data_path=data/datasets/sample/{file_path}"
+        f"habitat.dataset.data_path=data/datasets/hssd_demo/{file_path}"
     ]
     log_file = f"./log/example_{file_path}.log"
     with open(log_file, "w") as f:
@@ -59,11 +61,13 @@ def run_script(args):
         "habitat_baselines.num_environments=1",
         f"habitat_baselines.eval.json_option=[]",
         f"habitat_baselines.eval.video_option={a}",
+        f"habitat.simulator.habitat_sim_v0.gpu_device_id={gpu_id}",
+        f"habitat_baselines.torch_gpu_id={gpu_id}",
         f"habitat_baselines.eval.video_option_new=False",
         f"habitat_baselines.image_dir=video_dir/{file_path}",
         f"habitat_baselines.eval.image_option={a}",
         # f"habitat_baselines.eval.episode_stored={sample_info}",
-        f"habitat.dataset.data_path=data/datasets/sample/{file_path}"
+        f"habitat.dataset.data_path=data/datasets/hssd_demo/{file_path}"
     ]
     log_file = f"./log/example_new_{file_path}.log"
     with open(log_file, "w") as f:
@@ -78,11 +82,11 @@ if __name__ == "__main__":
     num_gz = int((sum_episode/epnum_per_gz)-gz_start)
     skip_len = dp_config.skip_len
     base_directory = dp_config.base_directory
-    zip_files = [f"process_{i}.json.gz" for i in range(gz_start,gz_start+num_gz)]
+    zip_files = [(f"data_{i}.json.gz",int(i%2)) for i in range(gz_start,gz_start+num_gz)]
     process_num = dp_config.process_num
     total_batches = len(zip_files)//process_num
     with multiprocessing.Pool(processes=process_num) as pool:
-        args = [(file_path, skip_len, base_directory) for file_path in zip_files]
+        args = [(file_path, skip_len, base_directory,gpu_id) for file_path,gpu_id in zip_files]
         for _ in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
             pass
     # with tqdm(total=len(zip_files),desc = "Processing Files") as pbar: 

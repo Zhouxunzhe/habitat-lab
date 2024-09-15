@@ -57,7 +57,7 @@ defaults:
     # - target_point
     # - nav_workspace_rgb_sensor
     # - nav_workspace_points_sensor
-    - arm_workspace_rgb_sensor
+    # - arm_workspace_rgb_sensor
     - obj_bbox_sensor
     - target_bbox_sensor
     - rec_bbox_sensor
@@ -114,7 +114,7 @@ habitat:
     #   shuffle: True
   simulator:
     type: RearrangeSim-v0
-    seed: 500
+    seed: 100
     additional_object_paths:
       - "data/objects/ycb/configs/"
       - "data/objects/amazon_berkeley/configs/"

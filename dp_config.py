@@ -1,6 +1,6 @@
-sum_episode = 5000
-epnum_per_gz = 2
-gz_start = 1270
+sum_episode = 400
+epnum_per_gz = 4
+gz_start = 0
 skip_len = 45
 base_directory = './video_dir/'
-process_num = 7
+process_num = 12

@@ -340,6 +340,12 @@ def get_arg_parser():
         help="Limit to one of the scene set samplers. Used to differentiate scenes from training and eval.",
     )
     parser.add_argument(
+        "--gpu_id",
+        type=int,
+        default=0,
+        help="The GPU ID",
+    )
+    parser.add_argument(
         "--num-episodes",
         type=int,
         default=1,
@@ -364,21 +370,20 @@ def get_arg_parser():
 if __name__ == "__main__":
     parser = get_arg_parser()
     args, _ = parser.parse_known_args()
-
     if args.seed is not None:
         random.seed(args.seed)
         np.random.seed(args.seed)
 
     # merge the configuration from file with the default
     cfg = get_config_defaults()
-    logger.info(f"\n\nOriginal Config:\n{cfg}")
+    # logger.info(f"\n\nOriginal Config:\n{cfg}")
     if args.config is not None:
         assert osp.exists(
             args.config
         ), f"Provided config, '{args.config}', does not exist."
         override_config = OmegaConf.load(args.config)
         cfg = OmegaConf.merge(cfg, override_config)  # type: ignore[assignment]
-
+    cfg['gpu_device_id'] = args.gpu_id
     logger.info(f"\n\nModified Config:\n{cfg}\n\n")
 
     dataset = RearrangeDatasetV0()
@@ -437,20 +442,20 @@ if __name__ == "__main__":
             import gzip
             dataset = dataset.to_json()
             dataset_json = json.loads(dataset)
-            # print("____________________________________________________________")
-            # print(dataset_json)
-            # print("____________________________________________________________")
-            item = random.sample(range(1,180),5)
-            # print("____________________________________________________________")
-            # print(item)
-            # print("____________________________________________________________")
-            i = 0
-            for episode in dataset_json['episodes']:
-                episode['episode_id'] = str(item[i])
-                i+=1
+            # # print("____________________________________________________________")
+            # # print(dataset_json)
+            # # print("____________________________________________________________")
+            # item = random.sample(range(1,180),100)
+            # # print("____________________________________________________________")
+            # # print(item)
+            # # print("____________________________________________________________")
+            # i = 0
+            # for episode in dataset_json['episodes']:
+            #     episode['episode_id'] = str(item[i])
+            #     i+=1
  
-            # with open(f'{output_path}_json', 'w') as file:
-            #     json.dump(dataset_json, file, indent=4)
+            with open(f'{output_path}_json', 'w') as file:
+                json.dump(dataset_json, file, indent=4)
 
             with gzip.open(output_path, "wt") as f:
                 f.write(json.dumps(dataset_json))

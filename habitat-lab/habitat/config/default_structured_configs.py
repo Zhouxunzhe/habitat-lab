@@ -2067,7 +2067,7 @@ class RendererConfig(HabitatBaseConfig):
 
 @dataclass
 class HabitatSimV0Config(HabitatBaseConfig):
-    gpu_device_id: int = 0
+    gpu_device_id: int = 1
     # Use Habitat-Sim's GPU->GPU copy mode to return rendering results in
     # pytorch tensors. Requires Habitat-Sim to be built with --with-cuda.
     # This will generally imply sharing cuda tensors between processes.
@@ -2269,7 +2269,7 @@ class HabitatConfig(HabitatBaseConfig):
     :property env_task: Indicates wether the environment is a Habitat gym environment (`GymHabitatEnv`) or a generic gym environment (`GymRegistryEnv`).
     :property env_task_gym_id: if `env_task` is `GymRegistryEnv`, env_task_gym_id is the identifier of the generic gym environment
     """
-    seed: int = 100
+    seed: int = 300
     # GymHabitatEnv works for all Habitat tasks, including Navigation and
     # Rearrange. To use a gym environment from the registry, use the
     # GymRegistryEnv. Any other environment needs to be created and registered.

@@ -84,28 +84,34 @@ import re
 
 #这是用来看item是什么类型的代码
 import json
-import csv
-json_path = '/home/lht/habitat-lab/data/scene_datasets/hssd-hab/scenes-uncluttered/102344022.scene_instance.json'
-csv_path = '/home/lht/habitat-lab/data/scene_datasets/hssd-hab/semantics/objects.csv'
+import csv,os
+load_scene = ['102344115','103997919_171031233','104348463_171513588','103997970_171031287',
+'108736689_177263340']
+for sc in load_scene:
+    json_path = f'./data/scene_datasets/hssd-hab/scenes-uncluttered/{sc}.scene_instance.json'
+    csv_path = './data/scene_datasets/hssd-hab/semantics/objects.csv'
 
-with open(json_path,'r') as f:
-    json_data = json.load(f)
+    with open(json_path,'r') as f:
+        json_data = json.load(f)
+    final_data = []
+    csv_data = {}
+    with open(csv_path,'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            csv_data[row['id']] = row['name']
+    result = []
+    for obj in json_data["object_instances"]:
+        template_name = obj["template_name"]
+        if template_name in csv_data:
+            name = csv_data[template_name]
+            result.append({"template_name": template_name, "name": name})
 
-csv_data = {}
-with open(csv_path,'r') as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        csv_data[row['id']] = row['name']
-result = []
-for obj in json_data["object_instances"]:
-    template_name = obj["template_name"]
-    if template_name in csv_data:
-        name = csv_data[template_name]
-        result.append({"template_name": template_name, "name": name})
-
-# 输出匹配结果
-for item in result:
-    print(item)
+    # 输出匹配结果
+    for item in result:
+        final_data.append(item)
+    output = f"./scene_dir/{sc}.json"
+    with open(output,'w') as file:
+        json.dump(final_data,file,indent=4)
 
 #这是用来看episode_id能匹配啥manipulation的代码
 # import json
