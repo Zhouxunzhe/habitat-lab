@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional
 import gym.spaces as spaces
 import numpy as np
 import torch
+from habitat_mas.agents.actions.discussion_actions import *
 from habitat_mas.utils import AgentArguments
 from habitat_mas.utils.models import OpenAIModel
 
@@ -62,7 +63,7 @@ ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
     '"""\n{task_description}\n"""\n\n'
     "You have the following capabilities:\n\n"
     '"""\n{capabilities}\n"""\n\n'
-    "I will assign you a subtask. If you don't have any task to do, you will receive \"Nothing to do\". "
+    'I will assign you a subtask. If you don\'t have any task to do, you will receive "Nothing to do". '
     "You should just wait until you receive message from other agents."
     r" If you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
     r' following this format: "{{no||<the reason>}}".'
@@ -123,6 +124,9 @@ def parse_agent_response(text):
     # Find all matches in the text
     matches = re.findall(pattern, text)
 
+    if len(matches) == 0:
+        print("No match found in agent response: ", text)
+        return "no", text
     response, reason = matches[0]
     if response == "yes":
         reason = None  # Use None to indicate no reason
@@ -132,6 +136,9 @@ def parse_agent_response(text):
         )  # Store the reason, strip spaces, or empty if none
 
     return response, reason
+
+
+DISCUSSION_TOOLS = [eval_python_code, add, subtract, multiply, divide]
 
 
 def group_discussion(
@@ -150,11 +157,13 @@ def group_discussion(
         robot_resume=robot_resume_prompt,
         scene_description=scene_description,
     )
-    leader = OpenAIModel(leader_prompt, [])
+    leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True)
     agents = {}
     for robot in robot_resume:
         robot_prompt = get_robot_prompt(robot_resume[robot], task_description, robot)
-        agents[robot] = OpenAIModel(robot_prompt, [])
+        agents[robot] = OpenAIModel(
+            robot_prompt, DISCUSSION_TOOLS, discussion_stage=True
+        )
 
     # robot_id_to_model_map = {
     #     robot_resume[robot]["robot_id"]: agents[robot] for robot in robot_resume
@@ -252,6 +261,7 @@ class MultiLLMPolicy(MultiPolicy):
 
         text_goal = observations["pddl_text_goal"][0].tolist()
         text_goal = "".join([chr(code) for code in text_goal]).strip()
+        # text_goal = "Fill in a tank with water. The tank is 80cm high, 50cm wide, and 50cm deep. The tank is empty. agent_0 has a 1L backet and agent_1 has a 2L bucket. Use function call to compute how many time agent_1 and agent_2 needs to fill the tank to full."
         # Stage 1: If all prev_actions are zero, which means it is the first step of the episode, then we need to do group discussion
         # Given: Robot resume + Scene description + task instruction
         # Output: (Subtask decomposition) + task assignment
