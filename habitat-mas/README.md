@@ -111,7 +111,7 @@ python habitat-lab/habitat/datasets/rearrange/run_hssd_episode_generator.py --ru
 
 `--out`: desired path of your newly generated dataset.
 
-`--type`: the purpose of your dataset, currently there are only three types: `preception`, `manipulation`, `hssd`.
+`--type`: the purpose of your dataset, currently there are three types: `height`, `distance`, `normal`.
 
 Besides, for dataset generation, you should:
 

@@ -33,7 +33,7 @@ from habitat.core.registry import registry
 from habitat.core.simulator import AgentState, Observations
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index, get_largest_two_island
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode
-from habitat.datasets.rearrange.samplers.receptacle import (
+from habitat.datasets.rearrange.samplers.hssd_receptacle import (
     AABBReceptacle,
     find_receptacles,
     parse_receptacles_from_user_config,
@@ -747,9 +747,10 @@ class RearrangeSim(HabitatSim):
 
             obj_counts[obj_handle] += 1
 
-        old_recep_handle = ep_info.info['old_recep_handle']
 
         if new_scene:
+            self.prev_recep = {"template": None, "handle": {}, "translation": None, "rotation": None,
+                               'prev_has_wall_cabinet': False}
             self._receptacles = self._create_recep_info(
                 ep_info.scene_id, list(self._handle_to_object_id.keys())
             )
@@ -777,7 +778,7 @@ class RearrangeSim(HabitatSim):
                 recep_prev.collidable = False
 
             handle_list = rom.get_object_handles()
-            selected_handles = [handle for handle in handle_list if old_recep_handle[:-4] in handle]
+            selected_handles = [handle for handle in handle_list if self.prev_recep['prev_handle'][:-4] in handle]
             sorted_handles= sorted(selected_handles, key=lambda x: int(x.split(':')[-1]))
             self.prev_recep['handle'][self.prev_recep['prev_handle']] = sorted_handles[-1]
 
@@ -786,11 +787,11 @@ class RearrangeSim(HabitatSim):
             self._receptacles_cache[ep_info.scene_id] = receps
             self._receptacles = receps
         elif 'dataset' in ep_info.info and ep_info.info['dataset'] == 'hssd':
-            rom = self.get_rigid_object_manager()
+            old_recep_handle = ep_info.info['old_recep_handle']
             tar_recep_handle = [tar_recep[0] for tar_recep in ep_info.target_receptacles]
             goal_recep_handle = [goal_recep[0] for goal_recep in ep_info.goal_receptacles]
-            if "wall_cabinet" in tar_recep_handle + goal_recep_handle:
-                if old_recep_handle not in self.prev_recep['handle']:
+            if "frl_apartment_wall_cabinet_01_:0000" in tar_recep_handle + goal_recep_handle:
+                if old_recep_handle not in list(self.prev_recep['handle'].keys()):
                     self.prev_recep['handle'][old_recep_handle] = old_recep_handle
                 handle_to_remove = self.prev_recep['handle'][old_recep_handle]
                 recep_to_remove = rom.get_object_by_handle(handle_to_remove)
