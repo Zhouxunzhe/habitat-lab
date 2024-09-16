@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os.path
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import magnum as mn
 import numpy as np
 from tqdm import tqdm
+import traceback
 
 import habitat.datasets.rearrange.samplers as samplers
 import habitat.sims.habitat_simulator.sim_utilities as sutils
@@ -30,7 +31,7 @@ from habitat.datasets.rearrange.navmesh_utils import (
     path_is_navigable_given_robot,
 )
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode
-from habitat.datasets.rearrange.samplers.receptacle import (
+from habitat.datasets.rearrange.samplers.hssd_receptacle import (
     OnTopOfReceptacle,
     Receptacle,
     ReceptacleSet,
@@ -51,7 +52,7 @@ def get_sample_region_ratios(load_dict) -> Dict[str, float]:
     return sample_region_ratios
 
 
-class RearrangeEpisodeGenerator:
+class HssdRearrangeEpisodeGenerator:
     """Generator class encapsulating logic for procedurally sampling individual episodes for general rearrangement task.
 
     Initialized from a provided configuration file defining dataset paths, object,scene,and receptacle sets, and state sampler parameters.
@@ -61,7 +62,7 @@ class RearrangeEpisodeGenerator:
     See `test_rearrange_episode_generator()` in test/test_rearrange_task.py for unit test example.
     """
 
-    def __enter__(self) -> "RearrangeEpisodeGenerator":
+    def __enter__(self) -> "HssdRearrangeEpisodeGenerator":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -83,7 +84,7 @@ class RearrangeEpisodeGenerator:
         :param cfg: The RearrangeEpisodeGeneratorConfig.
         :param debug_visualization: Whether or not to generate debug images and videos.
         :param limit_scene_set: Option to limit all generation to a single scene set.
-        :param num_episodes: The number of episodes which this RearrangeEpisodeGenerator will generate. Accuracy required only for BalancedSceneSampler.
+        :param num_episodes: The number of episodes which this HssdRearrangeEpisodeGenerator will generate. Accuracy required only for BalancedSceneSampler.
         """
         # load and cache the config
         self.cfg = cfg
@@ -198,7 +199,7 @@ class RearrangeEpisodeGenerator:
         """
         Extracts object sampler parameters from the yaml config file and constructs the sampler objects.
         """
-        self._obj_samplers: Dict[str, samplers.ObjectSampler] = {}
+        self._obj_samplers: Dict[str, samplers.HssdObjectSampler] = {}
 
         for obj_sampler_info in self.cfg.object_samplers:
             assert "name" in obj_sampler_info
@@ -225,7 +226,7 @@ class RearrangeEpisodeGenerator:
                     )
                 self._obj_samplers[
                     obj_sampler_info["name"]
-                ] = samplers.ObjectSampler(
+                ] = samplers.HssdObjectSampler(
                     object_set=object_handles,
                     allowed_recep_set_names=obj_sampler_info["params"][
                         "receptacle_sets"
@@ -261,7 +262,7 @@ class RearrangeEpisodeGenerator:
         Initialize target samplers. Expects self.episode_data to be populated by object samples.
         """
 
-        self._target_samplers: Dict[str, samplers.ObjectTargetSampler] = {}
+        self._target_samplers: Dict[str, samplers.HssdObjectTargetSampler] = {}
         for target_sampler_info in self.cfg.object_target_samplers:
             assert "name" in target_sampler_info
             assert "type" in target_sampler_info
@@ -274,7 +275,7 @@ class RearrangeEpisodeGenerator:
 
                 self._target_samplers[
                     target_sampler_info["name"]
-                ] = samplers.ObjectTargetSampler(
+                ] = samplers.HssdObjectTargetSampler(
                     # Add object set later
                     object_instance_set=[],
                     allowed_recep_set_names=target_sampler_info["params"][
@@ -451,21 +452,29 @@ class RearrangeEpisodeGenerator:
             self.dbv.debug_obs.append(self.dbv.get_observation())
 
     def generate_episodes(
-        self, num_episodes: int = 1, verbose: bool = False
+        self, num_episodes: int = 1, verbose: bool = False,
+        sample_mode: str = None
     ) -> List[RearrangeEpisode]:
         """
         Generate a fixed number of episodes.
         """
         generated_episodes: List[RearrangeEpisode] = []
         failed_episodes = 0
+        total_episodes = 0
         if verbose:
             pbar = tqdm(total=num_episodes)
         while len(generated_episodes) < num_episodes:
+            logger.info(f"Generating... succeeded / total: {len(generated_episodes)} / {total_episodes}")
+            total_episodes += 1
             try:
                 self._scene_sampler.set_cur_episode(len(generated_episodes))
-                new_episode = self.generate_single_episode()
-            except Exception:
+                new_episode = self.generate_single_episode(sample_mode)
+                if new_episode is None:
+                    continue
+            except Exception as e:
                 new_episode = None
+                trace = traceback.format_exc()
+                logger.error(f"An error occurred: {trace}")
                 logger.error("Generation failed with exception...")
             if new_episode is None:
                 failed_episodes += 1
@@ -477,12 +486,12 @@ class RearrangeEpisodeGenerator:
             pbar.close()
 
         logger.info(
-            f"Generated {num_episodes} episodes in {num_episodes+failed_episodes} tries."
+            f"Generated {num_episodes} episodes in {num_episodes + failed_episodes} tries."
         )
 
         return generated_episodes
 
-    def generate_single_episode(self) -> Optional[RearrangeEpisode]:
+    def generate_single_episode(self, sample_mode) -> Optional[RearrangeEpisode]:
         """
         Generate a single episode, sampling the scene.
         """
@@ -495,8 +504,10 @@ class RearrangeEpisodeGenerator:
 
         self._reset_samplers()
         self.episode_data: Dict[str, Dict[str, Any]] = {
-            "sampled_objects": {},  # object sampler name -> sampled object instances
-            "sampled_targets": {},  # target sampler name -> (object, target state)
+            "sampled_objects": {},
+            # object sampler name -> sampled object instances
+            "sampled_targets": {},
+            # target sampler name -> (object, target state)
         }
 
         ep_scene_handle = self.generate_scene()
@@ -505,6 +516,29 @@ class RearrangeEpisodeGenerator:
         recep_tracker.init_scene_filters(
             mm=self.sim.metadata_mediator, scene_handle=ep_scene_handle
         )
+
+        # Randomly replace one receptacle in hssd with replica cabinet
+        # get all receptcles
+        all_recep = find_receptacles(self.sim)
+        # remove a random receptacle
+        rom = self.sim.get_rigid_object_manager()
+        recep_to_remove = random.choice(all_recep)
+        recep_handle_to_remove = recep_to_remove.parent_object_handle
+        receptacle_to_remove = rom.get_object_by_handle(recep_handle_to_remove)
+        rotation_to_move = receptacle_to_remove.rotation
+        translation_to_move = receptacle_to_remove.translation
+        rom.remove_object_by_id(
+            receptacle_to_remove.object_id
+        )
+        # add wall cabinet to the origin place of the sampled receptacle
+        otm = self.sim.get_object_template_manager()
+        recep_path_to_add = f"data/replica_cad/configs/objects/frl_apartment_wall_cabinet_01.object_config.json"
+        recep_path_to_add = os.path.abspath(recep_path_to_add)
+        assert otm.get_library_has_handle(recep_path_to_add), "recep not loaded"
+        receptacle_to_add = rom.add_object_by_template_handle(recep_path_to_add)
+        translation_to_move[1] = receptacle_to_add.com.y - receptacle_to_add.collision_shape_aabb.min.y
+        receptacle_to_add.rotation = rotation_to_move
+        receptacle_to_add.translation = translation_to_move
 
         scene_name = ep_scene_handle.split(".")[0]
         navmesh_path = osp.join(
@@ -552,14 +586,10 @@ class RearrangeEpisodeGenerator:
         largest_indoor_island_id = get_largest_island_index(
             self.sim.pathfinder, self.sim, allow_outdoor=False
         )
-
-        # sample and allocate receptacles to contain the target objects
-        target_receptacles = defaultdict(list)
-        all_target_receptacles = []
-        for sampler_name, num_targets in target_numbers.items():
-            new_target_receptacles: List[Receptacle] = []
-            failed_samplers: Dict[str, bool] = defaultdict(bool)
-            while len(new_target_receptacles) < num_targets:
+        # largest_indoor_island_id = -1
+        def sample_recep(sample_mode):
+            new_receptacle = []
+            while len(new_receptacle) == 0:
                 assert len(failed_samplers.keys()) < len(
                     targ_sampler_name_to_obj_sampler_names[sampler_name]
                 ), f"All target samplers failed to find a match for '{sampler_name}'."
@@ -568,29 +598,46 @@ class RearrangeEpisodeGenerator:
                 )
 
                 sampler = self._obj_samplers[obj_sampler_name]
-                new_receptacle = None
+                # optionally constrain to the largest indoor island
+                nav_island = -1
+                if sampler._constrain_to_largest_nav_island:
+                    nav_island = largest_indoor_island_id
                 try:
                     new_receptacle = sampler.sample_receptacle(
-                        self.sim, recep_tracker
+                        self.sim,
+                        recep_tracker,
+                        sample_mode=sample_mode,
+                        nav_island=nav_island,
                     )
+                    if new_receptacle is None:
+                        logger.warning("No receptacle instances found matching this sampler's requirements")
+                        continue
                 except AssertionError:
                     # No receptacle instances found matching this sampler's requirements, likely ran out of allocations and a different sampler should be tried
-                    failed_samplers[obj_sampler_name]
+                    logger.warning("No receptacle instances found matching this sampler's requirements")
                     continue
 
                 if recep_tracker.allocate_one_placement(new_receptacle):
                     # used up new_receptacle, need to recompute the sampler's receptacle_candidates
                     sampler.receptacle_candidates = None
-                # optionally constrain to the largest indoor island
-                nav_island = -1
-                if sampler._constrain_to_largest_nav_island:
-                    nav_island = largest_indoor_island_id
                 new_receptacle = get_navigable_receptacles(
-                    self.sim, [new_receptacle], nav_island
+                    self.sim, [new_receptacle], nav_island,
                 )  # type: ignore
-                if len(new_receptacle) != 0:  # type: ignore
-                    new_target_receptacles.append(new_receptacle[0])  # type: ignore
 
+            return new_receptacle, obj_sampler_name
+
+        # sample and allocate receptacles to contain the target objects
+        target_receptacles = defaultdict(list)
+        all_target_receptacles = []
+        for sampler_name, num_targets in target_numbers.items():
+            new_target_receptacles: List[Receptacle] = []
+            failed_samplers: Dict[str, bool] = defaultdict(bool)
+            # while len(new_target_receptacles) < num_targets:
+            # TODO(zxz): now only two receps and objs here
+            new_receptacle, obj_sampler_name = sample_recep(sample_mode)
+            new_target_receptacles.append(new_receptacle[0])  # type: ignore
+            new_receptacle, obj_sampler_name = sample_recep('normal')
+            new_target_receptacles.append(new_receptacle[0])  # type: ignore
             target_receptacles[obj_sampler_name].extend(new_target_receptacles)
             all_target_receptacles.extend(new_target_receptacles)
 
@@ -607,25 +654,27 @@ class RearrangeEpisodeGenerator:
                 len(new_goal_receptacles) < num_targets
                 and num_iterations < max_iterations
             ):
+                # optionally constrain to the largest indoor island
+                nav_island = -1
+                if sampler._constrain_to_largest_nav_island:
+                    nav_island = largest_indoor_island_id
                 num_iterations += 1
                 new_receptacle = sampler.sample_receptacle(
                     self.sim,
                     recep_tracker,
+                    sample_mode='normal'
                 )
                 if isinstance(new_receptacle, OnTopOfReceptacle):
                     new_receptacle.set_episode_data(self.episode_data)
                 if recep_tracker.allocate_one_placement(new_receptacle):
                     # used up new_receptacle, need to recompute the sampler's receptacle_candidates
                     sampler.receptacle_candidates = None
-                # optionally constrain to the largest indoor island
-                nav_island = -1
-                if sampler._constrain_to_largest_nav_island:
-                    nav_island = largest_indoor_island_id
                 new_receptacle = get_navigable_receptacles(
                     self.sim, [new_receptacle], nav_island
                 )  # type: ignore
                 if len(new_receptacle) != 0:  # type: ignore
-                    new_goal_receptacles.append(new_receptacle[0])  # type: ignore
+                    new_goal_receptacles.append(
+                        new_receptacle[0])  # type: ignore
             assert (
                 len(new_goal_receptacles) == num_targets
             ), "Unable to sample goal Receptacles for all requested targets."
@@ -677,8 +726,8 @@ class RearrangeEpisodeGenerator:
                 [
                     obj.handle
                     for obj in new_objects[
-                        : len(target_receptacles[sampler_name])
-                    ]
+                               : len(target_receptacles[sampler_name])
+                               ]
                 ]
             )
             for obj, rec in zip(new_objects, receptacles):
@@ -764,20 +813,49 @@ class RearrangeEpisodeGenerator:
                 # Add check for checking if the robot can navigate from start to goal
                 # given the navmesh of the robot
                 if self.cfg.check_navigable:
-                    is_navigable = path_is_navigable_given_robot(
-                        sim=self.sim,
-                        start_pos=match_obj.translation,
-                        goal_pos=new_target_obj.translation,
-                        robot_navmesh_offsets=self.cfg.navmesh_offset,
-                        collision_rate_threshold=self.cfg.max_collision_rate_for_navigable,
-                        selected_island=largest_indoor_island_id,
-                        angle_threshold=self.cfg.angle_threshold,
-                        angular_speed=self.cfg.angular_velocity,
-                        distance_threshold=self.cfg.distance_threshold,
-                        linear_speed=self.cfg.linear_velocity,
-                        dbv=self.dbv,
-                        render_debug_video=False,
-                    )
+                    is_navigable = False
+                    # check not -1 island
+                    island_areas = [
+                        (island_ix, self.sim.pathfinder.island_area(island_index=island_ix))
+                        for island_ix in range(self.sim.pathfinder.num_islands)
+                    ]
+                    for i in range(len(island_areas)):
+                        snapped_point = self.sim.pathfinder.snap_point(match_obj.translation, i)
+                        if not np.isnan(snapped_point).any():
+                            selected_island = i
+                            is_navigable = path_is_navigable_given_robot(
+                                sim=self.sim,
+                                start_pos=match_obj.translation,
+                                goal_pos=new_target_obj.translation,
+                                robot_navmesh_offsets=self.cfg.navmesh_offset,
+                                collision_rate_threshold=self.cfg.max_collision_rate_for_navigable,
+                                selected_island=selected_island,
+                                angle_threshold=self.cfg.angle_threshold,
+                                angular_speed=self.cfg.angular_velocity,
+                                distance_threshold=self.cfg.distance_threshold,
+                                linear_speed=self.cfg.linear_velocity,
+                                dbv=self.dbv,
+                                render_debug_video=False,
+                            )
+                            if is_navigable:
+                                break
+                    # check -1 island
+                    if not is_navigable:
+                        is_navigable = path_is_navigable_given_robot(
+                            sim=self.sim,
+                            start_pos=match_obj.translation,
+                            goal_pos=new_target_obj.translation,
+                            robot_navmesh_offsets=self.cfg.navmesh_offset,
+                            collision_rate_threshold=self.cfg.max_collision_rate_for_navigable,
+                            selected_island=-1,
+                            angle_threshold=self.cfg.angle_threshold,
+                            angular_speed=self.cfg.angular_velocity,
+                            distance_threshold=self.cfg.distance_threshold,
+                            linear_speed=self.cfg.linear_velocity,
+                            dbv=self.dbv,
+                            render_debug_video=False,
+                        )
+                    # not navigable
                     if not is_navigable:
                         logger.info(
                             f"Collision rate greater than {self.cfg.max_collision_rate_for_navigable}, discarding episode."
@@ -798,6 +876,7 @@ class RearrangeEpisodeGenerator:
                     target_object.root_scene_node.cumulative_bb.size()
                 )
                 target_transform = target_object.transformation
+                # check the function of self.episode_data["sampled_targets"]
                 self.episode_data["sampled_targets"][
                     instance_handle
                 ] = np.array(target_transform)
@@ -823,6 +902,7 @@ class RearrangeEpisodeGenerator:
 
         # collect final object states and serialize the episode
         # TODO: creating shortened names should be automated and embedded in the objects to be done in a uniform way
+        # TODO(zxz): set rigid objects on the desired places
         sampled_rigid_object_states = []
         for sampled_obj in self.ep_sampled_objects:
             creation_attrib = sampled_obj.creation_attributes
@@ -838,14 +918,19 @@ class RearrangeEpisodeGenerator:
 
         self.num_ep_generated += 1
 
-        def extract_recep_info(recep):
-            return (recep.parent_object_handle, recep.parent_link)
+        def extract_recep_info(recep, rom):
+            receptacle = rom.get_object_by_handle(recep.parent_object_handle)
+            transformation = receptacle.transformation
+            transformation_list = np.array([[transformation[i][j] for j in range(4)] for i in range(4)]).T
+            translation = receptacle.translation
+            translation_list = np.array(translation)
+            return recep.parent_object_handle, transformation_list, translation_list
 
         save_target_receps = [
-            extract_recep_info(x) for x in all_target_receptacles
+            extract_recep_info(x, rom) for x in all_target_receptacles
         ]
         save_goal_receps = [
-            extract_recep_info(x) for x in all_goal_receptacles
+            extract_recep_info(x, rom) for x in all_goal_receptacles
         ]
 
         name_to_receptacle = {
@@ -872,7 +957,11 @@ class RearrangeEpisodeGenerator:
             goal_receptacles=save_goal_receps,
             markers=self.cfg.markers,
             name_to_receptacle=name_to_receptacle,
-            info={"object_labels": target_refs},
+            info={
+                "object_labels": target_refs,
+                "dataset": "hssd",
+                "old_recep_handle": recep_handle_to_remove,
+            },
         )
 
     def initialize_sim(self, scene_name: str, dataset_path: str) -> None:
@@ -993,7 +1082,7 @@ class RearrangeEpisodeGenerator:
                 settle_db_obs.append(self.dbv.get_observation())
 
         logger.info(
-            f"   ...done with placement stability analysis in {time.time()-settle_start_time} seconds."
+            f"   ...done with placement stability analysis in {time.time() - settle_start_time} seconds."
         )
         # check stability of placements
         logger.info(
@@ -1028,7 +1117,7 @@ class RearrangeEpisodeGenerator:
                         ],
                     ).save(self.dbv.output_path, prefix="unstable_")
         logger.info(
-            f" : unstable={len(unstable_placements)}|{len(self.ep_sampled_objects)} ({len(unstable_placements)/len(self.ep_sampled_objects)*100}%) : {unstable_placements}."
+            f" : unstable={len(unstable_placements)}|{len(self.ep_sampled_objects)} ({len(unstable_placements) / len(self.ep_sampled_objects) * 100}%) : {unstable_placements}."
         )
         logger.info(
             f" : Maximum displacement from settling = {max_settle_displacement}"

@@ -15,10 +15,10 @@ from omegaconf import OmegaConf
 
 from habitat.core.logging import logger
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeDatasetV0
-from habitat.datasets.rearrange.rearrange_generator import (
-    RearrangeEpisodeGenerator,
+from habitat.datasets.rearrange.hssd_generator import (
+    HssdRearrangeEpisodeGenerator,
 )
-from habitat.datasets.rearrange.samplers.receptacle import (
+from habitat.datasets.rearrange.samplers.hssd_receptacle import (
     get_all_scenedataset_receptacles,
 )
 
@@ -346,6 +346,18 @@ def get_arg_parser():
         help="The number of episodes to generate.",
     )
     parser.add_argument("--seed", type=int)
+    parser.add_argument(
+        "--type",
+        type=str,
+        default=None,
+        help="the use of the episode datasets.",
+    )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Relative path to robot resume.",
+    )
     return parser
 
 
@@ -370,7 +382,7 @@ if __name__ == "__main__":
     logger.info(f"\n\nModified Config:\n{cfg}\n\n")
 
     dataset = RearrangeDatasetV0()
-    with RearrangeEpisodeGenerator(
+    with HssdRearrangeEpisodeGenerator(
         cfg=cfg,
         debug_visualization=args.debug,
         limit_scene_set=args.limit_scene_set,
@@ -386,11 +398,22 @@ if __name__ == "__main__":
             print_metadata_mediator(ep_gen)
         else:
             import time
+            import json
+
+            resume = None
+            if args.resume is not None:
+                assert osp.exists(
+                    args.resume
+                ), f"Provided resume, '{args.resume}', does not exist."
+                with open(args.resume, 'r', encoding='utf-8') as file:
+                    resume = json.load(file)
 
             start_time = time.time()
+
             dataset.episodes += ep_gen.generate_episodes(
-                args.num_episodes, args.verbose
+                args.num_episodes, args.verbose, args.type
             )
+
             output_path = args.out
             if output_path is None:
                 # default
@@ -420,7 +443,7 @@ if __name__ == "__main__":
                 "=============================================================="
             )
             logger.info(
-                f"RearrangeEpisodeGenerator generated {args.num_episodes} episodes in {time.time()-start_time} seconds."
+                f"HssdRearrangeEpisodeGenerator generated {args.num_episodes} episodes in {time.time()-start_time} seconds."
             )
             logger.info(
                 f"RearrangeDatasetV0 saved to '{osp.abspath(output_path)}'"
