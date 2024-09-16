@@ -437,8 +437,8 @@ class RearrangeSim(HabitatSim):
             (False, False): "none"
         } 
 
-        if agent_type == "DJIDrone":
-            agent_type = "DJIDrone_default"
+        if agent_type == "DJIDrone" or agent_type == "StretchRobot":
+            agent_type += "_default"
         elif agent_type == "SpotRobot":
             agent_type = f"SpotRobot_{flag_map_spot[(has_head, has_arm, has_jaw)]}"
         else:
