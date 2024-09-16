@@ -341,7 +341,7 @@ class MP3DGenerator:
                 sim=self.sim,
                 near_dist=closest_dist_limit,
                 far_dist=furthest_dist_limit,
-                min_height_dist=2.0,
+                min_height_dist=2.5,
             )
             if not is_compatible:
                 num_tries += 1

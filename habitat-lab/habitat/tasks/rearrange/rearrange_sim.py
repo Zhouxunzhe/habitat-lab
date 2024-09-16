@@ -117,6 +117,7 @@ class RearrangeSim(HabitatSim):
         self._viz_objs: Dict[str, Any] = {}
         self._draw_bb_objs: List[int] = []
 
+        self.scene_type = self.habitat_config.scene_type
         self.agents_mgr = ArticulatedAgentManager(self.habitat_config, self)
 
         # Setup config options.
