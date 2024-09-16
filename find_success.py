@@ -177,6 +177,7 @@ def datatrans_2_end_single_agent_objectcentric(process_dir:str,skip_len:int,pick
     return sample_info
 def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_place_sample_num=3) -> list:
     find_episode = []
+    skip_len_start = skip_len
     process_dir_path = os.path.join('./video_dir',process_dir)
     for folder_name in os.listdir(process_dir_path):
         json_path = os.path.join(process_dir_path,folder_name,"sum_data.json")
@@ -218,9 +219,25 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
             data_final_0.append(turn1)
             nav_1_point = [action_point_index[0]]
             i = action_point_index[0]
+            skip_len = skip_len_start +random.randint(-5,5)
             while i +skip_len < action_point_index[1]:
-                i +=skip_len
-                nav_1_point.append(i)
+                now_step = i
+                if i+skip_len+14 >= action_point_index[1]:
+                    i = action_point_index[1]
+                else:
+                    i +=skip_len
+                skip_len = skip_len_start +random.randint(-5,5)
+                test_step = i
+                for a in range(now_step,test_step):
+                    test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
+                                                 point_3d=data[test_step]["agent_0_now_worldloc"][:3])
+                    x,y = test_point
+                    if not ((x<=256 and x>=0) and(y<=256 and y>=0)):
+                        test_step -=1
+                    else:
+                        break
+                nav_1_point.append(test_step)
+                i = test_step
             nav_1_point.append(action_point_index[1])
             for i in range(len(nav_1_point)):
                 if i+1< len(nav_1_point):
@@ -257,9 +274,25 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
             data_final_0.append(turn2)
             nav_2_point = [action_point_index[3]]
             i = action_point_index[3]
+            skip_len = skip_len_start +random.randint(-5,5)
             while i +skip_len < action_point_index[4]:
-                i +=skip_len
-                nav_2_point.append(i)
+                now_step = i
+                if i+skip_len+14 >= action_point_index[4]:
+                    i = action_point_index[4]
+                else:
+                    i +=skip_len
+                skip_len = skip_len_start +random.randint(-5,5)
+                test_step = i
+                for a in range(now_step,test_step):
+                    test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
+                                                 point_3d=data[test_step]["agent_0_now_worldloc"][:3])
+                    x,y = test_point
+                    if not ((x<=256 and x>=0) and(y<=256 and y>=0)):
+                        test_step -=1
+                    else:
+                        break
+                nav_2_point.append(test_step)
+                i = test_step
             nav_2_point.append(action_point_index[4])
             for i in range(len(nav_2_point)):
                 if i+1< len(nav_2_point):

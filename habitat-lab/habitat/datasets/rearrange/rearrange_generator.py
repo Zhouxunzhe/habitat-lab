@@ -470,7 +470,7 @@ class RearrangeEpisodeGenerator:
             try:
                 self._scene_sampler.set_cur_episode(len(generated_episodes))
                 new_episode = self.generate_single_episode()
-                if new_episode is None:
+                if new_episode is None and new_episode.target_receptacles[0][0]==new_episode.goal_receptacles[0][0]:
                     continue
                 rigid_objs = new_episode.rigid_objs
                 target_objs = new_episode.targets

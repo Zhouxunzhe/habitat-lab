@@ -7,7 +7,7 @@ from ruamel.yaml import YAML
 from find_success import datatrans_2_end,datatrans_2_end_single_agent_waypoint,datatrans_2_end_single_agent_objectcentric
 import os
 from datatrans_batch import process_directory
-import shutil
+import shutil,random
 yaml = YAML()
 def clear_directory(path):
     for filename in os.listdir(path):
@@ -21,8 +21,9 @@ def clear_directory(path):
             print(f'Failed to delete {file_path}. Reason: {e}')
 
 def run_script(args):
-    file_path,skip_len, base_directory,gpu_id = args
+    file_path,skip_len, base_directory,gpu_id,scene = args
     a = ["disk"]
+    seed = random.randint(100, 200)
     cmd = [
         "python", "-u", "-m", "habitat_baselines.run",
         "--config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml",
@@ -33,16 +34,17 @@ def run_script(args):
         f"habitat_baselines.torch_gpu_id={gpu_id}",
         f"habitat_baselines.eval.video_option={a}",
         f"habitat_baselines.eval.video_option_new=False",
-        f"habitat_baselines.image_dir=video_dir/{file_path}",
-        f"habitat.dataset.data_path=data/datasets/hssd_demo/{file_path}"
+        f"habitat_baselines.image_dir=video_dir/{scene}/{file_path}",
+        f"habitat.seed={seed}",
+        f"habitat.dataset.data_path=data/datasets/hssd_scene/{scene}/{file_path}"
     ]
     log_file = f"./log/example_{file_path}.log"
     with open(log_file, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
     time.sleep(1)
-    process_directory(os.path.join(base_directory,file_path),skip_len=skip_len)
+    process_directory(os.path.join(base_directory,scene,file_path),skip_len=skip_len)
     print("finish_trans")
-    sample_info = datatrans_2_end_single_agent_objectcentric(process_dir=file_path,skip_len = skip_len)
+    sample_info = datatrans_2_end_single_agent_waypoint(process_dir=f"{scene}/{file_path}",skip_len = skip_len)
     if not sample_info:
         print("no sample_info,Exiting process.")
         return 
@@ -52,11 +54,14 @@ def run_script(args):
     with open(llm_yaml_path,'r') as file:
         data = yaml.load(file)
     data['habitat_baselines']['eval']['episode_stored'] = sample_info
-    with open(f'./habitat-baselines/habitat_baselines/config/override/{file_path}.yaml','w') as file:
+    scene_yaml_path = os.path.join('./habitat-baselines/habitat_baselines/config/override',scene)
+    if not os.path.exists(scene_yaml_path):
+        os.mkdir(scene_yaml_path)
+    with open(os.path.join(scene_yaml_path,f'{file_path}.yaml'),'w') as file:
         yaml.dump(data,file)
     cmd = [
         "python", "-u", "-m", "habitat_baselines.run",
-        f"--config-name=override/{file_path}.yaml",
+        f"--config-name=override/{scene}/{file_path}.yaml",
         "habitat_baselines.evaluate=True",
         "habitat_baselines.num_environments=1",
         f"habitat_baselines.eval.json_option=[]",
@@ -64,10 +69,11 @@ def run_script(args):
         f"habitat.simulator.habitat_sim_v0.gpu_device_id={gpu_id}",
         f"habitat_baselines.torch_gpu_id={gpu_id}",
         f"habitat_baselines.eval.video_option_new=False",
-        f"habitat_baselines.image_dir=video_dir/{file_path}",
+        f"habitat_baselines.image_dir=video_dir/{scene}/{file_path}",
         f"habitat_baselines.eval.image_option={a}",
+        f"habitat.seed={seed}",
         # f"habitat_baselines.eval.episode_stored={sample_info}",
-        f"habitat.dataset.data_path=data/datasets/hssd_demo/{file_path}"
+        f"habitat.dataset.data_path=data/datasets/hssd_scene/102344115/{file_path}"
     ]
     log_file = f"./log/example_new_{file_path}.log"
     with open(log_file, "w") as f:
@@ -76,19 +82,22 @@ def run_script(args):
 
 if __name__ == "__main__":
     clear_directory('./habitat-baselines/habitat_baselines/config/override/')
-    sum_episode = dp_config.sum_episode
-    epnum_per_gz = dp_config.epnum_per_gz
-    gz_start = dp_config.gz_start
-    num_gz = int((sum_episode/epnum_per_gz)-gz_start)
-    skip_len = dp_config.skip_len
-    base_directory = dp_config.base_directory
-    zip_files = [(f"data_{i}.json.gz",int(i%2)) for i in range(gz_start,gz_start+num_gz)]
-    process_num = dp_config.process_num
-    total_batches = len(zip_files)//process_num
-    with multiprocessing.Pool(processes=process_num) as pool:
-        args = [(file_path, skip_len, base_directory,gpu_id) for file_path,gpu_id in zip_files]
-        for _ in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
-            pass
+    for scene in dp_config.sample_scene:
+        sum_episode = dp_config.sum_episode
+        epnum_per_gz = dp_config.epnum_per_gz
+        gz_start = dp_config.gz_start
+        gpu_num = dp_config.gpu_num
+        num_gz = int((sum_episode/epnum_per_gz)-gz_start)
+        skip_len = dp_config.skip_len
+        base_directory = dp_config.base_directory
+        zip_files = [(f"data_{i}.json.gz",int(i%gpu_num)) for i in range(gz_start,gz_start+num_gz)]
+        process_num = dp_config.process_num
+        total_batches = len(zip_files)//process_num
+        with multiprocessing.Pool(processes=process_num) as pool:
+            args = [(file_path, skip_len,base_directory,gpu_id,scene) for file_path,gpu_id in zip_files]
+            for _ in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
+                pass
+        print(f"FINISH------{scene}")
     # with tqdm(total=len(zip_files),desc = "Processing Files") as pbar: 
     #     for i in range(0, len(zip_files), batch_size):
     #         batch = zip_files[i:i + batch_size]  

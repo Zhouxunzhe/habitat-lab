@@ -1,7 +1,7 @@
 # bin/bash
 python -u -m habitat_baselines.run \
     --config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml \
-    habitat.dataset.data_path=data/datasets/test/policy_hssd.json.gz
+    habitat.dataset.data_path=data/datasets/hssd_scene/102344115/data_0.json.gz
 
 
 #运行机制：habitat_mas_evaluator中调用agent.actor_critic.act执行，此处方法是HierarchicalPolicy的方法
