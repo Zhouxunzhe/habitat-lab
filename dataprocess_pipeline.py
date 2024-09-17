@@ -9,6 +9,16 @@ import os
 from datatrans_batch import process_directory
 import shutil,random
 yaml = YAML()
+import zipfile
+import gzip
+import shutil
+import os
+def unzip_gz_file(gz_file_path, extract_to):
+    os.makedirs(extract_to, exist_ok=True)
+    output_file_path = os.path.join(extract_to, os.path.basename(gz_file_path).replace('.gz', ''))
+    with gzip.open(gz_file_path, 'rb') as gz_file:
+        with open(output_file_path, 'wb') as out_file:
+            shutil.copyfileobj(gz_file, out_file)
 def clear_directory(path):
     for filename in os.listdir(path):
         file_path = os.path.join(path, filename)
@@ -22,6 +32,7 @@ def clear_directory(path):
 
 def run_script(args):
     file_path,skip_len, base_directory,gpu_id,scene = args
+    
     a = ["disk"]
     seed = random.randint(100, 200)
     cmd = [
@@ -78,6 +89,12 @@ def run_script(args):
     log_file = f"./log/example_new_{file_path}.log"
     with open(log_file, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
+    scene_json_filename = file_path[:-3] if file_path.endswith('.gz') else file_path
+    scene_json_path = f'./data/datasets/hssd_scene/{scene}/{scene_json_filename}'
+    scene_target_path = f'./video_dir/{scene}/{file_path}'
+    os.makedirs(scene_target_path, exist_ok=True)
+    destination_file_path = os.path.join(scene_target_path, scene_json_filename)
+    shutil.move(scene_json_path, destination_file_path)
     time.sleep(1)
 
 if __name__ == "__main__":

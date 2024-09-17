@@ -238,7 +238,8 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                         break
                 nav_1_point.append(test_step)
                 i = test_step
-            nav_1_point.append(action_point_index[1])
+            if nav_1_point[-1] != action_point_index[1]:
+                nav_1_point.append(action_point_index[1])
             for i in range(len(nav_1_point)):
                 if i+1< len(nav_1_point):
                     nav_temp = {
@@ -293,7 +294,8 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                         break
                 nav_2_point.append(test_step)
                 i = test_step
-            nav_2_point.append(action_point_index[4])
+            if nav_2_point[-1] != action_point_index[4]:
+                nav_2_point.append(action_point_index[4])
             for i in range(len(nav_2_point)):
                 if i+1< len(nav_2_point):
                     nav_temp = {
@@ -312,7 +314,7 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                     place_temp = {
                         "step":data[place_skip+action_point_index[4]]["step"],
                         "action":{
-                            "name":"pick",
+                            "name":"place",
                             "position":data[place_skip+action_point_index[4]]["agent_0_target"]
                         },
                         "image":f"frame_"+str(data[place_skip+action_point_index[4]]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
