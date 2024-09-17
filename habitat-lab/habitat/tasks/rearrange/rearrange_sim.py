@@ -33,7 +33,7 @@ from habitat.core.registry import registry
 from habitat.core.simulator import AgentState, Observations
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index, get_largest_two_island
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode
-from habitat.datasets.rearrange.samplers.receptacle import (
+from habitat.datasets.rearrange.samplers.hssd_receptacle import (
     AABBReceptacle,
     find_receptacles,
     parse_receptacles_from_user_config,
@@ -149,6 +149,8 @@ class RearrangeSim(HabitatSim):
         self._should_setup_semantic_ids = (
             self.habitat_config.should_setup_semantic_ids
         )
+        self.prev_recep = {"template": None, "handle": {}, "translation": None, "rotation": None,
+                           'prev_has_wall_cabinet': False}
 
     def enable_perf_logging(self):
         """
@@ -285,7 +287,7 @@ class RearrangeSim(HabitatSim):
         self.ep_info = ep_info
         mp3d = 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d'
 
-        new_scene = (self.prev_scene_id != ep_info.scene_id) or mp3d
+        new_scene = self.prev_scene_id != ep_info.scene_id or mp3d
         if new_scene:
             self._prev_obj_names = None
 
@@ -293,7 +295,7 @@ class RearrangeSim(HabitatSim):
         ep_info.rigid_objs = sorted(ep_info.rigid_objs, key=lambda x: x[0])
         obj_names = [x[0] for x in ep_info.rigid_objs]
         # Only remove and re-add objects if we have a new set of objects.
-        should_add_objects = (self._prev_obj_names != obj_names) or mp3d
+        should_add_objects = self._prev_obj_names != obj_names or mp3d
         self._prev_obj_names = obj_names
 
         self.agents_mgr.pre_obj_clear()
@@ -746,11 +748,13 @@ class RearrangeSim(HabitatSim):
 
             obj_counts[obj_handle] += 1
 
+
         if new_scene:
+            self.prev_recep = {"template": None, "handle": {}, "translation": None, "rotation": None,
+                               'prev_has_wall_cabinet': False}
             self._receptacles = self._create_recep_info(
                 ep_info.scene_id, list(self._handle_to_object_id.keys())
             )
-    
             ao_mgr = self.get_articulated_object_manager()
             # Make all articulated objects (including the robots) kinematic
             for aoi_handle in ao_mgr.get_object_handles():
@@ -761,9 +765,50 @@ class RearrangeSim(HabitatSim):
                     for motor_id in ao.existing_joint_motor_ids:
                         ao.remove_joint_motor(motor_id)
                 self.art_objs.append(ao)
+        elif self.prev_recep['prev_has_wall_cabinet']:
+            # remove wall_cabinet if previous episode has
+            wall_handle = "frl_apartment_wall_cabinet_01_:0000"
+            assert wall_handle in rom.get_object_handles(), "can not find wall cabinet in previous episode"
+            rom.remove_object_by_handle(wall_handle)
+            # add prev remove recep
+            recep_prev = rom.add_object_by_template_handle(self.prev_recep['template'])
+            recep_prev.translation = self.prev_recep['translation']
+            recep_prev.rotation = self.prev_recep['rotation']
+            if self._kinematic_mode:
+                recep_prev.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                recep_prev.collidable = False
+
+            handle_list = rom.get_object_handles()
+            selected_handles = [handle for handle in handle_list if self.prev_recep['prev_handle'][:-4] in handle]
+            sorted_handles= sorted(selected_handles, key=lambda x: int(x.split(':')[-1]))
+            self.prev_recep['handle'][self.prev_recep['prev_handle']] = sorted_handles[-1]
 
         if 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d':
             receps = self.set_receptacle_in_scene(ep_info)
+            self._receptacles_cache[ep_info.scene_id] = receps
+            self._receptacles = receps
+        elif 'dataset' in ep_info.info and ep_info.info['dataset'] == 'hssd':
+            old_recep_handle = ep_info.info['old_recep_handle']
+            tar_recep_handle = [tar_recep[0] for tar_recep in ep_info.target_receptacles]
+            goal_recep_handle = [goal_recep[0] for goal_recep in ep_info.goal_receptacles]
+            if "frl_apartment_wall_cabinet_01_:0000" in tar_recep_handle + goal_recep_handle:
+                if old_recep_handle not in list(self.prev_recep['handle'].keys()):
+                    self.prev_recep['handle'][old_recep_handle] = old_recep_handle
+                handle_to_remove = self.prev_recep['handle'][old_recep_handle]
+                recep_to_remove = rom.get_object_by_handle(handle_to_remove)
+                # save the recep to move
+                move_recep_template = otm.get_templates_by_handle_substring(recep_to_remove.handle[:-6])
+                move_recep_template = list(move_recep_template.keys())[0]
+                self.prev_recep['template'] = move_recep_template
+                self.prev_recep['prev_handle'] = old_recep_handle
+                self.prev_recep['prev_has_wall_cabinet'] = True
+                self.prev_recep['translation'] = recep_to_remove.translation
+                self.prev_recep['rotation'] = recep_to_remove.rotation
+                rom.remove_object_by_handle(recep_to_remove.handle)
+            else:
+                self.prev_recep['prev_has_wall_cabinet'] = False
+
+            receps = self.set_receptacle_in_scene(ep_info, "wall_cabinet")
             self._receptacles_cache[ep_info.scene_id] = receps
             self._receptacles = receps
 
@@ -1163,81 +1208,121 @@ class RearrangeSim(HabitatSim):
 
         return stats_dict
 
-    def set_receptacle_in_scene(self, ep_info):
+    def set_receptacle_in_scene(self, ep_info, receptacle_name=None):
         rom = self.get_rigid_object_manager()
         otm = self.get_object_template_manager()
+        hssd = 'dataset' in ep_info.info and ep_info.info['dataset'] == 'hssd'
+        mp3d = 'dataset' in ep_info.info and ep_info.info['dataset'] == 'mp3d'
+        if hssd:
+            for object_path in ep_info.additional_obj_config_paths:
+                otm.load_configs(osp.abspath(object_path))
         assert ep_info.target_receptacles is not None and ep_info.goal_receptacles is not None
         receptacles, target_receptacles, goal_receptacles = [], [], []
         info = {}
+        recep_settled = []
         for i, (tar_recep_handle, tar_tranform, tar_translation) in enumerate(ep_info.target_receptacles):
-            tar_recep_name = tar_recep_handle
-            if '_:' in tar_recep_name:
-                tar_recep_name = tar_recep_handle[:-6]
-            tar_template = otm.get_templates_by_handle_substring(
-                tar_recep_name
-            )
-            if not tar_template:
-                raise ValueError(
-                    f"Template not found for object with handle {tar_recep_handle}"
+            if (
+                (
+                    receptacle_name and
+                    receptacle_name in tar_recep_handle and
+                    tar_recep_handle not in recep_settled
                 )
-            tar_path = list(tar_template.keys())[0]
-            target_receptacle = rom.add_object_by_template_handle(
-                tar_path
-            )
-            if self._kinematic_mode:
-                target_receptacle.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-                target_receptacle.collidable = False
+                or receptacle_name is None
+            ):
+                recep_settled.append(tar_recep_handle)
+                tar_recep_name = tar_recep_handle
+                if '_:' in tar_recep_name:
+                    tar_recep_name = tar_recep_handle[:-6]
+                tar_template = otm.get_templates_by_handle_substring(
+                    tar_recep_name
+                )
+                if not tar_template:
+                    raise ValueError(
+                        f"Template not found for object with handle {tar_recep_handle}"
+                    )
+                tar_path = list(tar_template.keys())[0]
+                with open(tar_path) as tar_file:
+                    tar_object_config = json.load(tar_file)
+                user_defined = tar_object_config['user_defined']
+                if 'scale' in user_defined:
+                    tar_scale = user_defined['scale']
+                else:
+                    tar_scale = user_defined[list(user_defined.keys())[0]]['scale']
+                target_receptacle = rom.add_object_by_template_handle(
+                    tar_path
+                )
+                if self._kinematic_mode:
+                    target_receptacle.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                    target_receptacle.collidable = False
 
-            target_receptacle.transformation = mn.Matrix4(
-                [[tar_tranform[j][i] for j in range(4)] for i in range(4)]
-            )
-            target_receptacle.translation = tar_translation
-            user_attr = target_receptacle.user_attributes
-            
-            info["translation"] = np.array(tar_translation)
-            target_receptacles.extend(
-                parse_receptacles_from_user_config(
-                    user_attr,
-                    parent_object_handle=tar_recep_handle,
-                    parent_template_directory=tar_path,
-                    mp3d=True,
-                    info=info
+                target_receptacle.transformation = mn.Matrix4(
+                    [[tar_tranform[j][i] for j in range(4)] for i in range(4)]
                 )
-            )
+                target_receptacle.translation = tar_translation
+                user_attr = target_receptacle.user_attributes
+
+                info["translation"] = np.array(tar_translation)
+                target_receptacles.extend(
+                    parse_receptacles_from_user_config(
+                        user_attr,
+                        parent_object_handle=tar_recep_handle,
+                        parent_template_directory=tar_path,
+                        mp3d=mp3d,
+                        info=info,
+                        scale=tar_scale,
+                    )
+                )
         receptacles.extend(target_receptacles)
         for i, (goal_recep_handle, goal_transform, goal_translation) in enumerate(ep_info.goal_receptacles):
-            goal_recep_name = goal_recep_handle
-            if '_:' in goal_recep_name:
-                goal_recep_name = goal_recep_handle[:-6]
-            goal_template = otm.get_templates_by_handle_substring(
-                goal_recep_name
-            )
-            if not goal_template:
-                raise ValueError(
-                    f"Template not found for object with handle {goal_recep_handle}"
+            if (
+                (
+                    receptacle_name and
+                    receptacle_name in goal_recep_handle and
+                    goal_recep_handle not in recep_settled
                 )
-            goal_path = list(goal_template.keys())[0]
-            goal_receptacle = rom.add_object_by_template_handle(
-                goal_path
-            )
-            if self._kinematic_mode:
-                goal_receptacle.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-                goal_receptacle.collidable = False
-            goal_receptacle.transformation = mn.Matrix4(
-                [[goal_transform[j][i] for j in range(4)] for i in range(4)]
-            )
-            goal_receptacle.translation = goal_translation
-            user_attr = goal_receptacle.user_attributes
-            info["translation"] = np.array(goal_translation)
-            goal_receptacles.extend(
-                parse_receptacles_from_user_config(
-                    user_attr,
-                    parent_object_handle=goal_recep_handle,
-                    parent_template_directory=goal_path,
-                    mp3d=True,
-                    info=info
+                or receptacle_name is None
+            ):
+                recep_settled.append(goal_recep_handle)
+                goal_recep_name = goal_recep_handle
+                if '_:' in goal_recep_name:
+                    goal_recep_name = goal_recep_handle[:-6]
+                goal_template = otm.get_templates_by_handle_substring(
+                    goal_recep_name
                 )
-            )
+                if not goal_template:
+                    raise ValueError(
+                        f"Template not found for object with handle {goal_recep_handle}"
+                    )
+                goal_path = list(goal_template.keys())[0]
+                with open(goal_path) as goal_file:
+                    goal_object_config = json.load(goal_file)
+                user_defined = goal_object_config['user_defined']
+                if 'scale' in user_defined:
+                    goal_scale = user_defined['scale']
+                else:
+                    goal_scale = user_defined[list(user_defined.keys())[0]]['scale']
+                goal_receptacle = rom.add_object_by_template_handle(
+                    goal_path
+                )
+                if self._kinematic_mode:
+                    goal_receptacle.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                    goal_receptacle.collidable = False
+                goal_receptacle.transformation = mn.Matrix4(
+                    [[goal_transform[j][i] for j in range(4)] for i in range(4)]
+                )
+                goal_receptacle.translation = goal_translation
+                user_attr = goal_receptacle.user_attributes
+                info["translation"] = np.array(goal_translation)
+                goal_receptacles.extend(
+                    parse_receptacles_from_user_config(
+                        user_attr,
+                        parent_object_handle=goal_recep_handle,
+                        parent_template_directory=goal_path,
+                        mp3d=mp3d,
+                        info=info,
+                        scale=goal_scale,
+                    )
+                )
         receptacles.extend(goal_receptacles)
 
         receps = {}
@@ -1256,7 +1341,7 @@ class RearrangeSim(HabitatSim):
                 np.min(bounds, axis=0), np.max(bounds, axis=0)
             )
         return receps
-   
+
     def navigable_far_to_target(self, start_pos):
         path = habitat_sim.ShortestPath()
         path.requested_start = start_pos   
