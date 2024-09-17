@@ -61,14 +61,20 @@ ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
     'You are a "{robot_type}" agent called "{robot_key}".'
     " Your task is to work with other agents to complete the task described below:\n\n"
     '"""\n{task_description}\n"""\n\n'
+    "The scene description is as follows:\n\n"
+    '"""\n{scene_description}\n"""\n\n'
     "You have the following capabilities:\n\n"
     '"""\n{capabilities}\n"""\n\n'
-    'I will assign you a subtask. If you don\'t have any task to do, you will receive "Nothing to do". '
-    "You should just wait until you receive message from other agents."
+    "The physics capabilities include its mobility, perception, and manipulation capabilities."
+    "Please use the numerical values if any in the three aforementioned capabilities to determine the robot's capabilities."
+    'You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
+    "Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
+    # "You should confirm the task assigned to you are explain the reason if you think the task is incorrect.\n"
+    # "You should just wait until you receive message from other agents."
     r" If you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
     r' following this format: "{{no||<the reason>}}".'
     r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
-    r" Example responses: {{no||The task is unclear}}, {{yes}}, {{no||I have no moving ability}}."
+    r" Example responses: {{yes}}, {{no||I have no moving ability}}, {{no||The object is out of my arm workspace}}."
 )
 
 
@@ -77,30 +83,32 @@ NO_MOBILITY = "The provided URDF does not include specific joints"
 NO_PERCEPTION = "UNKNOWN"
 
 
-def get_capabilities(robot: dict):
+def get_text_capabilities(robot: dict):
     capabilities = ""
-    if not robot["mobility"]["summary"].startswith(NO_MOBILITY):
-        mobility = robot["mobility"]["summary"]
-        capabilities += f"Mobility capbility: {mobility}\n\n"
-    if not robot["perception"]["summary"].startswith(NO_MOBILITY):
-        perception = robot["perception"]["summary"]
-        capabilities += f"Perception capbility: {perception}\n\n"
-    if not robot["manipulation"]["summary"].startswith(NO_MANIPULATION):
-        manipulation = robot["manipulation"]["summary"]
-        capabilities += f"Manipulation capbility: {manipulation}\n\n"
+    if "mobility" in robot:
+        mobility = json.dumps(robot["mobility"]["summary"])
+        capabilities += f"Mobility capbility: {mobility}\n"
+    if "perception" in robot:
+        perception = json.dumps(robot["perception"]["summary"])
+        capabilities += f"Perception capbility: {perception}\n"
+    if "manipulation" in robot:
+        manipulation = json.dumps(robot["manipulation"]["summary"])
+        capabilities += f"Manipulation capbility: {manipulation}\n"
     return capabilities
 
 
-def get_robot_prompt(robot: dict, task_description: str, robot_key: str):
-    capabilities = get_capabilities(robot)
-    return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
-        robot_type=robot["robot_type"],
-        # robot_id=robot["robot_id"],
-        robot_key=robot_key,
-        task_description=task_description,
-        capabilities=capabilities,
-    )
-
+def get_full_capabilities(robot: dict):
+    capabilities = "The followinfg is a list of python dicts describing the robot's capabilities:\n"
+    if "mobility" in robot:
+        mobility = json.dumps(robot["mobility"])
+        capabilities += f" - Mobility capability: {mobility}\n"
+    if "perception" in robot:
+        perception = json.dumps(robot["perception"])
+        capabilities += f" - Perception capability: {perception}\n"
+    if "manipulation" in robot:
+        manipulation = json.dumps(robot["manipulation"])
+        capabilities += f" - Manipulation capability: {manipulation}\n"
+    return capabilities
 
 def parse_leader_response(text):
     # Define the regular expression pattern
@@ -142,7 +150,7 @@ DISCUSSION_TOOLS = [eval_python_code, add, subtract, multiply, divide]
 
 
 def group_discussion(
-    robot_resume: str, scene_description, task_description
+    robot_resume: dict, scene_description: str, task_description: str
 ) -> dict[str, AgentArguments]:
     robot_resume = json.loads(robot_resume)
     robot_resume_prompt = ""
@@ -150,7 +158,7 @@ def group_discussion(
         robot_resume_prompt += ROBOT_RESUME_TEMPLATE.format(
             robot_key=robot_key,
             robot_type=robot_resume[robot_key]["robot_type"],
-            capabilities=get_capabilities(robot_resume[robot_key]),
+            capabilities=get_text_capabilities(robot_resume[robot_key]),
         )
     leader_prompt = LEADER_DISCUSS_TEMPLATE.format(
         task_description=task_description,
@@ -159,9 +167,15 @@ def group_discussion(
     )
     leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True)
     agents = {}
-    for robot in robot_resume:
-        robot_prompt = get_robot_prompt(robot_resume[robot], task_description, robot)
-        agents[robot] = OpenAIModel(
+    for robot_key in robot_resume:
+        robot_prompt = ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
+            robot_type=robot_resume[robot_key]["robot_type"],
+            robot_key=robot_key,
+            task_description=task_description,
+            scene_description=scene_description,
+            capabilities=get_full_capabilities(robot_resume[robot_key]),
+        )
+        agents[robot_key] = OpenAIModel(
             robot_prompt, DISCUSSION_TOOLS, discussion_stage=True
         )
 
