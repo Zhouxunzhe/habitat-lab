@@ -180,6 +180,7 @@ class OraclePickPolicy(NnSkillPolicy):
         else:
             full_action[0][self._pick_srt_idx:self._pick_srt_idx+3] = torch.tensor(
                 [action_idxs, self.PICK_ID, 0.0])
+        full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor([action_idxs, self.PICK_ID])
         full_action[0][self._pick_end_idx-1] = 1.0
 
         return PolicyActionData(
@@ -325,6 +326,7 @@ class OraclePlacePolicy(OraclePickPolicy):
             full_action[0][self._place_srt_idx:self._place_srt_idx+3] = torch.tensor(
                 [action_idxs, self.PLACE_ID, 0.0])
 
+        full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor([action_idxs, self.PLACE_ID])
         if self._is_skill_done(observations, rnn_hidden_states, prev_actions, masks, cur_batch_idx):
             full_action[0][self._place_end_idx-1] = -1.0
 

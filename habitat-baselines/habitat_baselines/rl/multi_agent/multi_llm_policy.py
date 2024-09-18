@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional
 import gym.spaces as spaces
 import numpy as np
 import torch
+from habitat_mas.agents.actions.discussion_actions import *
 from habitat_mas.utils import AgentArguments
 from habitat_mas.utils.models import OpenAIModel
 
@@ -27,17 +28,6 @@ from habitat_baselines.rl.multi_agent.utils import (
     update_dict_with_agent_prefix,
 )
 
-LEADER_DISCUSS_TEMPLATE = (
-    "You are a group discussion leader."
-    " Your have to discuss with real robots (agents) to break an overall"
-    " task to smaller subtasks and assign a subtask to each agent."
-    " The task is described below:\n\n"
-    '"""\n{task_description}\n"""\n\n'
-    "All agents are in a scene, the scene description is as follows:\n\n"
-    '"""\n{scene_description}\n"""\n\n'
-    "The agents are described below:\n\n"
-    '"""\n{robot_resume}\n"""\n\n'
-)
 
 ROBOT_RESUME_TEMPLATE = (
     '"{robot_key}" is a  "{robot_type}" agent.'
@@ -45,30 +35,77 @@ ROBOT_RESUME_TEMPLATE = (
     '"""\n{capabilities}\n"""\n\n'
 )
 
-LEADER_START_MESSAGE = (
-    "Now you should assign subtasks to each agent following this format:\n\n"
-    r"{robot_id||subtask_description}\n\n"
-    'For example, if you want to assign a subtask "Navigate to box_1" to agent_0, you should type:\n'
-    "{agent_0||Navigate to box_1}\n\n"
-    "Remember you must include the brackets and you MUST include all the robots in your response.\n"
-    'If you think a robot should not have a subtask, you can assign it "Nothing to do".\n'
-)
+def create_leader_prompt(robot_resume):
+
+    LEADER_SYSTEM_PROMPT_TEMPLATE = (
+        "You are a group discussion leader."
+        " Your have to discuss with real robots (agents) to break an overall"
+        " task to smaller subtasks and assign a subtask to each agent."
+        "The agents are described below:\n\n"
+        '"""\n{robot_resume}\n"""\n\n'
+        )
+    FORMAT_INSTRUCTION = (
+        "You should assign subtasks to each agent based on their capabilities, following this format:\n\n"
+        r"{robot_id||subtask_description}\n\n"
+        'For example, if you want to assign a subtask "Navigate to box_1" to agent_0, you should type:\n'
+        r"{agent_0||Navigate to box_1}\n\n"
+        "Remember you must include the brackets and you MUST include all the robots in your response.\n"
+        'If you think a robot should not have a subtask, you can assign it "Nothing to do".\n'
+    )
+    
+    return LEADER_SYSTEM_PROMPT_TEMPLATE.format(
+        robot_resume=robot_resume) + FORMAT_INSTRUCTION
 
 
-ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
-    # 'You are a "{robot_type}" robot with id "{robot_id}".'
-    'You are a "{robot_type}" agent called "{robot_key}".'
-    " Your task is to work with other agents to complete the task described below:\n\n"
-    '"""\n{task_description}\n"""\n\n'
-    "You have the following capabilities:\n\n"
-    '"""\n{capabilities}\n"""\n\n'
-    "I will assign you a subtask. If you don't have any task to do, you will receive \"Nothing to do\". "
-    "You should just wait until you receive message from other agents."
-    r" If you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
-    r' following this format: "{{no||<the reason>}}".'
-    r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
-    r" Example responses: {{no||The task is unclear}}, {{yes}}, {{no||I have no moving ability}}."
-)
+def create_leader_start_message(task_description, scene_description):
+
+    LEADER_MESSAGE_TEMPLATE = (
+        " The task is described below:\n\n"
+        '"""\n{task_description}\n"""\n\n'
+        "All agents are in a scene, the scene description is as follows:\n\n"
+        '"""\n{scene_description}\n"""\n\n'
+        "Now you should assign subtasks to each agent based on their capabilities, following the format in the system prompt."
+    )
+    
+    return LEADER_MESSAGE_TEMPLATE.format(
+        task_description=task_description, 
+        scene_description=scene_description) # + FORMAT_INSTRUCTION
+
+def create_robot_prompt(robot_type, robot_key, capabilities):
+
+    ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
+        # 'You are a "{robot_type}" robot with id "{robot_id}".'
+        'You are a "{robot_type}" agent called "{robot_key}".'
+        "You have the following capabilities:\n\n"
+        '"""\n{capabilities}\n"""\n\n'
+        # "The physics capabilities include its mobility, perception, and manipulation capabilities."
+        'You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
+        "Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
+        "You can use the provided functions to check if task is feasible or not numerically." 
+
+    )
+    FORMAT_INSTRUCTION = (
+        r" Finally, if you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
+        r' following this format: "{{no||<the reason>}}".'
+        r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
+        r" Example responses: {{yes}}, {{no||I have no moving ability}}, {{no||The object is out of my arm workspace}}."
+    )
+    return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
+        robot_type=robot_type,
+        robot_key=robot_key,
+        capabilities=capabilities) + FORMAT_INSTRUCTION
+
+def create_robot_start_message(task_description, scene_description):
+
+    ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE = (
+        " Your task is to work with other agents to complete the assigned subtask described below:\n\n"
+        '"""\n{task_description}\n"""\n\n'
+        "The scene description is as follows:\n\n"
+        '"""\n{scene_description}\n"""\n\n'
+    )
+    return ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE.format(
+        task_description=task_description, 
+        scene_description=scene_description)
 
 
 NO_MANIPULATION = "There are no explicit manipulation components"
@@ -76,30 +113,32 @@ NO_MOBILITY = "The provided URDF does not include specific joints"
 NO_PERCEPTION = "UNKNOWN"
 
 
-def get_capabilities(robot: dict):
+def get_text_capabilities(robot: dict):
     capabilities = ""
-    if not robot["mobility"]["summary"].startswith(NO_MOBILITY):
-        mobility = robot["mobility"]["summary"]
-        capabilities += f"Mobility capbility: {mobility}\n\n"
-    if not robot["perception"]["summary"].startswith(NO_MOBILITY):
-        perception = robot["perception"]["summary"]
-        capabilities += f"Perception capbility: {perception}\n\n"
-    if not robot["manipulation"]["summary"].startswith(NO_MANIPULATION):
-        manipulation = robot["manipulation"]["summary"]
-        capabilities += f"Manipulation capbility: {manipulation}\n\n"
+    if "mobility" in robot:
+        mobility = json.dumps(robot["mobility"]["summary"])
+        capabilities += f"Mobility capbility: {mobility}\n"
+    if "perception" in robot:
+        perception = json.dumps(robot["perception"]["summary"])
+        capabilities += f"Perception capbility: {perception}\n"
+    if "manipulation" in robot:
+        manipulation = json.dumps(robot["manipulation"]["summary"])
+        capabilities += f"Manipulation capbility: {manipulation}\n"
     return capabilities
 
 
-def get_robot_prompt(robot: dict, task_description: str, robot_key: str):
-    capabilities = get_capabilities(robot)
-    return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
-        robot_type=robot["robot_type"],
-        # robot_id=robot["robot_id"],
-        robot_key=robot_key,
-        task_description=task_description,
-        capabilities=capabilities,
-    )
-
+def get_full_capabilities(robot: dict):
+    capabilities = "The followinfg is a list of python dicts describing the robot's capabilities:\n"
+    if "mobility" in robot:
+        mobility = json.dumps(robot["mobility"])
+        capabilities += f" - Mobility capability: {mobility}\n"
+    if "perception" in robot:
+        perception = json.dumps(robot["perception"])
+        capabilities += f" - Perception capability: {perception}\n"
+    if "manipulation" in robot:
+        manipulation = json.dumps(robot["manipulation"])
+        capabilities += f" - Manipulation capability: {manipulation}\n"
+    return capabilities
 
 def parse_leader_response(text):
     # Define the regular expression pattern
@@ -123,6 +162,9 @@ def parse_agent_response(text):
     # Find all matches in the text
     matches = re.findall(pattern, text)
 
+    if len(matches) == 0:
+        print("No match found in agent response: ", text)
+        return "no", text
     response, reason = matches[0]
     if response == "yes":
         reason = None  # Use None to indicate no reason
@@ -134,8 +176,11 @@ def parse_agent_response(text):
     return response, reason
 
 
+DISCUSSION_TOOLS = [eval_python_code, add, subtract, multiply, divide]
+
+
 def group_discussion(
-    robot_resume: str, scene_description, task_description
+    robot_resume: dict, scene_description: str, task_description: str
 ) -> dict[str, AgentArguments]:
     robot_resume = json.loads(robot_resume)
     robot_resume_prompt = ""
@@ -143,24 +188,29 @@ def group_discussion(
         robot_resume_prompt += ROBOT_RESUME_TEMPLATE.format(
             robot_key=robot_key,
             robot_type=robot_resume[robot_key]["robot_type"],
-            capabilities=get_capabilities(robot_resume[robot_key]),
+            capabilities=get_text_capabilities(robot_resume[robot_key]),
         )
-    leader_prompt = LEADER_DISCUSS_TEMPLATE.format(
-        task_description=task_description,
-        robot_resume=robot_resume_prompt,
-        scene_description=scene_description,
-    )
-    leader = OpenAIModel(leader_prompt, [])
+    leader_prompt = create_leader_prompt(robot_resume_prompt)
+    leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True)
     agents = {}
-    for robot in robot_resume:
-        robot_prompt = get_robot_prompt(robot_resume[robot], task_description, robot)
-        agents[robot] = OpenAIModel(robot_prompt, [])
+    for robot_key in robot_resume:
+        robot_prompt = create_robot_prompt(
+            robot_resume[robot_key]["robot_type"],
+            robot_key,
+            get_text_capabilities(robot_resume[robot_key]),
+        )
+        agents[robot_key] = OpenAIModel(
+            robot_prompt, DISCUSSION_TOOLS, discussion_stage=True
+        )
 
     # robot_id_to_model_map = {
     #     robot_resume[robot]["robot_id"]: agents[robot] for robot in robot_resume
     # }
-
-    response = leader.chat(LEADER_START_MESSAGE)
+    leader_start_message = create_leader_start_message(
+        task_description=task_description, 
+        scene_description=scene_description
+    )
+    response = leader.chat(leader_start_message)
     robot_tasks = parse_leader_response(response)
     print("===============Task Description==============")
     print(task_description)
@@ -171,7 +221,11 @@ def group_discussion(
     agent_response = {}
     for robot_id in robot_tasks:
         robot_model = agents[robot_id]
-        response = robot_model.chat(f'You subtask is "{robot_tasks[robot_id]}".')
+        robot_start_message = create_robot_start_message(
+            task_description=robot_tasks[robot_id],
+            scene_description=scene_description,
+        )
+        response = robot_model.chat(robot_start_message)
         agent_response[robot_id] = parse_agent_response(response)
         print("===============Robot Response==============")
         print(f"Robot {robot_id} response: {response}")
@@ -252,6 +306,7 @@ class MultiLLMPolicy(MultiPolicy):
 
         text_goal = observations["pddl_text_goal"][0].tolist()
         text_goal = "".join([chr(code) for code in text_goal]).strip()
+        # text_goal = "Fill in a tank with water. The tank is 80cm high, 50cm wide, and 50cm deep. The tank is empty. agent_0 has a 1L backet and agent_1 has a 2L bucket. Use function call to compute how many time agent_1 and agent_2 needs to fill the tank to full."
         # Stage 1: If all prev_actions are zero, which means it is the first step of the episode, then we need to do group discussion
         # Given: Robot resume + Scene description + task instruction
         # Output: (Subtask decomposition) + task assignment

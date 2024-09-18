@@ -64,6 +64,7 @@ defaults:
     - target_start_gps_compass_sensor
     - target_goal_gps_compass_sensor
     - localization_sensor
+    - object_to_goal_distance_sensor
     # - other_agent_gps
     - pddl_text_goal
 
@@ -132,7 +133,7 @@ habitat:
     robot_at_thresh: 2.0
 
   environment:
-    max_episode_steps: 1500
+    max_episode_steps: 4000
   simulator:
     type: RearrangeSim-v0
     seed: 100
@@ -165,8 +166,9 @@ habitat:
       
     w2j: False
     json_path: "data/robots/robot_configs/mp3d/mobility_eval.json"
+    scene_type: mp3d
   dataset:
-    data_path: data/datasets/mp3d/mobility_episodes_1k5.json.gz
+    data_path: data/datasets/mobility/mp3d_test.json.gz
     # new
     randomize_agent_start: 1
     # robot_config: data/robots/robot_configs/mp3d/mobility_eval.json

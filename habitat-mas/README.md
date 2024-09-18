@@ -102,23 +102,16 @@ habitat-lab
 Here is a demo data generation command for dataset in `hssd` scene.
 
 ```sh
-python habitat-lab/habitat/datasets/rearrange/run_episode_generator.py --run \
---config data/config/replica_cad/all_object_receptacle_dataset.yaml \
---num-episodes 50 \
---out data/datasets/replica_cad/multi_objects_manipulation_eval.json.gz \
---type manipulation \
-[Optional] --resume habitat-mas/habitat_mas/data/robot_resume/StretchRobot_default.json
+python habitat-lab/habitat/datasets/rearrange/run_hssd_episode_generator.py --run --config data/config/hssd/hssd_dataset.yaml --num-episodes 340 --out data/datasets/hssd_height.json.gz --type height
 ```
 
 `--config`: path of your dataset generation configuration data.
 
-`--num-episodes`: episodes number you want to generate.
+`--num-episodes`: episodes number you want to generate. (Note: in `scene_balanced` type `scene_sampler`, the number should be Integer multiple of `34`, you can customize your dataset generation configuration, which should be the file in the path of `--config`)
 
 `--out`: desired path of your newly generated dataset.
 
-`--type`: the purpose of your dataset, currently there are only three types: `preception`, `manipulation`, `hssd`.
-
-`--resume`: path of desired robot resume as object position constraint, currently it is not used, you can freely ignore it.
+`--type`: the purpose of your dataset, currently there are three types: `height`, `distance`, `normal`.
 
 Besides, for dataset generation, you should:
 

@@ -2121,9 +2121,10 @@ class SimulatorConfig(HabitatBaseConfig):
     # Configuration for rendering
     renderer: RendererConfig = RendererConfig()
     
-    #TODO(ycc): write to json config
+    # write to json config
     w2j: bool = False
     json_path: str = "data/robots/json/test.json"
+    scene_type: str = "hssd"
 
 
 @dataclass

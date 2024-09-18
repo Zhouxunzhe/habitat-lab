@@ -3,7 +3,19 @@
 objects:
   - name: any_targets|0
     expr_type: movable_entity_type
+  - name: any_targets|1
+    expr_type: movable_entity_type
+  - name: any_targets|2
+    expr_type: movable_entity_type
+  - name: any_targets|3
+    expr_type: movable_entity_type
   - name: TARGET_any_targets|0
+    expr_type: goal_entity_type
+  - name: TARGET_any_targets|1
+    expr_type: goal_entity_type
+  - name: TARGET_any_targets|2
+    expr_type: goal_entity_type
+  - name: TARGET_any_targets|3
     expr_type: goal_entity_type
   - name: agent_0
     expr_type: robot_entity_type
@@ -17,53 +29,93 @@ objects:
 goal:
   expr_type: AND
   sub_exprs:
-    - robot_at(TARGET_any_targets|0, agent_0)
+    - at(any_targets|0,TARGET_any_targets|0)
+    - at(any_targets|1,TARGET_any_targets|1)
+    - at(any_targets|2,TARGET_any_targets|2)
+    - at(any_targets|3,TARGET_any_targets|3)
+    - is_detected(any_targets|0)
+    - is_detected(any_targets|1)
+    - is_detected(any_targets|2)
+    - is_detected(any_targets|3)
     
-
-
 stage_goals:
-  stage_1_1:
+  any_targets|0_rearranged:
     expr_type: AND
     sub_exprs:
-      - robot_at(any_targets|0, agent_0)
-  stage_1_2:
+      - at(any_targets|0,TARGET_any_targets|0)
+  any_targets|1_rearranged:
     expr_type: AND
     sub_exprs:
-      - robot_at(any_targets|0, agent_1)
-  stage_1_3:
+      - at(any_targets|1,TARGET_any_targets|1)
+  any_targets|2_rearranged:
     expr_type: AND
     sub_exprs:
-      - robot_at(any_targets|0, agent_2)
-  stage_1_4:
+      - at(any_targets|2,TARGET_any_targets|2)
+  any_targets|3_rearranged:
     expr_type: AND
     sub_exprs:
-      - robot_at(any_targets|0, agent_3)
-
-  stage_2_1:
+      - at(any_targets|3,TARGET_any_targets|3)
+  
+  any_targets|0_detected:
     expr_type: AND
     sub_exprs:
-      - robot_at(TARGET_any_targets|0, agent_0)
-  stage_2_2:
+      - is_detected(any_targets|0)
+  any_targets|1_detected:
     expr_type: AND
     sub_exprs:
-      - robot_at(TARGET_any_targets|0, agent_1)
-  stage_2_3:
+      - is_detected(any_targets|1)
+  any_targets|2_detected:
     expr_type: AND
     sub_exprs:
-      - robot_at(TARGET_any_targets|0, agent_2)
-  stage_2_4:
+      - is_detected(any_targets|2)
+  any_targets|3_detected:
     expr_type: AND
     sub_exprs:
-      - robot_at(TARGET_any_targets|0, agent_3)
+      - is_detected(any_targets|3)
 
 solution:
-  - nav_to_goal(any_targets|0, agent_0)
-  - nav_to_goal(any_targets|0, agent_1)
-  - nav_to_goal(any_targets|0, agent_2)
   - nav_to_goal(any_targets|0, agent_3)
-  # - pick(any_targets|0, agent_0)
+  - nav_to_goal(any_targets|1, agent_3)
+  - nav_to_goal(any_targets|2, agent_3)
+  - nav_to_goal(any_targets|3, agent_3)
+
+  - nav_to_goal(any_targets|0, agent_0)
+  - reset_arm(agent_0)
+  - pick(any_targets|0, agent_0)
+  - reset_arm(agent_0)
   - nav_to_obj(TARGET_any_targets|0, agent_0)
-  - nav_to_obj(TARGET_any_targets|0, agent_1)
-  - nav_to_obj(TARGET_any_targets|0, agent_2)
-  - nav_to_obj(TARGET_any_targets|0, agent_3)
-  # - place(any_targets|0,TARGET_any_targets|0, agent_0)
+  - place(any_targets|0, TARGET_any_targets|0, agent_0)
+  - reset_arm(agent_0)
+
+  - nav_to_goal(any_targets|1, agent_0)
+  - reset_arm(agent_0)
+  - pick(any_targets|1, agent_0)
+  - reset_arm(agent_0)
+  - nav_to_obj(TARGET_any_targets|1, agent_0)
+  - place(any_targets|1, TARGET_any_targets|1, agent_0)
+  - reset_arm(agent_0)
+
+  - nav_to_goal(any_targets|2, agent_0)
+  - reset_arm(agent_0)
+  - pick(any_targets|2, agent_0)
+  - reset_arm(agent_0)
+  - nav_to_obj(TARGET_any_targets|2, agent_0)
+  - place(any_targets|2, TARGET_any_targets|2, agent_0)
+  - reset_arm(agent_0)
+
+  - nav_to_goal(any_targets|3, agent_0)
+  - reset_arm(agent_0)
+  - pick(any_targets|3, agent_0)
+  - reset_arm(agent_0)
+  - nav_to_obj(TARGET_any_targets|3, agent_0)
+  - place(any_targets|3, TARGET_any_targets|3, agent_0)
+  - reset_arm(agent_0)
+
+  - nav_to_goal(any_targets|0, agent_1)
+  - nav_to_goal(any_targets|1, agent_1)
+  - nav_to_goal(any_targets|2, agent_1)
+  - nav_to_goal(any_targets|3, agent_1)
+  - nav_to_goal(any_targets|0, agent_2)
+  - nav_to_goal(any_targets|1, agent_2)
+  - nav_to_goal(any_targets|2, agent_2)
+  - nav_to_goal(any_targets|3, agent_2)

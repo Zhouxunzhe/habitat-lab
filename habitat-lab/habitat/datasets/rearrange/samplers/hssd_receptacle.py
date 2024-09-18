@@ -584,6 +584,9 @@ def parse_receptacles_from_user_config(
     parent_template_directory: str = "",
     valid_link_names: Optional[List[str]] = None,
     ao_uniform_scaling: float = 1.0,
+    mp3d: bool = False,
+    info: Optional[Dict[str, Any]] = None,
+    scale: Optional[List[float]] = None,
 ) -> List[Union[Receptacle, AABBReceptacle, TriangleMeshReceptacle]]:
     """
     Parse receptacle metadata from the provided user subconfig object.
@@ -657,7 +660,13 @@ def parse_receptacles_from_user_config(
             receptacle_position = ao_uniform_scaling * sub_config.get(
                 "position"
             )
-            receptacle_scale = ao_uniform_scaling * sub_config.get("scale")
+            if mp3d:
+                receptacle_position = ao_uniform_scaling * info["translation"]
+            # TODO(zxz): add cabinets scale here
+            if scale is None:
+                receptacle_scale = ao_uniform_scaling * sub_config.get("scale")
+            else:
+                receptacle_scale = ao_uniform_scaling * mn.Vector3(scale)
 
             if aabb_receptacle_id_string in sub_config_key:
                 receptacles.append(
@@ -980,7 +989,7 @@ def get_navigable_receptacles(
                     sim=sim,
                     point=point,
                     height=max_access_height,
-                    nav_to_min_distance=nav_to_min_distance,
+                    nav_to_min_distance=-1,
                     nav_island=nav_island,
                     target_object_id=receptacle_obj.object_id,
                 )
