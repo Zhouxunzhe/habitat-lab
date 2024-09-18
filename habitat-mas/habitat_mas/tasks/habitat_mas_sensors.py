@@ -186,39 +186,39 @@ class PddlTextGoalSensor(Sensor):
         if predicate_name == "in":
             obj = args[0].name
             receptacle = args[1].name
-            return f"{obj} is in {receptacle}"
+            return f"The object '{obj}' is inside the '{receptacle}'."
 
         elif predicate_name == "holding":
             obj = args[0].name
             robot_id = args[1].name
-            return f"{robot_id} is holding {obj}"
+            return f"The robot '{robot_id}' is holding the object '{obj}'."
 
         elif predicate_name == "not_holding":
             robot_id = args[0].name
-            return f"{robot_id} is not holding anything"
+            return f"The robot '{robot_id}' is not holding any object."
 
         elif predicate_name == "robot_at":
-            Y = args[0].name
+            location = args[0].name
             robot_id = args[1].name
-            return f"{robot_id} is at object/receptacle {Y}"
+            return f"The robot '{robot_id}' is located at '{location}'."
 
         elif predicate_name == "at":
             obj = args[0].name
-            at_entity = args[1].name
-            return f"{obj} is at receptacle {at_entity}"
+            location = args[1].name
+            return f"The object '{obj}' is placed at '{location}'."
 
         elif predicate_name == "detected_object":
-            any_targets = args[0].name
+            obj = args[0].name
             robot_id = args[1].name
-            return f"{robot_id} has detected objects {any_targets}"
-        
+            return f"The robot '{robot_id}' has detected the object '{obj}'."
+
         elif predicate_name == "is_detected":
             obj = args[0].name
-            return f"{obj} is detected by any robot"
+            return f"The object '{obj}' has been detected by any robot."
 
         elif predicate_name == "any_at":
             obj = args[0].name
-            return f"Any robot is at object/receptacle {obj}" 
+            return f"Any robot is currently at the location of '{obj}'."
 
         else:
             return str(predicate)

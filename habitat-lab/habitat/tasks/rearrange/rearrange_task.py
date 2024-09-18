@@ -430,12 +430,20 @@ class RearrangeTask(NavigationTask):
         # load agent with new sampled position
             robot_config = []
             for agent_idx in range(self._sim.num_articulated_agents):
-                (
-                    articulated_agent_pos,
-                    articulated_agent_rot,
-                ) = self._sim.set_articulated_agent_base_to_random_point(
+                articulated_agent = self._sim.get_agent_data(
                     agent_idx=agent_idx
+                ).articulated_agent
+                articulated_agent_pos = np.array(
+                    articulated_agent.base_pos
                 )
+                articulated_agent_rot = articulated_agent.base_rot
+                if not sum(articulated_agent_pos):
+                    (
+                        articulated_agent_pos,
+                        articulated_agent_rot,
+                    ) = self._sim.set_articulated_agent_base_to_random_point(
+                        agent_idx=agent_idx
+                    )
                 agent_config = self._sim.parse_agent_info(
                     start_pos=articulated_agent_pos,
                     start_rot=articulated_agent_rot,
