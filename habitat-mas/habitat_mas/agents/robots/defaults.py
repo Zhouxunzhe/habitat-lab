@@ -37,7 +37,7 @@ robot_base_offset_map = {
     "KinematicHumanoid": np.array([0, -0.9, 0]),
     "FetchRobot": np.array([0, 0, 0]),
     "SpotRobot": np.array([0, -0.48, 0]),
-    "StretchRobot": np.array([0, -0.5, 0]),
+    "StretchRobot": np.array([0, -0.0, 0]),
     "DJIDrone": np.array([0, -1.5, 0]),
 }
 
