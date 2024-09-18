@@ -16,12 +16,7 @@
   "manipulation": {
     "summary": "The robot features a highly capable manipulator with multiple prismatic joints in the arm (link_arm_l4 to link_arm_l0), enhancing its vertical reach. It has a sophisticated wrist with yaw, pitch, and roll capabilities, and it ends with a gripper that includes two fingers and fingertips, allowing for complex grasping tasks. This high degree of freedom in the arm's joints maximizes the robot's workspace, permitting it to manipulate objects in various orientations and heights, including high shelves and under tables. Thus, it can effectively perform home arrangement tasks by rearranging furniture and objects in abnormal positions.",
     "arm_workspace": {
-      "center": [
-        -0.6420079469680786,
-        0.5130168795585632,
-        0.17324839532375336
-      ],
-      "radius": 0.84763783,
+      "type": "box",
       "min_bound": [
         -1.0987000465393066,
         -0.14606091380119324,

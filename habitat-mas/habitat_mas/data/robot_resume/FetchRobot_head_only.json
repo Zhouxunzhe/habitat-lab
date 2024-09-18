@@ -16,22 +16,13 @@
   "manipulation": {
     "summary": "The robot features a highly articulable arm with seven degrees of freedom, including joints for shoulder pan and lift, continuous rotation for the upper arm and forearm, and revolute joints for the elbow and wrist flexion. This setup, coupled with a prismatic gripper mechanism, allows for versatile and precise manipulation. The arm's extensive reach and adjustability enable it to interact with objects both on high shelves and under tables, making it suitable for complex home arrangement tasks.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
         0.14739853143692017,
         0.899940013885498,
         0.1324108988046646
       ],
-      "radius": 1.1041796,
-      "min_bound": [
-        -0.8757104873657227,
-        -0.03437389060854912,
-        -0.8868222236633301
-      ],
-      "max_bound": [
-        1.0899982452392578,
-        1.8497143983840942,
-        1.1006197929382324
-      ]
+      "radius": 1.1041796
     }
   }
 }

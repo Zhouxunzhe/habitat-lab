@@ -16,22 +16,13 @@
   "manipulation": {
     "summary": "Spot features a highly articulated arm with seven revolute joints (shoulder, elbow, wrist, and finger), providing a high degree of freedom for intricate manipulative tasks. This enables Spot to perform pick-and-place operations and rearrangement tasks, handling objects both on high shelves and under tables, thanks to the arm\u2019s extended reach and flexible movement. The detailed joint structure allows for precise manipulation which is necessary for home arrangement tasks and cooperative perception-based manipulation.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
         0.218833327293396,
         0.7876816987991333,
         0.18432271480560303
       ],
-      "radius": 0.977087,
-      "min_bound": [
-        -0.6372385025024414,
-        -0.03964763879776001,
-        -0.6838088035583496
-      ],
-      "max_bound": [
-        1.1124820709228516,
-        1.5562466382980347,
-        1.0395488739013672
-      ]
+      "radius": 0.977087
     }
   }
 }

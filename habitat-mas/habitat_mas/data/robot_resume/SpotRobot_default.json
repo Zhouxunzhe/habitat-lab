@@ -20,22 +20,13 @@
   "manipulation": {
     "summary": "Spot has a versatile manipulator arm with seven revolute joints and an end effector designed for grasping (finger). The extensive joint configuration allows for a significant range of motion, including high shelves and under tables. The fixed camera on the arm aids in precise object manipulation by providing detailed visual feedback. This configuration is suitable for complex tasks such as object rearrangement and cooperative perception-based manipulation.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
         0.218833327293396,
         0.7876816987991333,
         0.18432271480560303
       ],
-      "radius": 0.977087,
-      "min_bound": [
-        -0.6372385025024414,
-        -0.03964763879776001,
-        -0.6838088035583496
-      ],
-      "max_bound": [
-        1.1124820709228516,
-        1.5562466382980347,
-        1.0395488739013672
-      ]
+      "radius": 0.977087
     }
   }
 }

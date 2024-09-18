@@ -20,22 +20,13 @@
   "manipulation": {
     "summary": "The Fetch robot features a sophisticated manipulator arm with multiple degrees of freedom, including joints that can pan, lift, roll, and flex. The arm has both elbow and wrist joints that provide significant flexibility and reach. The end effector is a gripper with prismatic joints allowing for fine adjustments needed for gripping objects. There is also an articulated camera near the gripper to provide close-up visual feedback during manipulation tasks. The versatile design of the arm allows Fetch to engage in complex manipulation tasks, such as picking and placing objects from high shelves or under tables, accommodating various object sizes and shapes.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
         0.14739853143692017,
         0.899940013885498,
         0.1324108988046646
       ],
-      "radius": 1.1041796,
-      "min_bound": [
-        -0.8757104873657227,
-        -0.03437389060854912,
-        -0.8868222236633301
-      ],
-      "max_bound": [
-        1.0899982452392578,
-        1.8497143983840942,
-        1.1006197929382324
-      ]
+      "radius": 1.1041796
     }
   }
 }

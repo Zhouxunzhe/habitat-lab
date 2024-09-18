@@ -16,22 +16,13 @@
   "manipulation": {
     "summary": "Fetch features a highly capable manipulator arm with multiple joints offering a high degree of freedom. The manipulator includes revolute joints at the shoulder (pan and lift), upper arm roll, elbow flex, forearm roll, wrist flex, and wrist roll, facilitating a wide range of movements. The end effector consists of a gripper with prismatic joints for the fingers, allowing precise grasping and manipulation of objects. The robot's design, combined with the lift mechanism of the torso, enables it to reach high shelves and low areas, making it suitable for tasks involving the rearrangement of furniture and objects across various heights within a home or similar setting.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
         0.14739853143692017,
         0.899940013885498,
         0.1324108988046646
       ],
-      "radius": 1.1041796,
-      "min_bound": [
-        -0.8757104873657227,
-        -0.03437389060854912,
-        -0.8868222236633301
-      ],
-      "max_bound": [
-        1.0899982452392578,
-        1.8497143983840942,
-        1.1006197929382324
-      ]
+      "radius": 1.1041796
     }
   }
 }

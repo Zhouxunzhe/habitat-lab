@@ -16,22 +16,13 @@
   "manipulation": {
     "summary": "The robot's manipulation capability is quite advanced with a multi-jointed arm consisting of seven revolute joints, culminating in an end-effector link named 'arm0.link_fngr'. This articulate design provides a wide range of motion and high precision, facilitating tasks that require picking and placing objects in varied locations. The high degree of freedom in the arm allows reaching objects at different heights, including under tables and on high shelves, crucial for home arrangement tasks. The overall workspace of the manipulator, coupled with the revolute joints, ensures extensive reach and flexibility, making Spot adept at complex object manipulation in a home environment.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
         0.218833327293396,
         0.7876816987991333,
         0.18432271480560303
       ],
-      "radius": 0.977087,
-      "min_bound": [
-        -0.6372385025024414,
-        -0.03964763879776001,
-        -0.6838088035583496
-      ],
-      "max_bound": [
-        1.1124820709228516,
-        1.5562466382980347,
-        1.0395488739013672
-      ]
+      "radius": 0.977087
     }
   }
 }
