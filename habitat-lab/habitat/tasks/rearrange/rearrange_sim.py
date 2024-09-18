@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import json
 import os
+import re
 import os.path as osp
 import time
 from collections import defaultdict
@@ -796,10 +797,15 @@ class RearrangeSim(HabitatSim):
                     self.prev_recep['handle'][old_recep_handle] = old_recep_handle
                 handle_to_remove = self.prev_recep['handle'][old_recep_handle]
                 recep_to_remove = rom.get_object_by_handle(handle_to_remove)
-                # save the recep to move
-                move_recep_template = otm.get_templates_by_handle_substring(recep_to_remove.handle[:-6])
-                move_recep_template = list(move_recep_template.keys())[0]
-                self.prev_recep['template'] = move_recep_template
+                # save the recep to remove
+                remove_recep_templates = otm.get_templates_by_handle_substring(recep_to_remove.handle[:-6])
+                pattern = re.compile(rf'{recep_to_remove.handle[:-6]}\b')
+                matched_template = None
+                for template in list(remove_recep_templates.keys()):
+                    if pattern.search(template):
+                        remove_recep_template = template
+                        break
+                self.prev_recep['template'] = remove_recep_template
                 self.prev_recep['prev_handle'] = old_recep_handle
                 self.prev_recep['prev_has_wall_cabinet'] = True
                 self.prev_recep['translation'] = recep_to_remove.translation
