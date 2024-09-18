@@ -31,10 +31,10 @@ def clear_directory(path):
             print(f'Failed to delete {file_path}. Reason: {e}')
 
 def run_script(args):
-    file_path,skip_len, base_directory,gpu_id,scene = args
+    file_path,skip_len, base_directory,gpu_id,scene,max_step = args
     
     a = ["disk"]
-    seed = random.randint(100, 200)
+    seed = random.randint(100, 400)
     cmd = [
         "python", "-u", "-m", "habitat_baselines.run",
         "--config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml",
@@ -44,15 +44,16 @@ def run_script(args):
         f"habitat.simulator.habitat_sim_v0.gpu_device_id={gpu_id}",
         f"habitat_baselines.torch_gpu_id={gpu_id}",
         f"habitat_baselines.eval.video_option={a}",
-        f"habitat_baselines.eval.video_option_new=False",
+        # f"habitat_baselines.eval.video_option_new=False",
         f"habitat_baselines.image_dir=video_dir/{scene}/{file_path}",
         f"habitat.seed={seed}",
+        f"habitat.environment.max_episode_steps={max_step}",
         f"habitat.dataset.data_path=data/datasets/hssd_scene/{scene}/{file_path}"
     ]
     log_file = f"./log/example_{file_path}.log"
     with open(log_file, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
-    time.sleep(1)
+    time.sleep(0.7)
     process_directory(os.path.join(base_directory,scene,file_path),skip_len=skip_len)
     print("finish_trans")
     sample_info = datatrans_2_end_single_agent_waypoint(process_dir=f"{scene}/{file_path}",skip_len = skip_len,sample_clip=450)
@@ -83,8 +84,9 @@ def run_script(args):
         f"habitat_baselines.image_dir=video_dir/{scene}/{file_path}",
         f"habitat_baselines.eval.image_option={a}",
         f"habitat.seed={seed}",
+        f"habitat.environment.max_episode_steps={max_step}",
         # f"habitat_baselines.eval.episode_stored={sample_info}",
-        f"habitat.dataset.data_path=data/datasets/hssd_scene/102344115/{file_path}"
+        f"habitat.dataset.data_path=data/datasets/hssd_scene/{scene}/{file_path}"
     ]
     log_file = f"./log/example_new_{file_path}.log"
     with open(log_file, "w") as f:
@@ -95,7 +97,7 @@ def run_script(args):
     os.makedirs(scene_target_path, exist_ok=True)
     destination_file_path = os.path.join(scene_target_path, scene_json_filename)
     shutil.move(scene_json_path, destination_file_path)
-    time.sleep(1)
+    time.sleep(0.7)
 
 if __name__ == "__main__":
     clear_directory('./habitat-baselines/habitat_baselines/config/override/')
@@ -106,15 +108,17 @@ if __name__ == "__main__":
         gpu_num = dp_config.gpu_num
         num_gz = int((sum_episode/epnum_per_gz)-gz_start)
         skip_len = dp_config.skip_len
+        max_step = 600
         base_directory = dp_config.base_directory
         zip_files = [(f"data_{i}.json.gz",int(i%gpu_num)) for i in range(gz_start,gz_start+num_gz)]
         process_num = dp_config.process_num
         total_batches = len(zip_files)//process_num
         with multiprocessing.Pool(processes=process_num) as pool:
-            args = [(file_path, skip_len,base_directory,gpu_id,scene) for file_path,gpu_id in zip_files]
+            args = [(file_path, skip_len,base_directory,gpu_id,scene,max_step) for file_path,gpu_id in zip_files]
             for _ in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
                 pass
         print(f"FINISH------{scene}")
+        time.sleep(1)
     # with tqdm(total=len(zip_files),desc = "Processing Files") as pbar: 
     #     for i in range(0, len(zip_files), batch_size):
     #         batch = zip_files[i:i + batch_size]  
