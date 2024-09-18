@@ -33,10 +33,6 @@ goal:
     - at(any_targets|1,TARGET_any_targets|1)
     - at(any_targets|2,TARGET_any_targets|2)
     - at(any_targets|3,TARGET_any_targets|3)
-    - is_detected(any_targets|0)
-    - is_detected(any_targets|1)
-    - is_detected(any_targets|2)
-    - is_detected(any_targets|3)
     
 stage_goals:
   any_targets|0_rearranged:
@@ -55,23 +51,6 @@ stage_goals:
     expr_type: AND
     sub_exprs:
       - at(any_targets|3,TARGET_any_targets|3)
-  
-  any_targets|0_detected:
-    expr_type: AND
-    sub_exprs:
-      - is_detected(any_targets|0)
-  any_targets|1_detected:
-    expr_type: AND
-    sub_exprs:
-      - is_detected(any_targets|1)
-  any_targets|2_detected:
-    expr_type: AND
-    sub_exprs:
-      - is_detected(any_targets|2)
-  any_targets|3_detected:
-    expr_type: AND
-    sub_exprs:
-      - is_detected(any_targets|3)
 
 solution:
   - nav_to_goal(any_targets|0, agent_3)
@@ -111,11 +90,3 @@ solution:
   - place(any_targets|3, TARGET_any_targets|3, agent_0)
   - reset_arm(agent_0)
 
-  - nav_to_goal(any_targets|0, agent_1)
-  - nav_to_goal(any_targets|1, agent_1)
-  - nav_to_goal(any_targets|2, agent_1)
-  - nav_to_goal(any_targets|3, agent_1)
-  - nav_to_goal(any_targets|0, agent_2)
-  - nav_to_goal(any_targets|1, agent_2)
-  - nav_to_goal(any_targets|2, agent_2)
-  - nav_to_goal(any_targets|3, agent_2)

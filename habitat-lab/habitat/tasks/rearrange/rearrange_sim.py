@@ -457,7 +457,7 @@ class RearrangeSim(HabitatSim):
         
     # add a write-to-json function to store robot setups
     def write_to_json(self, start_pos = np.array([0.0, 0.0, 0.0]), start_rot = 0.0, agent_idx: int = 0) -> None:
-        episode_id = self.ep_info.episode_id
+        episode_id = str(self.ep_info.episode_id)
         agent_info = self.parse_agent_info(start_pos, start_rot, agent_idx)
         
         file_path = self.habitat_config.json_path
