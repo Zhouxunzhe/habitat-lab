@@ -454,8 +454,8 @@ if __name__ == "__main__":
             #     episode['episode_id'] = str(item[i])
             #     i+=1
  
-            # with open(f'{output_path}_json', 'w') as file:
-            #     json.dump(dataset_json, file, indent=4)
+            with open(f'{output_path}.json', 'w') as file:
+                json.dump(dataset_json, file, indent=4)
 
             with gzip.open(output_path, "wt") as f:
                 f.write(json.dumps(dataset_json))

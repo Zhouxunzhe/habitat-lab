@@ -175,7 +175,7 @@ def datatrans_2_end_single_agent_objectcentric(process_dir:str,skip_len:int,pick
         except:
             continue
     return sample_info
-def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_place_sample_num=3) -> list:
+def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_place_sample_num=3,sample_clip=450) -> list:
     find_episode = []
     skip_len_start = skip_len
     process_dir_path = os.path.join('./video_dir',process_dir)
@@ -186,7 +186,7 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                 data = json.load(f)
                 if 'entities' in data:
                     entity_count = len(data['entities'])
-                    if 5< entity_count < 644:
+                    if 5< entity_count < sample_clip-5:
                         find_episode.append(folder_name)
     temp_q = 0
     sample_info = []
@@ -232,7 +232,7 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not ((x<=256 and x>=0) and(y<=256 and y>=0)):
+                    if not (0 <= x <= 256 and 0 <= y <= 256):
                         test_step -=1
                     else:
                         break
@@ -288,7 +288,7 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not ((x<=256 and x>=0) and(y<=256 and y>=0)):
+                    if not (0 <= x <= 256 and 0 <= y <= 256):
                         test_step -=1
                     else:
                         break

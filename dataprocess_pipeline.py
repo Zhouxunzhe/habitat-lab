@@ -55,7 +55,7 @@ def run_script(args):
     time.sleep(1)
     process_directory(os.path.join(base_directory,scene,file_path),skip_len=skip_len)
     print("finish_trans")
-    sample_info = datatrans_2_end_single_agent_waypoint(process_dir=f"{scene}/{file_path}",skip_len = skip_len)
+    sample_info = datatrans_2_end_single_agent_waypoint(process_dir=f"{scene}/{file_path}",skip_len = skip_len,sample_clip=450)
     if not sample_info:
         print("no sample_info,Exiting process.")
         return 

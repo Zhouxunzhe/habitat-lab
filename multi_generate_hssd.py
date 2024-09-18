@@ -9,7 +9,7 @@ def run_episode_generator(args):
     
     data_name,gpu_id,item = args
     # 生成基于进程名称的输出文件名
-    output_file = f"data/datasets/hssd_scene/{item}/{data_name}.json.gz"
+    output_file = f"hssd_scene/{item}/{data_name}.json.gz"
     command = [
         "python",
         "./habitat-lab/habitat/datasets/rearrange/run_episode_generator.py",
@@ -36,8 +36,8 @@ if __name__ == '__main__':
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     zip_files = [f"data_{i}" for i in range(0,int(sum_episode/batch_num))]
-    # scene_sample = ["108294465_176709960","102344115","103997919_171031233",
-    scene_sample = ["104348463_171513588","103997970_171031287",
+    # scene_sample
+    scene_sample = ["108294465_176709960","102344115","103997919_171031233","104348463_171513588","103997970_171031287",
     "108736689_177263340","102344193","107733912_175999623"]
     for item in scene_sample:
         if not os.path.exists(os.path.join(output_dir, item)):
