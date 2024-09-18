@@ -175,28 +175,27 @@ def generate_objects_description(sim, object_layer):
         
         position = np.array(obj.center)
         # Remove quotes in list 
-        position_str = ', '.join([f'{p:.1f}' for p in position])
-        description += f'Object "{obj_name}" is at the position [{position_str}]. '
+        # position_str = ', '.join([f'{p:.1f}' for p in position])
+        # description += f'Object "{obj_name}" is at the position [{position_str}]. '
         # add height and distance information
-        if not obj.label or obj.label.startswith("any_targets"):
-            description += f'The height of "{obj_name}" is {position[1]:.1f}. '
-            island_areas = [
-                (island_ix, sim.pathfinder.island_area(island_index=island_ix))
-                for island_ix in range(sim.pathfinder.num_islands)
-            ]
-            horizontal_dist = np.inf
-            for nav_island in range(len(island_areas)):
-                snap_pos = sim.pathfinder.snap_point(obj.center, nav_island)
-                if not np.isnan(snap_pos).any():
-                    horizontal_dist = np.linalg.norm(
-                        np.array(snap_pos)[[0, 2]] - np.array(obj.center)[[0, 2]]
-                    )
-                    break
-            description += f'The horizontal distance of "{obj_name}" to the nearest navigable point is {horizontal_dist:.1f}. '
-            if horizontal_dist == np.inf:
-                description += f'"inf" means the robot cannot navigate to a position near "{obj_name}".\n'
-            else:
-                description += "\n"
+        description += f'The height of "{obj_name}" is {position[1]:.1f}. '
+        island_areas = [
+            (island_ix, sim.pathfinder.island_area(island_index=island_ix))
+            for island_ix in range(sim.pathfinder.num_islands)
+        ]
+        horizontal_dist = np.inf
+        for nav_island in range(len(island_areas)):
+            snap_pos = sim.pathfinder.snap_point(obj.center, nav_island)
+            if not np.isnan(snap_pos).any():
+                horizontal_dist = np.linalg.norm(
+                    np.array(snap_pos)[[0, 2]] - np.array(obj.center)[[0, 2]]
+                )
+                break
+        description += f'The horizontal distance of "{obj_name}" to the nearest navigable point is {horizontal_dist:.1f}. '
+        if horizontal_dist == np.inf:
+            description += f'"inf" means the robot cannot navigate to a position near "{obj_name}".\n'
+        else:
+            description += "\n"
 
     return description
 

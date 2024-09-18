@@ -115,23 +115,29 @@ class SceneGraphMP3D(SceneGraphBase):
                         )
                         region_node.add_object(object_node)
                 
+                target_trans = self.sim._get_target_trans()
+                targets= {}
+                for target_id, trans in target_trans:
+                    targets[target_id] = trans
+
                 if self.sim.ep_info.goal_receptacles and len(self.sim.ep_info.goal_receptacles):
                     for target_id, goal_recep in enumerate(self.sim.ep_info.goal_receptacles):
                         goal_recep_handle = goal_recep[0]
                         assert goal_recep_handle in all_object_handles
                         obj = rom.get_object_by_handle(goal_recep_handle)
                         abs_obj_id = obj.semantic_id
-                        pos = obj.translation
-                        pos = np.array([pos.x, pos.y, pos.z])
-                        rot = obj.rotation
+                        
+                        target = targets[target_id]
+                        target_pos = np.array(target.translation)
+                        target_rot = target.rotation
 
-                        is_inside = np.all(pos >= region_bbox[0]) and np.all(
-                            pos <= region_bbox[1]
+                        is_inside = np.all(target_pos >= region_bbox[0]) and np.all(
+                            target_pos <= region_bbox[1]
                         )
                         if is_inside and abs_obj_id not in self.object_layer.obj_ids:
                             object_node = self.object_layer.add_object(
-                                center=pos,
-                                rotation=rot,
+                                center=target_pos,
+                                rotation=target_rot,
                                 id=abs_obj_id,
                                 full_name=goal_recep_handle,
                                 label=f"TARGET_any_targets|{target_id}",
