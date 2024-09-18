@@ -2,10 +2,10 @@
   "robot_id": "FetchRobot_head_only",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The Fetch robot is equipped with a differential drive system, as indicated by the presence of left and right wheel links connected via continuous joints to the base link. This design suggests mobility on flat ground and possibly rough terrain, but it does not include any flight capability, stair-climbing mechanisms, or abilities to move between floors autonomously. Therefore, for multi-floor tasks, the robot will require external assistance to traverse different levels."
+    "summary": "FetchRobot has wheel-based mobility with two continuous joints for the right and left wheel links attached to the base link, allowing it to move efficiently on flat surfaces. Its prismatic joint in the torso lift link allows vertical movement, which helps in accessing different height levels, though it does not support stair traversal or vertical climbing."
   },
   "perception": {
-    "summary": "Fetch has an articulated head equipped with pan and tilt capabilities, enabling wide-angle perception. Specifically, it includes an RGB camera and a depth camera mounted on the head, providing both visual data and depth information crucial for object detection and manipulation. The height of these sensors varies with the adjustable torso lift, improving its ability to perceive objects at various heights and contribute effectively to cooperative perception tasks and object search and identification.",
+    "summary": "FetchRobot is equipped with multiple cameras for perception. It has a head camera with a head_pan_link and head_tilt_link, allowing it to look around and focus on specific objects. The head camera supports both RGB and depth information (via head_camera_rgb_frame and head_camera_depth_frame), suitable for capturing detailed geometric information necessary for manipulation tasks.",
     "cameras_info": {
       "head_camera": {
         "height": 1.2000000476837158,
@@ -14,7 +14,7 @@
     }
   },
   "manipulation": {
-    "summary": "The robot features a highly articulable arm with seven degrees of freedom, including joints for shoulder pan and lift, continuous rotation for the upper arm and forearm, and revolute joints for the elbow and wrist flexion. This setup, coupled with a prismatic gripper mechanism, allows for versatile and precise manipulation. The arm's extensive reach and adjustability enable it to interact with objects both on high shelves and under tables, making it suitable for complex home arrangement tasks.",
+    "summary": "FetchRobot has a dexterous arm with multiple revolute and continuous joints, including shoulder_pan_link, shoulder_lift_link, and wrist_flex_link, allowing for a wide range of motion to manipulate objects. The arm ends in a gripper with two prismatic joints for the gripper fingers, enabling precise gripping actions. The torso's vertical movement (prismatic joint) enhances its ability to reach objects on high shelves or under tables.",
     "arm_workspace": {
       "type": "sphere",
       "center": [

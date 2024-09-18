@@ -2,10 +2,10 @@
   "robot_id": "SpotRobot_head_only",
   "robot_type": "SpotRobot",
   "mobility": {
-    "summary": "Spot has four legs each with three revolute joints (hip, upper leg, and lower leg), indicating a walking/quadrupedal base type. This allows Spot to navigate various ground types and potentially uneven terrains, making it capable of traversing different environments efficiently. However, based on the given information, it does not have mechanisms (e.g., flying capability) to move between floors independently, such as flying or stair climbing."
+    "summary": "SpotRobot has a quadruped base, offering significant stability and mobility on various ground types. Each leg consists of hip, upper leg, and lower leg segments connected by revolute joints, allowing for flexible and adaptive movement across different terrains. Though primarily ground-based, the articulated legs could facilitate overcoming obstacles and navigating uneven surfaces."
   },
   "perception": {
-    "summary": "Spot is equipped with a head camera attached via a fixed joint, likely providing a stable view of its surroundings. Given its head-mounted position, the camera likely benefits from an elevated vantage point for a better field of view. This setup is useful for cooperative perception tasks, allowing Spot to search for and perceive geometric information of objects, crucial for manipulation tasks.",
+    "summary": "SpotRobot features a head-mounted camera attached via a fixed joint, which provides visual perception capabilities. This camera is positioned high enough to get a broad view of its surroundings, aiding in tasks like object searching and cooperative perception. The single camera might limit depth perception but is essential for acquiring geometric information necessary for manipulation tasks.",
     "cameras_info": {
       "head_camera": {
         "height": 0.48,
@@ -14,7 +14,7 @@
     }
   },
   "manipulation": {
-    "summary": "Spot features a highly articulated arm with seven revolute joints (shoulder, elbow, wrist, and finger), providing a high degree of freedom for intricate manipulative tasks. This enables Spot to perform pick-and-place operations and rearrangement tasks, handling objects both on high shelves and under tables, thanks to the arm\u2019s extended reach and flexible movement. The detailed joint structure allows for precise manipulation which is necessary for home arrangement tasks and cooperative perception-based manipulation.",
+    "summary": "The robot is equipped with a sophisticated manipulator arm consisting of multiple revolute joints, greatly enhancing its manipulation capabilities. The arm segments include shoulder, humerus, elbow, and wrist joints, culminating in an end effector at the fingertips. This configuration allows for complex, articulated movements necessary for pick and place operations, reaching high shelves, or accessing spaces under tables. The arm's dexterity is well-suited for nuanced tasks such as object rearrangement and furniture positioning.",
     "arm_workspace": {
       "type": "sphere",
       "center": [

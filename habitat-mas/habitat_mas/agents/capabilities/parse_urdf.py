@@ -32,6 +32,11 @@ Cross-floor object rearrangement (pick and place objects from one floor to anoth
 Cooperative Perception for manipulation: Robots need to search for and perceive the object to get geometric information, and then manipulate the object;
 Home arrangement: Robots need to rearrange the furniture in the home, especially the objects in abnormal positions like on the high shelf and under table.
 """
+# default_tasks = """
+# • Task 1: Cross-floor object navigation: In the multi-floor task requires the collaboration of robots with different base types to navigate to multiple objects in the scene. The wheeled robot operates on a single floor, while the legged robot can navigate between floors, emphasizing the need for coordinated planning with awareness of mobility capabilities of different robots.
+# • Task 2: Cooperative perception for manipulation: In single-floor scenario, the robots need to acquire good RGBD perception of an object to enable complex manipulation. The target objects are visible only from viewpoints (eg. camera height will affect the viewpoint) of certain robots. It is necessary to reason about robot sensor type and viewpoint to succeed in this task.
+# • Task 3: Collaborative home rearrangement. This single-floor task involves rearranging objects placed in varying positions including the ground, high shelves, or a bed center far from navigable area, requiring the robots with different arm workspace to understand their availablility for different rearrangement targets.
+# """
 
 def generate_robot_link_id2name():
     # Define the settings for the simulator
@@ -211,9 +216,13 @@ def generate_tree_text_with_edge_types(graph, root):
     return "\n".join(tree_structure)
 
 # Function to generate physics capabilities summary using OpenAI API
-def query_llm_with_urdf(urdf: URDF, model_name="gpt-4o", task_text=default_tasks):
+def query_llm_with_urdf(urdf: URDF, model_name="gpt-4o", task_text=default_tasks,
+                        robot_id=None, robot_type=None, manipulation=None, perception=None):
     # Extract relevant information from URDF
-    robot_name = urdf.name
+    if robot_type is None:
+        robot_name = urdf.name
+    else:
+        robot_name = robot_type
 
     urdf_text = ""
     
@@ -237,12 +246,36 @@ def query_llm_with_urdf(urdf: URDF, model_name="gpt-4o", task_text=default_tasks
             root_node = node
     urdf_text = generate_tree_text_with_edge_types(urdf_nx_graph, root_node)
     # TODO: modify the prompt so the LLM attends to the cameras in urdf
+    # TODO(zxz): prompt with fk function call
+#     system_prompt = """
+# You are a robot urdf structure reasoner. You will be given a robot's urdf tree-structured text, and you need to provide a summary of the robot's physics capabilities.
+# Please pay attention to the task and summarize the mobility, perception, and manipulation capabilities of the robot that are relevant to the task.
+# For the robot's mobility capability, consider the robot's base type (e.g., flying, walking, wheeled), and evaluate the robot's ability to move between floors, factoring in whether it can fly, walk up stairs, or is limited to ground-level movement on wheels.
+# For the robot's perception capability, pay attention to different robots' camera height in perception part, and compare to inference their perception.
+# For the robot's manipulation capability, consider different robots' arm workspace in manipulation part, pay attention to their radius and the center point of the manipulation space, and compare to inference the height and distance the robot can manipulate.
+# The response should be a JSON object with each capability as a dictionary, containing a summary field:
+# {
+#     "mobility": {"summary": ...},
+#     "perception": {"summary": ...},
+#     "manipulation": {"summary": ...}
+# }
+# """
+#     prompt = f"""
+# The robot's name is {robot_name}. Here is the tree structure of the robot's URDF:
+# {urdf_text}
+# The robot task includes: {task_text}
+# Pay attention to the the radius from the center point, (including the height and horizonal distance from the center)
+# Notably, The coordinates are in [x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions.
+# The robots' manipulation includes: {manipulation}
+# The robots' perception includes: {perception}
+# Please provide a summary of the robot's physics capabilities based on corresponding information and task.
+# """
     system_prompt = """
 You are a robot urdf structure reasoner. You will be given a robot's urdf tree-structured text, and you need to provide a summary of the robot's physics capabilities.
 Please pay attention to the task and summarize the mobility, perception, and manipulation capabilities of the robot that are relevant to the task.
-For the robot's mobility capability, consider the robot's base type (e.g., flying, walking, wheeled), as well as its ability to navigate different environments (e.g., across floors, on various ground types, or in the air). Specifically, evaluate the robot's ability to move between floors, factoring in whether it can fly, walk up stairs, or is limited to ground-level movement on wheels.
-For the robot's perception capability, take into account the robot's sensor configuration, with a focus on the cameras. Consider the positions of sensors, particularly in relation to their height and field of view, to understand how they impact the robot's overall perception ability.
-For the robot's manipulation capability, consider both the end effectors and the joints that enable the robot to interact with objects. Additionally, assess the workspace of the manipulator, including the height and horizontal reach of the arm, the degrees of freedom at each joint, and how these factors influence the robot's ability to effectively manipulate objects in its environment.
+For the mobility capability, you should consider the robot's base type, the moving capability on/in the ground type or the air.
+For the perception capability, you should consider the robot's sensors, especially the cameras, their types and positions.
+For the manipulation capability, you should consider the robot's end effectors and the joints that allow the robot to manipulate objects.
 The response should be a JSON object with each capability as a dictionary, containing a summary field:
 {
     "mobility": {"summary": ...},

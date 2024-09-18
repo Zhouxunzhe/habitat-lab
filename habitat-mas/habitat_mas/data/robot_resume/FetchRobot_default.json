@@ -2,10 +2,10 @@
   "robot_id": "FetchRobot_default",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The Fetch robot utilizes a wheeled base with continuous joints for its right and left wheels, making it a ground-based robot primarily suited for flat surfaces. It does not possess the ability to navigate stairs or move between floors autonomously, therefore requiring external assistance for inter-floor travel."
+    "summary": "FetchRobot has a mobile base equipped with two continuous joints connected to right and left wheels (r_wheel_link and l_wheel_link), allowing it to move on the ground with differential drive capabilities. For cross-floor movement, additional infrastructure like elevators or ramps would be necessary as the robot itself does not feature any vertical mobility mechanism."
   },
   "perception": {
-    "summary": "Fetch is equipped with several sensors for perception. It has a color and depth camera mounted on a pan-tilt head, which allows it to adjust its field of view both horizontally and vertically. The height of the head can be adjusted using the torso lift mechanism, enhancing its ability to perceive objects at different heights and angles. Additionally, a laser sensor is available, possibly for distance measurement and mapping purposes. This array of sensors allows the robot to effectively locate and identify objects in its environment, capturing geometric information necessary for manipulation tasks.",
+    "summary": "FetchRobot is equipped with multiple sensors, including an RGB camera (head_camera_rgb_frame and head_camera_rgb_optical_frame) and a depth camera (head_camera_depth_frame and head_camera_depth_optical_frame) mounted on a head that can pan and tilt, allowing for extensive environmental scanning and object identification from various angles. Additionally, there is a fixed laser sensor (laser_link) which likely helps in obstacle detection and environment mapping. This setup enables advanced cooperative perception capabilities required for identifying and locating objects before manipulation.",
     "cameras_info": {
       "articulated_agent_arm_camera": {
         "height": 0.7860100000000001,
@@ -18,7 +18,7 @@
     }
   },
   "manipulation": {
-    "summary": "The Fetch robot features a sophisticated manipulator arm with multiple degrees of freedom, including joints that can pan, lift, roll, and flex. The arm has both elbow and wrist joints that provide significant flexibility and reach. The end effector is a gripper with prismatic joints allowing for fine adjustments needed for gripping objects. There is also an articulated camera near the gripper to provide close-up visual feedback during manipulation tasks. The versatile design of the arm allows Fetch to engage in complex manipulation tasks, such as picking and placing objects from high shelves or under tables, accommodating various object sizes and shapes.",
+    "summary": "FetchRobot has a highly articulated arm with multiple degrees of freedom, including shoulder, elbow, and wrist joints that provide extensive workspace flexibility. The end-effector is a gripper (gripper_link) with two prismatic joints controlling the gripper fingers (r_gripper_finger_link and l_gripper_finger_link). This allows for precise gripping and manipulation of objects, facilitating tasks like pick-and-place from various locations including high shelves and under tables. The arm also includes an articulated agent arm camera for better perception during manipulation tasks.",
     "arm_workspace": {
       "type": "sphere",
       "center": [

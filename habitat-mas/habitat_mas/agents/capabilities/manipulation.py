@@ -219,14 +219,20 @@ def get_all_robot_arm_workspace():
         # Calculate the minimum and maximum x, y, and z coordinates
         min_bound = np.min(end_effector_positions, axis=0)
         max_bound = np.max(end_effector_positions, axis=0)
-        
-        robot_arm_workspace[robot_type] = {
-            "center": center,
-            "radius": radius,
-            "min_bound": min_bound,
-            "max_bound": max_bound,
-        }
-            
+
+        if robot_type == "FetchRobot" or robot_type == "SpotRobot":
+            robot_arm_workspace[robot_type] = {
+                "type": "sphere",
+                "center": center,
+                "radius": radius,
+            }
+        elif robot_type == "StretchRobot":
+            robot_arm_workspace[robot_type] = {
+                "type": "box",
+                "min_bound": min_bound,
+                "max_bound": max_bound,
+            }
+
     return robot_arm_workspace
 
 if __name__ == "__main__":

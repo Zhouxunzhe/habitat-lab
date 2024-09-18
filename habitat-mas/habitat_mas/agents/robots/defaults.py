@@ -44,22 +44,78 @@ robot_base_offset_map = {
 # Pre-computed ego-centric arm workspace, w.r.t. base footprint link. TOO SLOW to compute in real-time.
 robot_arm_workspaces = {
     'FetchRobot': {
+        "type": "sphere",
         'center': np.array([0.14739853, 0.89994   , 0.1324109 ], dtype=np.float32),
         'radius': 1.1041796,
-        'min_bound': np.array([-0.8757105 , -0.03437389, -0.8868222 ], dtype=np.float32),
-        'max_bound': np.array([1.0899982, 1.8497144, 1.1006198], dtype=np.float32)
     },
     'SpotRobot': {
+        "type": "sphere",
         'center': np.array([0.21883333, 0.7876817 , 0.18432271], dtype=np.float32),
         'radius': 0.977087,
-        'min_bound': np.array([-0.6372385 , -0.03964764, -0.6838088 ], dtype=np.float32),
-        'max_bound': np.array([1.1124821, 1.5562466, 1.0395489], dtype=np.float32)
     },
     'StretchRobot': {
-        'center': np.array([-0.64200795,  0.5130169 ,  0.1732484 ], dtype=np.float32),
-        'radius': 0.84763783,
-        'min_bound': np.array([-1.0987    , -0.14606091, -0.01741028], dtype=np.float32),
-        'max_bound': np.array([-0.21523285,  1.2452799 ,  0.37965298], dtype=np.float32)
+        'type': 'box',
+        'min_bound': np.array([-1.3228146, -0.1473276, -0.1384921], dtype=np.float32),
+        'max_bound': np.array([-0.22937274,  1.2440531 ,  0.26185083], dtype=np.float32)
+    }
+}
+
+robot_perception = {
+    'FetchRobot_default': {
+        'articulated_agent_arm_camera': {
+            'height': 0.786,
+            'type': 'articulated'
+        },
+        'head_camera': {
+            'height': 1.2,
+            'type': 'fixed'
+        }
+    },
+    'FetchRobot_head_only': {
+        'head_camera': {
+            'height': 1.2,
+            'type': 'fixed'
+        }
+    },
+    'FetchRobot_arm_only': {
+        'articulated_agent_arm_camera': {
+            'height': 0.786,
+            'type': 'articulated'
+        }
+    },
+    'SpotRobot_default': {
+        'articulated_agent_arm_camera': {
+            'height': 0.577,
+            'type': 'articulated'
+        },
+        'head_camera': {
+            'height': 0.48,
+            'type': 'fixed'
+        }
+    },
+    'SpotRobot_head_only': {
+        'head_camera': {
+            'height': 0.48,
+            'type': 'fixed'
+        }
+    },
+    'SpotRobot_arm_only': {
+        'articulated_agent_arm_camera': {
+            'height': 0.577,
+            'type': 'articulated'
+        }
+    },
+    'StretchRobot_default': {
+        'head_camera': {
+            'height': 1.422,
+            'type': 'articulated'
+        }
+    },
+    'DJIDrone_default': {
+        'head_camera': {
+            'height': 1.5,
+            'type': 'fixed'
+        }
     }
 }
 

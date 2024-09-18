@@ -2,10 +2,10 @@
   "robot_id": "DJIDrone_default",
   "robot_type": "DJIDrone",
   "mobility": {
-    "summary": "The dji_m100 is designed primarily as an aerial robot, indicating its flying capability. This capability allows it to easily navigate between different floors and across various environments. Its mobilization is not constrained by ground-based challenges such as stairs or differing ground types, which makes it suitable for tasks requiring movement between multiple levels in a building."
+    "summary": "The DJIDrone features an aerial mobility base indicated by its name and structure. It lacks mobile joints indicating terrestrial locomotion and therefore is likely an aerial vehicle capable of multi-floor operations, suitable for tasks that involve vertical movement and cross-floor transport."
   },
   "perception": {
-    "summary": "The robot is equipped with multiple sensors. It features a RealSense camera attached to a base link, suggesting a comprehensive visual perceptive capability. The height and fixed positioning of these cameras enable a consistent field of view, which is critical for accurate Object detection and perception essential for cooperative tasks. With sensors like the Velodyne likely providing additional depth or environmental sensing, it has robust capabilities for perceiving and navigating its surroundings before manipulation.",
+    "summary": "The DJIDrone is equipped with multiple sensors for perceiving its environment. It has a Velodyne sensor and a RealSense camera, the latter of which includes a depth optical frame. These sensors provide the drone with depth perception and detailed geometric information which are critical for object detection, necessary to search for and perceive objects for manipulation.",
     "cameras_info": {
       "head_camera": {
         "height": 1.5,
@@ -14,7 +14,7 @@
     }
   },
   "manipulation": {
-    "summary": "The URDF description does not detail joints or end effectors specific to manipulation tasks, suggesting the primary focus is on mobility and perception. Without articulated arms or manipulators listed, the dji_m100 may rely on other robots for manipulation in cooperative tasks or might require additional modules to perform object rearrangement and handling. Its current structure may limit its ability to directly interact with objects, particularly those in abnormal positions like high shelves or under tables.",
+    "summary": "There are no specific end effectors or manipulative joints mentioned in the provided structure, suggesting the DJIDrone may not have direct manipulation capabilities built-in. However, its sensing capabilities make it suitable for cooperative manipulation tasks, likely working in tandem with other manipulators.",
     "arm_workspace": {}
   }
 }

@@ -6,8 +6,12 @@ from urchin import URDF, Link, Joint
 from habitat_mas.agents.capabilities.parse_urdf import parse_urdf
 from habitat_mas.agents.robots.defaults import (
     robot_base_offset_map,
+    robot_urdf_paths,
+    robot_arm_workspaces,
+    dji_camera_params,
     fetch_camera_params,
-    spot_camera_params,
+    stretch_camera_params,
+    spot_camera_params
 )
 
 def get_camera_tf_to_base(urdf: URDF, camera_link: Link) -> np.ndarray:
@@ -67,12 +71,21 @@ def get_cameras_height_and_type(urdf_path: str, camera_links:List[str], robot_na
     return cameras_info
 
 if __name__ == "__main__":
+    robot_camera_params = {
+        "FetchRobot": fetch_camera_params,
+        "SpotRobot": spot_camera_params,
+        "StretchRobot": stretch_camera_params,
+        "DJIDrone": dji_camera_params
+    }
     cur_dir = os.path.dirname(__file__)
-    urdf_path = os.path.join(cur_dir, "../../data/robot_urdf/hab_spot_arm_default.urdf")
-    # camera_params = spot_camera_params["head_only"]
-    camera_params = spot_camera_params["default"]
-    camera_links = [f"{camera_name}_camera" for camera_name in camera_params.keys()]
-    robot_name = "SpotRobot"
-    cameras_info = get_cameras_height_and_type(urdf_path, camera_links, robot_name)
-    print(cameras_info)
-    # output: {'articulated_agent_arm_camera': {'height': 0.5770000063180923, 'type': 'articulated'}, 'head_camera': {'height': 0.48, 'type': 'fixed'}}
+    habitat_mas_data_dir = os.path.join(cur_dir, "../../data")
+    robot_perception = {}
+    for robot_name, camera_params in robot_camera_params.items():
+        org_urdf_file_path = robot_urdf_paths[robot_name]
+        org_urdf_file_name = os.path.basename(org_urdf_file_path).split(".")[0]
+        for camera_setup, camera_param in camera_params.items():
+            urdf_path = os.path.join(habitat_mas_data_dir, "robot_urdf", f"{org_urdf_file_name}_{camera_setup}.urdf")
+            camera_links = [f"{camera_name}_camera" for camera_name in camera_param.keys()]
+            camera_info = get_cameras_height_and_type(urdf_path, camera_links, robot_name)
+            robot_perception[f'{robot_name}_{camera_setup}'] = camera_info
+    print(robot_perception)
