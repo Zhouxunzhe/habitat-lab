@@ -32,6 +32,7 @@ defaults:
     - composite_stage_goals
     - pddl_subgoal_reward
     - rearrange_cooperate_reward
+    - object_to_goal_distance
   - /habitat/task/lab_sensors:
     - relative_resting_pos_sensor
     - target_start_sensor

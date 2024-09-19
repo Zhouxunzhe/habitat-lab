@@ -31,13 +31,18 @@ stage_goals:
       - at(any_targets|1,TARGET_any_targets|1)
 
 solution:
+  - reset_arm(agent_0)
   - nav_to_goal(any_targets|0, agent_0)
   - pick(any_targets|0, agent_0)
+  - reset_arm(agent_0)
   - nav_to_obj(TARGET_any_targets|0, agent_0)
   - place(any_targets|0,TARGET_any_targets|0, agent_0)
+  - reset_arm(agent_0)
 
   - nav_to_goal(any_targets|1, agent_0)
   - pick(any_targets|1, agent_0)
+  - reset_arm(agent_0)
   - nav_to_obj(TARGET_any_targets|1, agent_0)
   - place(any_targets|1,TARGET_any_targets|1, agent_0)
+  - reset_arm(agent_0)
 

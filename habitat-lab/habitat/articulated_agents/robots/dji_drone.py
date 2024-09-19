@@ -68,7 +68,7 @@ class DJIDrone(MobileManipulator):
     ):
         drone_height = 1.5
         if sim.scene_type == "mp3d":
-            drone_height = 0.8
+            drone_height = 1.0
         super().__init__(
             self._get_params(drone_height),
             agent_cfg,

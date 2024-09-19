@@ -503,12 +503,16 @@ class ObjectToGoalDistanceSensor(UsesArticulatedAgentInterface, Sensor):
 
     def get_observation(self, *args, episode, **kwargs):
         task = kwargs['task']
-        idxs, goal_pos = self._sim.get_targets()
-        scene_pos = self._sim.get_scene_pos()
-        target_pos = scene_pos[idxs]
-        distances = np.linalg.norm(target_pos - goal_pos, ord=2, axis=-1)
-        # TODO(zxz): need to change the return
-        return distances[self.agent_id]
+        assert 'object_to_goal_distance' in task.measurements.measures
+        task.measurements.measures[
+            ObjectToGoalDistance.cls_uuid
+        ].update_metric(episode=episode)
+        obj_to_goal_dist = task.measurements.measures[
+            ObjectToGoalDistance.cls_uuid
+        ].get_metric()
+
+        dist_to_goal = obj_to_goal_dist[str(task.targ_idx)]
+        return dist_to_goal
 
 
 @registry.register_measure

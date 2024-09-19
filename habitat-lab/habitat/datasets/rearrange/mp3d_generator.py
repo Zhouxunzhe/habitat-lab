@@ -83,11 +83,27 @@ class MP3DGenerator:
             num_episodes: int = 1,
             scene_dataset_path: str = "data/scene_datasets/mp3d/",
             num_objects: int = 1,
+            num_object_filter_height: int = 0,
+            min_height: float = None,
+            max_height: float = None,
+
         ) -> None:
         self.cfg = cfg
         self.num_episodes = num_episodes
         self.dataset_path = scene_dataset_path
         self.num_objects = num_objects
+
+        min_filter_list = [None] * num_objects
+        max_filter_list = [None] * num_objects
+        min_filter = random.sample(range(num_objects), num_object_filter_height)
+        max_filter = random.sample(range(num_objects), num_object_filter_height)
+
+        for i in min_filter:
+            min_filter_list[i] = min_height
+        for i in max_filter:
+            max_filter_list[i] = max_height
+        self.min_filter_list = min_filter_list
+        self.max_filter_list = max_filter_list
 
         self.sim: RearrangeSim = None
         self.failed_episodes = 0
@@ -203,36 +219,40 @@ class MP3DGenerator:
 
         return new_pos
 
-    def choose_unique_file(self, source_set: list, target_set: list) -> list:
+    def choose_file(self, source_set: list, target_set: list, unique: bool = True) -> list:
         assert isinstance(source_set, list) and isinstance(target_set, list)
         assert len(source_set)
-
-        unique_files = list(set(source_set) - set(target_set))
-        return random.sample(unique_files, 1)[0]
+        if unique:
+            unique_files = list(set(source_set) - set(target_set))
+            return random.sample(unique_files, 1)[0]
+        else:
+            return random.choice(source_set)
 
     def sample_files(self):
 
         object_files, target_receptacle_files, goal_receptacle_files = [], [], []
 
         for i in range(num_objects):
-            object_file = self.choose_unique_file(self.object_set, object_files)
+            object_file = self.choose_file(self.object_set, object_files)
             object_files.append(object_file)
 
-            goal_receptacle_file = self.choose_unique_file(
+            goal_receptacle_file = self.choose_file(
                 self.receptacle_set, 
-                goal_receptacle_files
+                goal_receptacle_files,
+                False
             )
             goal_receptacle_files.append(goal_receptacle_file)
 
-            target_receptacle_file = self.choose_unique_file(
+            target_receptacle_file = self.choose_file(
                 self.receptacle_set, 
-                target_receptacle_files
+                target_receptacle_files,
+                False
             )
             target_receptacle_files.append(target_receptacle_file)
 
         return object_files, target_receptacle_files, goal_receptacle_files
     
-    def is_object_accessible(self, receptacle):
+    def is_object_accessible(self, receptacle, min_height = None, max_height = None):
         # get all the aabb_receptacles of receptacle
         aabbs = parse_receptacles_from_user_config(
             receptacle.user_attributes,
@@ -241,7 +261,7 @@ class MP3DGenerator:
         )
         is_access = False
 
-        for _ in range(50):
+        for _ in range(100):
             aabb = random.choice(aabbs)
             rec_up_global = (
                 aabb.get_global_transform(self.sim)
@@ -263,6 +283,15 @@ class MP3DGenerator:
                 nav_island=self.largest_island_idx,
                 target_object_id=receptacle.object_id
             )
+
+            snap_pos = self.safe_snap_point(target_obj_pos, self.largest_island_idx)
+            if not np.isnan(snap_pos[0]):
+                height_to_floor = target_obj_pos[1] - snap_pos[1]
+                if min_height and height_to_floor < min_height:
+                    is_access = False
+                if max_height and height_to_floor > max_height:
+                    is_access = False
+
             if is_access:
                 break
         
@@ -290,6 +319,11 @@ class MP3DGenerator:
 
         return receptacle
 
+    def clear_objects(self, rom):
+        assert len(rom.get_object_handles())
+        for obj_handle in rom.get_object_handles():
+            rom.remove_object_by_handle(obj_handle)
+
     def set_filter_positions(
             self, 
             pf,
@@ -304,6 +338,8 @@ class MP3DGenerator:
             num_max_tries: int = 200,
             closest_dist_limit: float = 3.0,
             furthest_dist_limit: float = 100.0,
+            min_height: float = None,
+            max_height: float = None
         ):
 
         # 1. Get target and goal positions for receptacles
@@ -362,8 +398,10 @@ class MP3DGenerator:
         # 3. Check if the object is accessible from target receptacle
         assert otm.get_library_has_handle(object_file)
         obj = rom.add_object_by_template_handle(object_file)
-        obj_target_pos, target_aabb = self.is_object_accessible(target_recep)
+        obj_target_pos, target_aabb = self.is_object_accessible(target_recep, min_height, max_height)
         if not obj_target_pos:
+            # we need clear all the objects in the scene
+            self.clear_objects(rom)
             return False, [], [], [], {}, {}
         
         # 4. Set the object to obj_target_pos
@@ -384,8 +422,9 @@ class MP3DGenerator:
         # 6. Remove the object and check if it is accessible from goal receptacle
         rom.remove_object_by_id(obj.object_id)
         obj = rom.add_object_by_template_handle(object_file)
-        obj_goal_pos, goal_aabb = self.is_object_accessible(goal_recep)
+        obj_goal_pos, goal_aabb = self.is_object_accessible(goal_recep, min_height, max_height)
         if not obj_goal_pos:
+            self.clear_objects(rom)
             return False, [], [], [], {}, {}
 
         obj.translation = obj_goal_pos
@@ -478,6 +517,8 @@ class MP3DGenerator:
                         goal_receptacles=goal_receptacles,
                         targets=targets,
                         name_to_receptacle=name_to_receptacle,
+                        min_height=self.min_filter_list[i],
+                        max_height=self.max_filter_list[i],
                     )
                     one_object_tries += 1
                     if one_object_tries >= 10:
@@ -496,23 +537,23 @@ class MP3DGenerator:
             object_labels[obj_name] = f"any_targets|{obj_id}"
 
         return RearrangeEpisode(
-        episode_id=episode_id,
-        additional_obj_config_paths=self.cfg.additional_object_paths,
-        start_position=[0, 0, 0],
-        start_rotation=[0, 0, 0, 1],
-        scene_id=ep_scene_handle,
-        rigid_objs=rigid_objects,
-        ao_states={},
-        target_receptacles=target_receptacles,
-        targets=targets,
-        goal_receptacles=goal_receptacles,
-        name_to_receptacle=name_to_receptacle,
-        markers={},
-        info={
-            "object_labels": object_labels,
-            "dataset": "mp3d",
-        },
-    )
+            episode_id=episode_id,
+            additional_obj_config_paths=self.cfg.additional_object_paths,
+            start_position=[0, 0, 0],
+            start_rotation=[0, 0, 0, 1],
+            scene_id=ep_scene_handle,
+            rigid_objs=rigid_objects,
+            ao_states={},
+            target_receptacles=target_receptacles,
+            targets=targets,
+            goal_receptacles=goal_receptacles,
+            name_to_receptacle=name_to_receptacle,
+            markers={},
+            info={
+                "object_labels": object_labels,
+                "dataset": "mp3d",
+            },
+        )
 
     def generate_mobility_episodes(self, output_dir):
 
@@ -564,10 +605,13 @@ class MP3DGenerator:
 
 if __name__ == "__main__":
     config_path = "habitat-lab/habitat/datasets/rearrange/configs/mp3d.yaml" 
-    output_dir = "data/datasets/mobility"
+    output_dir = "data/datasets/mp3d"
     scene_dataset_path = "data/scene_datasets/mp3d/"     
-    num_episodes = 5
-    num_objects = 2
+    num_episodes = 1
+    num_objects = 4
+    num_object_filter_height = 1
+    min_height = None
+    max_height = None
 
     assert num_episodes > 0, "Number of episodes must be greater than 0."
     assert osp.exists(
@@ -582,6 +626,10 @@ if __name__ == "__main__":
         cfg=cfg,
         num_episodes=num_episodes,
         scene_dataset_path=scene_dataset_path,
-        num_objects=num_objects
+        num_objects=num_objects,
+        num_object_filter_height=num_object_filter_height,
+        min_height=min_height,
+        max_height=max_height,
+
     ) as mp_gen:
         mp_gen.generate_mobility_episodes(output_dir)
