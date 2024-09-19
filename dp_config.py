@@ -1,8 +1,11 @@
-sum_episode = 8
-epnum_per_gz = 8
+sum_episode = 4000
+epnum_per_gz = 100
 gz_start = 0
-skip_len = 30
+skip_len = 40
 base_directory = './video_dir/'
-process_num = 1
-gpu_num = 1
-sample_scene = ["102344115","102344193","104348463_171513588","107733912_175999623"]
+process_num = 8
+gpu_num = 8
+max_step = 500
+jump_gz = 10
+repeat_time = 40
+sample_scene = ["102344115","102344193","103997970_171031287","104348463_171513588","108294465_176709960","108736689_177263340"]
