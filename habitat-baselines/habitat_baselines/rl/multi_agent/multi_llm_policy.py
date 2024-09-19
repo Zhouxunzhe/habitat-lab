@@ -81,8 +81,10 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         # "The physics capabilities include its mobility, perception, and manipulation capabilities."
         'You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
         "Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
-        "You can use the provided functions to check if task is feasible or not numerically." 
-
+        'You can generate python code to check if task is feasible or not numerically like if a location is within the space bounded by the shape. '
+        'When you do this, pay attention to the type of the robot workspace. '
+        "You MUST print the varible you want to know in the code."
+        "I will execute the code and give your the result to help you make decisions."
     )
     FORMAT_INSTRUCTION = (
         r" Finally, if you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
@@ -176,7 +178,8 @@ def parse_agent_response(text):
     return response, reason
 
 
-DISCUSSION_TOOLS = [eval_python_code, add, subtract, multiply, divide]
+# DISCUSSION_TOOLS = [eval_python_code, add, subtract, multiply, divide]
+DISCUSSION_TOOLS = []
 
 
 def group_discussion(
@@ -191,7 +194,7 @@ def group_discussion(
             capabilities=get_text_capabilities(robot_resume[robot_key]),
         )
     leader_prompt = create_leader_prompt(robot_resume_prompt)
-    leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True)
+    leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=False)
     agents = {}
     for robot_key in robot_resume:
         robot_prompt = create_robot_prompt(
@@ -200,7 +203,7 @@ def group_discussion(
             get_text_capabilities(robot_resume[robot_key]),
         )
         agents[robot_key] = OpenAIModel(
-            robot_prompt, DISCUSSION_TOOLS, discussion_stage=True
+            robot_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=True,
         )
 
     # robot_id_to_model_map = {

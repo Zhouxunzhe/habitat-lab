@@ -2,6 +2,7 @@ import json
 from ..agents.crab_core import Action
 from typing import List
 import openai
+from .python_interpreter import SubprocessInterpreter
 
 
 class OpenAIModel:
@@ -12,6 +13,7 @@ class OpenAIModel:
         model="gpt-4o",
         window_size=None,
         discussion_stage=False,
+        code_execution=False,
     ) -> None:
         self.system_message = {
             "role": "system",
@@ -24,6 +26,15 @@ class OpenAIModel:
         self.model = model
         self.client = openai.OpenAI()
         self.planning_stage = discussion_stage
+        self.code_execution = code_execution
+        if self.code_execution:
+            self.interpreter = SubprocessInterpreter()
+        self.openai_tools = (
+            [{"type": "function", "function": action} for action in self.actions]
+            if action_space
+            else None
+        )
+        self.tool_calls_enable = True if action_space else False
 
     def set_system_message(self, system_message: str):
         self.system_message = {"role": "system", "content": system_message}
@@ -49,33 +60,61 @@ class OpenAIModel:
 
         if self.planning_stage:
             while True:
-                response = self.client.chat.completions.create(
-                    messages=request,  # type: ignore
-                    model=self.model,
-                    tools=[
-                        {"type": "function", "function": action}
-                        for action in self.actions
-                    ],
-                )
+                if self.tool_calls_enable:
+                    response = self.client.chat.completions.create(
+                        messages=request,  # type: ignore
+                        model=self.model,
+                        tools=self.openai_tools,
+                    )
+                else:
+                    response = self.client.chat.completions.create(
+                        messages=request,  # type: ignore
+                        model=self.model,
+                    )
+
                 response_message = response.choices[0].message
                 self.chat_history[-1].append(response_message)
                 request.append(response_message)
 
                 tool_calls = response_message.tool_calls
-                if tool_calls is None or not tool_calls:
+                codes = _extract_code(response_message.content)
+                if self.tool_calls_enable and tool_calls is not None:
+                    for tool_call in tool_calls:
+                        tool_call_result = {
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": tool_call.function.name,
+                            "content": self.execute_action(
+                                tool_call.function.name,
+                                json.loads(tool_call.function.arguments),
+                            ),
+                        }
+                        self.chat_history[-1].append(tool_call_result)
+                        request.append(tool_call_result)
+
+                elif self.code_execution and codes:
+                    execution_results = []
+                    for code_block, code_type in codes:
+                        execution_results.append(self.interpreter.run(code_block, code_type))
+
+                    # result_content = "".join(
+                    #     [
+                    #         f"Result of code block {idx}: {result}\n"
+                    #         for idx, result in enumerate(execution_results)
+                    #     ]
+                    # )
+                    result_content = "\n".join(execution_results)
+                    print("============Codes============")
+                    for idx, code in enumerate(codes):
+                        print(f"Code block {idx}: {code[0]}")
+                    print("============Results============")
+                    print(result_content)
+                    print("==============================")
+                    result_message = {"role": "user", "content": result_content}
+                    self.chat_history[-1].append(result_message)
+                    request.append(result_message)
+                else:
                     return response_message.content
-                for tool_call in tool_calls:
-                    tool_call_result = {
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": tool_call.function.name,
-                        "content": self.execute_action(
-                            tool_call.function.name,
-                            json.loads(tool_call.function.arguments),
-                        ),
-                    }
-                    self.chat_history[-1].append(tool_call_result)
-                    request.append(tool_call_result)
         else:
             response = self.client.chat.completions.create(
                 messages=request,  # type: ignore
@@ -123,3 +162,33 @@ class OpenAIModel:
         for action in action_space:
             new_action = action.to_openai_json_schema()
             self.actions.append(new_action)
+
+
+def _extract_code(content) -> list[tuple[str, str]]:
+    codes = []
+    texts = []
+
+    lines = content.split("\n")
+    idx = 0
+    start_idx = 0
+    while idx < len(lines):
+        while idx < len(lines) and (not lines[idx].lstrip().startswith("```")):
+            idx += 1
+        text = "\n".join(lines[start_idx:idx]).strip()
+        texts.append(text)
+
+        if idx >= len(lines):
+            break
+
+        code_type = lines[idx].strip()[3:].strip()
+        idx += 1
+        start_idx = idx
+        while not lines[idx].lstrip().startswith("```"):
+            idx += 1
+        code = "\n".join(lines[start_idx:idx]).strip()
+        codes.append((code, code_type))
+
+        idx += 1
+        start_idx = idx
+
+    return codes
