@@ -55,8 +55,10 @@ class HSSDSceneDescriptionSensor(Sensor):
         }
         
         # convert dict to json string
-        scene_description_str = json.dumps(scene_description)
-        
+        # scene_description_str = json.dumps(scene_description)
+        scene_description_str = 'Here are the descriptions of the scene: \n'
+        scene_description_str += objects_description + '\n'
+        scene_description_str += agent_description
         return scene_description_str
 
 class MP3DSceneDescriptionSensor(Sensor):
@@ -94,8 +96,10 @@ class MP3DSceneDescriptionSensor(Sensor):
         }
         
         # convert dict to json string
-        scene_description_str = json.dumps(scene_description)
-        
+        # scene_description_str = json.dumps(scene_description)
+        scene_description_str = 'Here are the descriptions of the scene: \n'
+        scene_description_str += objects_description + '\n'
+        scene_description_str += agent_description
         return scene_description_str   
     
 @registry.register_sensor

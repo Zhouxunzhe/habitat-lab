@@ -1,10 +1,13 @@
 from __future__ import annotations
-
+import os
+import datetime
 import json
 import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
+from hydra.core.hydra_config import HydraConfig
+from openai.types.chat.chat_completion import ChatCompletionMessage
 
 import gym.spaces as spaces
 import numpy as np
@@ -82,8 +85,8 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         'You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
         "Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
         'You can generate python code to check if task is feasible or not numerically like if a location is within the space bounded by the shape. '
-        'When you do this, pay attention to the type of the robot workspace. '
-        "You MUST print the varible you want to know in the code."
+        'Please pay attention to the type of the robot workspace when your generate code to check if a location is within the space bounded by the shape.'
+        'You MUST print the varible you want to know in the code.'
         "I will execute the code and give your the result to help you make decisions."
     )
     FORMAT_INSTRUCTION = (
@@ -183,7 +186,8 @@ DISCUSSION_TOOLS = []
 
 
 def group_discussion(
-    robot_resume: dict, scene_description: str, task_description: str
+    robot_resume: dict, scene_description: str, task_description: str, 
+    save_chat_history=True, save_chat_history_dir="./chat_history_output", episode_id=-1
 ) -> dict[str, AgentArguments]:
     robot_resume = json.loads(robot_resume)
     robot_resume_prompt = ""
@@ -195,7 +199,7 @@ def group_discussion(
         )
     leader_prompt = create_leader_prompt(robot_resume_prompt)
     leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=False)
-    agents = {}
+    agents: Dict[str, OpenAIModel] = {}
     for robot_key in robot_resume:
         robot_prompt = create_robot_prompt(
             robot_resume[robot_key]["robot_type"],
@@ -263,6 +267,35 @@ def group_discussion(
     print(robot_tasks)
     print("====================================================")
 
+    # debug info: save all agent chat history
+    if save_chat_history:
+        # save dir format: chat_history_output/<date>/<config>/<episode_id>
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        hydra_cfg = HydraConfig.get()
+        config_str = hydra_cfg.job.config_name.split("/")[-1].replace(".yaml", "")
+        episode_save_dir = os.path.join(save_chat_history_dir, date_str, config_str, str(episode_id))
+        
+        if not os.path.exists(episode_save_dir):
+            os.makedirs(episode_save_dir)
+
+        class CustomJSONEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, ChatCompletionMessage):
+                    # Pydantic models are not serializable by json.dump by default
+                    return dict(obj)
+                return super().default(obj)
+
+        # save leader chat history
+        with open(os.path.join(episode_save_dir, "leader_chat_history.json"), "w") as f:
+            full_history = [leader.system_message] + leader.chat_history
+            json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
+            
+        for agent in agents:
+            with open(os.path.join(episode_save_dir, f"{agent}_chat_history.json"), "w") as f:
+                agent_chat_history = agents[agent].chat_history
+                full_history = [agents[agent].system_message] + agent_chat_history
+                json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
+
     return results
 
 
@@ -323,6 +356,8 @@ class MultiLLMPolicy(MultiPolicy):
                     robot_resume = env_text_context["robot_resume"]
                 if "scene_description" in env_text_context:
                     scene_description = env_text_context["scene_description"]
+                if "episode_id" in env_text_context:
+                    episode_id = env_text_context["episode_id"]
                 # print("===============Group Discussion===============")
                 # print(robot_resume)
                 # print("=============================================")
@@ -331,7 +366,7 @@ class MultiLLMPolicy(MultiPolicy):
                 # print(text_goal)
                 # print("=============================================")
                 agent_arguments = group_discussion(
-                    robot_resume, scene_description, text_goal
+                    robot_resume, scene_description, text_goal, episode_id=episode_id
                 )
                 envs_agent_arguments.append(agent_arguments)
 

@@ -141,6 +141,10 @@ class HabitatMASEvaluator(Evaluator):
                     for i in range(envs.num_envs):
                         pddl_text_goal_np = envs_pddl_text_goal_np[i, ...]
                         envs_text_context[i]['pddl_text_goal'] = ''.join(str(pddl_text_goal_np, encoding='UTF-8'))
+                
+                for i in range(envs.num_envs):
+                    # also add the debug/ logging info to the text context for convenience
+                    envs_text_context[i]['episode_id'] = current_episodes_info[i].episode_id
 
             space_lengths = {}
             n_agents = len(config.habitat.simulator.agents)

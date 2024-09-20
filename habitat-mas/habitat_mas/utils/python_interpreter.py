@@ -94,7 +94,7 @@ class SubprocessInterpreter:
             print(Fore.RED + stderr + Fore.RESET)
             print("==================")
         exec_result = f"{stdout}"
-        exec_result += f"(stderr: {stderr})" if stderr else ""
+        # exec_result += f"(stderr: {stderr})" if stderr else ""
         return exec_result
 
     def run(
