@@ -26,9 +26,10 @@ class CrabAgent:
         self,
         name: str,
         actions: List[Action],
+        code_execution: bool = False,
     ):
         self.name = name
-        self.llm_model = OpenAIModel("", action_space=actions)
+        self.llm_model = OpenAIModel("", action_space=actions, code_execution=code_execution)
         self.initilized = False
 
     def init_agent(
@@ -70,7 +71,13 @@ class CrabAgent:
             return {"name": "wait", "arguments": ["20"]}
         if action_name == "wait":
             return {"name": "wait", "arguments": ["20"]}
-        if action_name in ["nav_to_obj", "nav_to_goal", "nav_to_robot", "place", "pick"]:
+        if action_name in [
+            "nav_to_obj",
+            "nav_to_goal",
+            "nav_to_robot",
+            "place",
+            "pick",
+        ]:
             parameters["robot"] = self.name
             return {"name": action_name, "arguments": parameters}
         else:
