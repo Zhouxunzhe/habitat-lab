@@ -82,14 +82,15 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         "You have the following capabilities:\n\n"
         '"""\n{capabilities}\n"""\n\n'
         # "The physics capabilities include its mobility, perception, and manipulation capabilities."
-        'You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
-        "Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
-        'You can generate python code to check if task is feasible or not numerically like if a location is within the space bounded by the shape. '
-        'Please pay attention to the type of the robot workspace when your generate code to check if a location is within the space bounded by the shape.'
-        'You MUST print the varible you want to know in the code.'
-        "I will execute the code and give your the result to help you make decisions."
+        ' You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
+        " Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
+        ' You can generate python code to check if task is feasible numerically.'
+        ' Please pay attention to the shape type of the robot workspace when your generate code to check if a location is within the 3D space bounded by the shape.'
+        ' I will execute the code and give your the result to help you make decisions.'
     )
     FORMAT_INSTRUCTION = (
+        r' Please put all your code in a single python code block wrapped within ```python and ```.'
+        r' You MUST print the varible with "<name>: <value>" format you want to know in the code.'
         r" Finally, if you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
         r' following this format: "{{no||<the reason>}}".'
         r' If you think the task is correct, you should confirm it by typing "{{yes}}".'

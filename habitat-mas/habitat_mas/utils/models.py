@@ -93,20 +93,20 @@ class OpenAIModel:
                         request.append(tool_call_result)
 
                 elif self.code_execution and codes:
-                    execution_results = []
-                    for code_block, code_type in codes:
-                        execution_results.append(self.interpreter.run(code_block, code_type))
-
-                    # result_content = "".join(
-                    #     [
-                    #         f"Result of code block {idx}: {result}\n"
-                    #         for idx, result in enumerate(execution_results)
-                    #     ]
-                    # )
-                    result_content = "\n".join(execution_results)
-                    print("============Codes============")
-                    for idx, code in enumerate(codes):
-                        print(f"Code block {idx}: {code[0]}")
+                    # execution_results = []
+                    # for code_block, code_type in codes:
+                    #     execution_results.append(self.interpreter.run(code_block, code_type))
+                    
+                    # result_content = "\n".join(execution_results)
+                    # print("============Codes============")
+                    # for idx, code in enumerate(codes):
+                    #     print(f"Code block {idx}: {code[0]}")
+                    
+                    merged_code = "\n".join([code_block for code_block, code_type in codes
+                                             if code_type in self.interpreter._CODE_TYPE_MAPPING
+                                             ])
+                    result_content = self.interpreter.run(merged_code, "python")
+                
                     print("============Results============")
                     print(result_content)
                     print("==============================")
