@@ -1770,6 +1770,7 @@ class SimulatorSensorConfig(HabitatBaseConfig):
     type: str = MISSING
     height: int = 480
     width: int = 640
+    uuid: str = ""
     position: List[float] = field(default_factory=lambda: [0.0, 1.25, 0.0])
     # Euler's angles:
     orientation: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])

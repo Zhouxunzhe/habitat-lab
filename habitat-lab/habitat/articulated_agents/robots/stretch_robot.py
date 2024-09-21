@@ -53,6 +53,11 @@ class StretchRobot(MobileManipulator):
                     cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
                     attached_link_id=-1,
                 ),
+                "top": ArticulatedAgentCameraParams(
+                    cam_offset_pos=mn.Vector3(0., 7.5, 0),
+                    cam_look_at_pos=mn.Vector3(0, 0.0, 0.0),
+                    attached_link_id=-2,
+                ),
             },
             gripper_closed_state=np.array([0.0, 0.0], dtype=np.float32),
             gripper_open_state=np.array([0.6, 0.6], dtype=np.float32),
