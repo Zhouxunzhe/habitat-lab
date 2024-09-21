@@ -22,7 +22,7 @@ def get_articulated_agent_camera_transform_from_cam_info(
         ).transformation
     # Get the camera offset transformation
     cam_offset_transform = None
-    if cam_info.cam_look_at_pos == None:
+    if cam_info.cam_look_at_pos == None or (cam_info.attached_link_id != -2 and cam_info.cam_look_at_pos == mn.Vector3(0, 0, 0)):
         # if cam_info.cam_look_at_pos is None that means the camera's pose-transform
         # is described as a position and orientation in the local coordinate space of the parent link or object
         pos = cam_info.cam_offset_pos

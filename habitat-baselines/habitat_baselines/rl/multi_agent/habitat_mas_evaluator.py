@@ -91,12 +91,25 @@ class HabitatMASEvaluator(Evaluator):
             rgb_frames: List[List[np.ndarray]] = [
                 [
                     observations_to_image(
-                        {k: v[env_idx] for k, v in batch.items()}, {}, config, 0,
+                        {k: v[env_idx] for k, v in batch.items() if
+                             k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb"}, {}, config,
+                        0,
                     )
                 ]
                 for env_idx in range(config.habitat_baselines.num_environments)
             ]
+            if config.habitat_baselines.eval.generate_fourth_rgb:
+                rgb_frames_fourth: List[List[np.ndarray]] = [
+                    [
+                        observations_to_image(
+                            {k: v[env_idx] for k, v in batch.items()if
+                                 k == "agent_0_fourth_rgb"}, {}, config, 0,
+                        )
+                    ]
+                    for env_idx in range(config.habitat_baselines.num_environments)
+                ]
         else:
+            rgb_frames_fourth = None
             rgb_frames = None
 
         if len(config.habitat_baselines.eval.video_option) > 0:
@@ -243,26 +256,49 @@ class HabitatMASEvaluator(Evaluator):
                 if len(config.habitat_baselines.eval.video_option) > 0:
                     # TODO move normalization / channel changing out of the policy and undo it here
                     frame = observations_to_image(
-                        {k: v[i] for k, v in batch.items()}, disp_info,
+                        {k: v[i] for k, v in batch.items()if
+                         k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb"}, disp_info,
                         config, len(rgb_frames[0]),
                         episode_id=current_episodes_info[i].episode_id,
                     )
+                    if config.habitat_baselines.eval.generate_fourth_rgb:
+                        frame_fourth = observations_to_image(
+                            {k: v[i] for k, v in batch.items() if
+                             k == "agent_0_fourth_rgb"}, infos[i],
+                            config, len(rgb_frames_fourth[0]),
+                            episode_id=current_episodes_info[i].episode_id,
+                        )
                     if not not_done_masks[i].any().item():
                         # The last frame corresponds to the first frame of the next episode
                         # but the info is correct. So we use a black frame
                         final_frame = observations_to_image(
-                            {k: v[i] * 0.0 for k, v in batch.items()},
+                            {k: v[i] * 0.0 for k, v in batch.items()if
+                             k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb"},
                             disp_info, config,
                             frame_id=len(rgb_frames[0]),
                             episode_id=current_episodes_info[i].episode_id,
                         )
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            final_frame_fourth = observations_to_image(
+                                {k: v[i] for k, v in batch.items() if
+                                 k == "agent_0_fourth_rgb"}, infos[i],
+                                config, len(rgb_frames_fourth[0]),
+                                episode_id=current_episodes_info[i].episode_id,
+                            )
                         final_frame = overlay_frame(final_frame, disp_info)
                         rgb_frames[i].append(final_frame)
                         # The starting frame of the next episode will be the final element..
                         rgb_frames[i].append(frame)
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            final_frame_fourth = overlay_frame(final_frame_fourth, infos[i])
+                            rgb_frames_fourth[i].append(final_frame_fourth)
+                            rgb_frames_fourth[i].append(frame_fourth)
                     else:
                         frame = overlay_frame(frame, disp_info)
                         rgb_frames[i].append(frame)
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            frame_fourth = overlay_frame(frame_fourth, infos[i])
+                            rgb_frames_fourth[i].append(frame_fourth)
 
                 # episode ended
                 if not not_done_masks[i].any().item():
@@ -285,6 +321,18 @@ class HabitatMASEvaluator(Evaluator):
                     test_recurrent_hidden_states[i] = 0
 
                     if len(config.habitat_baselines.eval.video_option) > 0:
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            generate_video(
+                                video_option=config.habitat_baselines.eval.video_option,
+                                video_dir=config.habitat_baselines.video_dir,
+                                images=rgb_frames_fourth[i][:-1],
+                                episode_id=f"{current_episodes_info[i].episode_id}_{ep_eval_count[k]}_fourth",
+                                checkpoint_idx=checkpoint_index,
+                                metrics=extract_scalars_from_info(disp_info),
+                                fps=config.habitat_baselines.video_fps,
+                                tb_writer=writer,
+                                keys_to_include_in_name=config.habitat_baselines.eval_keys_to_include_in_name,
+                            )
                         generate_video(
                             video_option=config.habitat_baselines.eval.video_option,
                             video_dir=config.habitat_baselines.video_dir,
@@ -299,6 +347,8 @@ class HabitatMASEvaluator(Evaluator):
                         )
 
                         # Since the starting frame of the next episode is the final frame.
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            rgb_frames_fourth[i] = rgb_frames_fourth[i][-1:]
                         rgb_frames[i] = rgb_frames[i][-1:]
 
                     gfx_str = infos[i].get(GfxReplayMeasure.cls_uuid, "")
