@@ -109,6 +109,8 @@ class OpenAIModel:
                                              ])
                     result_content = self.interpreter.run(merged_code, "python")
                 
+                    print("============merged code============")
+                    print(merged_code)
                     print("============Results============")
                     print(result_content)
                     print("==============================")
