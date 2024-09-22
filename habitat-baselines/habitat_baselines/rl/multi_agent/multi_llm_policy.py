@@ -204,7 +204,7 @@ def group_discussion(
         robot_resume_prompt += ROBOT_RESUME_TEMPLATE.format(
             robot_key=robot_key,
             robot_type=robot_resume[robot_key]["robot_type"],
-            capabilities=get_text_capabilities(robot_resume[robot_key]),
+            capabilities=get_full_capabilities(robot_resume[robot_key]),
         )
     leader_prompt = create_leader_prompt(robot_resume_prompt)
     leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=False)
@@ -213,7 +213,7 @@ def group_discussion(
         robot_prompt = create_robot_prompt(
             robot_resume[robot_key]["robot_type"],
             robot_key,
-            get_text_capabilities(robot_resume[robot_key]),
+            get_full_capabilities(robot_resume[robot_key]),
         )
         agents[robot_key] = OpenAIModel(
             robot_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=True,

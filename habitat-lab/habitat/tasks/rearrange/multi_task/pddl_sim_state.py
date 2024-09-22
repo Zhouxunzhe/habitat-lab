@@ -422,8 +422,6 @@ class PddlSimState:
             
             T = robot.base_transformation
             pos = T.inverted().transform_point(targ_pos)
-            pos[2] = 0.0
-
             dist = np.linalg.norm(pos)
 
             if dist <= sim_info.robot_at_thresh:
