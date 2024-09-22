@@ -35,6 +35,7 @@ class OpenAIModel:
             else None
         )
         self.tool_calls_enable = True if action_space else False
+        self.token_usage = 0
 
     def set_system_message(self, system_message: str):
         self.system_message = {"role": "system", "content": system_message}
@@ -71,6 +72,7 @@ class OpenAIModel:
                         messages=request,  # type: ignore
                         model=self.model,
                     )
+                self.token_usage += response.usage.total_tokens
 
                 response_message = response.choices[0].message
                 self.chat_history[-1].append(response_message)
@@ -124,6 +126,7 @@ class OpenAIModel:
                 ],
                 tool_choice="required",
             )
+            self.token_usage += response.usage.total_tokens
 
             response_message = response.choices[0].message
             self.chat_history[-1].append(response_message)

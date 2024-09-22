@@ -123,6 +123,8 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             print("=================llm_output===================")
             print("Agent: ", self.llm_agent.name)
             print(llm_output)
+            print("=================total token usage=======================")
+            print("Agent: {} {}".format(self.llm_agent.name, self.llm_agent.get_token_usage()))
             print("==============================================")
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]

@@ -272,10 +272,16 @@ def group_discussion(
             subtask_description=robot_tasks[agent],
             chat_history=agents[agent].chat_history,
         )
-
+    leader_tokens = leader.token_usage
+    robot_tokens = sum([agent.token_usage for agent in agents.values()])
+    total_tokens = leader_tokens + robot_tokens
     print("===============Group Discussion Result==============")
     print(robot_tasks)
-    print("====================================================")
+    print("===============group discussion token usage========================")
+    print(f"Leader token usage: {leader_tokens}")
+    print(f"Robots token usage: {robot_tokens}")
+    print(f"Total token usage: {total_tokens}")
+    print("========================================================")
 
     # debug info: save all agent chat history
     if save_chat_history:
@@ -294,6 +300,10 @@ def group_discussion(
                     # Pydantic models are not serializable by json.dump by default
                     return dict(obj)
                 return super().default(obj)
+
+        with open(os.path.join(episode_save_dir, "group_discussion_token_usage.json"), "w") as f:
+            token_usage = {"leader": leader_tokens, "robots": robot_tokens, "total": total_tokens}
+            json.dump(token_usage, f, indent=2, cls=CustomJSONEncoder)
 
         # save leader chat history
         with open(os.path.join(episode_save_dir, "leader_chat_history.json"), "w") as f:
