@@ -8,8 +8,8 @@ defaults:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_1.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_llm
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_dummy
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_dummy
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat/task/lab_sensors:
@@ -41,8 +41,8 @@ habitat_baselines:
   evaluator:
     _target_: habitat_baselines.rl.multi_agent.habitat_mas_evaluator.HabitatMASEvaluator
 
-  image_dir: "video_multi/fetch_stretch/image_dir/"
-  video_dir: "video_multi/fetch_stretch"
+  image_dir: "video_multi/dummy/image_dir/"
+  video_dir: "video_multi/dummy"
 
   eval:
     should_load_ckpt: False
@@ -163,7 +163,7 @@ habitat_baselines:
             - open_fridge
             - close_cab
             - close_fridge
-            
+
     ppo:
       # ppo params
       clip_param: 0.2

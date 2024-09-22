@@ -35,7 +35,6 @@ defaults:
     - composite_stage_goals
     - pddl_subgoal_reward
     - rearrange_cooperate_reward
-    - object_to_goal_distance
   - /habitat/task/lab_sensors:
     - relative_resting_pos_sensor
     - target_start_sensor
@@ -49,7 +48,7 @@ defaults:
     - other_agent_gps
     - detected_objects_sensor
     - object_to_goal_distance_sensor
-    #- pddl_text_goal
+    - pddl_text_goal
     #- arm_workspace_rgb_sensor
     #- object_masks_sensor
     #- nav_workspace_rgb_sensor
@@ -122,7 +121,7 @@ habitat:
     # w2j: True
     # json_path: "data/robots/robot_configs/hssd/dist_man.json"
   dataset:
-    data_path: data/datasets/hssd_dist.json.gz
+    data_path: data/datasets/hssd_dist_man_reverse_not_test.json.gz
     # new
     randomize_agent_start: 1
     robot_config: data/robots/robot_configs/hssd/dist_man.json

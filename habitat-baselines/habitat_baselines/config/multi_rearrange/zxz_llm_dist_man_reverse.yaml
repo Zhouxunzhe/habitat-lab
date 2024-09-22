@@ -15,7 +15,7 @@ defaults:
   - /habitat/task/lab_sensors:
     # For the oracle navigation
     - has_finished_oracle_nav
-    # - all_predicates
+    - all_predicates
   - _self_
 
 
@@ -73,7 +73,7 @@ habitat_baselines:
               - "other_agent_gps"
               - "obj_start_sensor"
               - "obj_goal_sensor"
-              # - "all_predicates"
+              - "all_predicates"
             allowed_actions:
               - wait
               - nav_to_goal
@@ -125,7 +125,7 @@ habitat_baselines:
               - "other_agent_gps"
               - "obj_start_sensor"
               - "obj_goal_sensor"
-              # - "all_predicates"
+              - "all_predicates"
             allowed_actions:
               - wait
               - nav_to_goal

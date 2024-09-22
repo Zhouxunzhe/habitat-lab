@@ -35,7 +35,6 @@ defaults:
     - composite_stage_goals
     - pddl_subgoal_reward
     - rearrange_cooperate_reward
-    - object_to_goal_distance
   - /habitat/task/lab_sensors:
     - relative_resting_pos_sensor
     - target_start_sensor
@@ -120,8 +119,8 @@ habitat:
       agent_0:
         joint_start_noise: 0.0
   dataset:
-    data_path: data/datasets/replica_cad/two_agent_manipulation_eval.json.gz
+    data_path: data/datasets/hssd_man_fig.json.gz
     # new
-    randomize_agent_start: 0
+    randomize_agent_start: 1
     robot_config: data/robots/robot_configs/replica_cad/two_agent_manipulation_eval.json
     mode: manipulation

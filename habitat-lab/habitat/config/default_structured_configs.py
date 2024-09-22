@@ -321,7 +321,7 @@ class OraclePickActionConfig(ArmActionConfig):
     arm_controller: str = "OraclePickAction"
     grip_controller: str = "MagicGraspAction"
     grasp_thresh_dist: float = 0.1
-    render_ee_target: bool = True
+    render_ee_target: bool = False
 
 @dataclass
 class OraclePlaceActionConfig(ArmActionConfig):
@@ -333,7 +333,7 @@ class OraclePlaceActionConfig(ArmActionConfig):
     arm_controller: str = "OraclePlaceAction"
     grip_controller: str = "MagicGraspAction"
     grasp_thresh_dist: float = 0.05
-    render_ee_target: bool = True
+    render_ee_target: bool = False
 
 @dataclass
 class ResetArmActionConfig(ArmActionConfig):
@@ -345,7 +345,7 @@ class ResetArmActionConfig(ArmActionConfig):
     arm_controller: str = "OracleResetArmAction"
     grip_controller: str = "MagicGraspAction"
     grasp_thresh_dist: float = 0.05
-    render_ee_target: bool = True
+    render_ee_target: bool = False
 
 @dataclass
 class WaitActionConfig(ActionConfig):
@@ -364,7 +364,7 @@ class StretchOraclePickActionConfig(ArmActionConfig):
     type: str = "ArmAction"
     arm_controller: str = "StretchOraclePickAction"
     grip_controller: str = "MagicGraspAction"
-    render_ee_target: bool = True
+    render_ee_target: bool = False
     arm_joint_mask: Optional[List[int]] = field(default_factory=lambda: [1, 0, 0, 0, 1, 1, 1, 1])
     # arm_joint_dimensionality: int = 10
     grasp_thresh_dist: float = 0.15
@@ -888,8 +888,8 @@ class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     pixel_threshold: int = 10
     height: int = 480
     width: int = 640
-    rgb_sensor_name: str = "head_rgb"
-    depth_sensor_name: str = "head_depth"
+    rgb_sensor_name: str = "third_rgb"
+    depth_sensor_name: str = "third_rgb"
 
 @dataclass
 class NavWorkspaceRGBSensorConfig(LabSensorConfig):
@@ -940,6 +940,16 @@ class MP3DSceneDescriptionSensorConfig(LabSensorConfig):
 class RobotResumeSensorConfig(LabSensorConfig):
     type: str = "RobotResumeSensor"
     robot_resume_dir: str = "robot_resume"
+
+@dataclass
+class VIPInfoSensorConfig(LabSensorConfig):
+    uuid: str = "vip_info"
+    type: str = "VIPInfoSensor"
+
+@dataclass
+class CameraInfoSensorConfig(LabSensorConfig):
+    uuid: str = "camera_info"
+    type: str = "CameraInfoSensor"
 
 @dataclass
 class OtherAgentGpsConfig(LabSensorConfig):
@@ -2846,6 +2856,18 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="robot_resume",
     node=RobotResumeSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.vip_info",
+    group="habitat/task/lab_sensors",
+    name="vip_info",
+    node=VIPInfoSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.camera_info",
+    group="habitat/task/lab_sensors",
+    name="camera_info",
+    node=CameraInfoSensorConfig,
 )
 
 cs.store(

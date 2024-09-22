@@ -248,7 +248,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
             {
                 self._action_arg_prefix
                 + "oracle_nav_action": spaces.Box(
-                    shape=(1,),
+                    shape=(5,),
                     low=np.finfo(np.float32).min,
                     high=np.finfo(np.float32).max,
                     dtype=np.float32,
@@ -321,18 +321,17 @@ class OracleNavDiffBaseAction(OracleNavAction):
             self.pathfinder = self._create_pathfinder(self.config)
 
         self.skill_done = False
-        nav_to_target_idx = kwargs[
+        nav_action = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
         ]
-
-        if self.prev_nav_done and int(nav_to_target_idx[0]) - 1 == self.prev_match_target_id:
+        nav_to_target_idx = int(nav_action[0]) - 1
+        has_nav_action = nav_action[1]
+        if self.prev_nav_done and nav_to_target_idx == self.prev_match_target_id:
             nav_to_target_idx = 0
-        if nav_to_target_idx <= 0 or nav_to_target_idx > len(
+        if nav_to_target_idx < 0 or nav_to_target_idx > len(
             self._poss_entities
         ):
             return
-        nav_to_target_idx = int(nav_to_target_idx[0]) - 1
-
         final_nav_targ, obj_targ_pos = self._get_target_for_idx(
             nav_to_target_idx
         )
@@ -380,7 +379,10 @@ class OracleNavDiffBaseAction(OracleNavAction):
             raise Exception
         else:
             # Compute distance and angle to target
-            cur_nav_targ = curr_path_points[1]
+            if has_nav_action > 0:
+                cur_nav_targ = nav_action[2:]
+            else:
+                cur_nav_targ = curr_path_points[1]
             forward = np.array([1.0, 0, 0])
             robot_forward = np.array(base_T.transform_vector(forward))
 

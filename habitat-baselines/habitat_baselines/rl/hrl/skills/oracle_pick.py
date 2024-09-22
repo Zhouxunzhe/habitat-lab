@@ -163,7 +163,8 @@ class OraclePickPolicy(NnSkillPolicy):
         masks,
         cur_batch_idx,
         deterministic=False,
-    ): 
+        new_action=None,
+    ):
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device
         )
@@ -171,7 +172,14 @@ class OraclePickPolicy(NnSkillPolicy):
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
 
-        full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor([action_idxs, self.PICK_ID])
+        # [pddl_id, #pick_tag, has_cord, [cords: 3], grip_tag(>=0: pick)]
+        if new_action is not None:
+            full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor(
+                [action_idxs, self.PICK_ID, 1.0,
+                 new_action[0], new_action[1], new_action[2]])
+        else:
+            full_action[0][self._pick_srt_idx:self._pick_srt_idx+3] = torch.tensor(
+                [action_idxs, self.PICK_ID, 0.0])
         full_action[0][self._pick_end_idx-1] = 1.0
 
         return PolicyActionData(
@@ -299,6 +307,7 @@ class OraclePlacePolicy(OraclePickPolicy):
         masks,
         cur_batch_idx,
         deterministic=False,
+        new_action=None,
     ):
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device
@@ -307,7 +316,15 @@ class OraclePlacePolicy(OraclePickPolicy):
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
 
-        full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor([action_idxs, self.PLACE_ID])
+        # [pddl_id, #place_tag, has_cord, [cords: 3], grip_tag(<0: place)]
+        if new_action is not None:
+            full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor(
+                [action_idxs, self.PLACE_ID, 1.0,
+                 new_action[0], new_action[1], new_action[2]])
+        else:
+            full_action[0][self._place_srt_idx:self._place_srt_idx+3] = torch.tensor(
+                [action_idxs, self.PLACE_ID, 0.0])
+
         if self._is_skill_done(observations, rnn_hidden_states, prev_actions, masks, cur_batch_idx):
             full_action[0][self._place_end_idx-1] = -1.0
 
