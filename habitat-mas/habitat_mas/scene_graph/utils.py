@@ -134,13 +134,13 @@ def generate_region_adjacency_description(reion_layer):
     
     for region_node in reion_layer.nodes:
         region_id = region_node.region_id
-        region_name = region_node.class_name + str(region_id)
-        description += "The {}-th region is named {}.\n".format(
-            region_id, region_name
-        )
+        region_name = region_node.class_name + "_" + str(region_id)
+        # description += "The {}-th region is named {}.\n".format(
+        #     region_id, region_name
+        # )
         for neighbor_node in reion_layer.neighbors(region_node):
             neighbor_id = neighbor_node.region_id
-            neighbor_name = neighbor_node.class_name + str(neighbor_id)
+            neighbor_name = neighbor_node.class_name + "_" + str(neighbor_id)
             description += "{} is connected to {}.\n".format(region_name, neighbor_name)
 
     return description
@@ -208,16 +208,19 @@ def generate_mp3d_objects_description(object_layer):
         obj = object_layer.obj_dict[obj_id]
         assert obj.parent_region, f"{obj.full_name} has no parent region"
         parent_region = obj.parent_region
+        region_name = parent_region.class_name + "_" + str(parent_region.region_id)
+        level = parent_region.parent_level
         obj_name = obj.label
+        obj_height = obj.height
         if not obj.label:
             obj_name = obj.full_name
 
         # Remove quotes in list
-        position = np.array(obj.center)
-        position_str = ', '.join([f'{p:.1f}' for p in position])
+        # position = np.array(obj.center)
+        # position_str = ', '.join([f'{p:.1f}' for p in position])
         description += (
-            f'Object "{obj_name}" is at position [{position_str}], '
-            f'in {parent_region.class_name} on {parent_region.parent_level} floor. \n'
+            f'The object "{obj_name}" is located in {region_name} on {level} floor. '
+            f'The height of object "{obj_name}" from the floor is {obj_height:.1f}. \n'
         )
 
     return description

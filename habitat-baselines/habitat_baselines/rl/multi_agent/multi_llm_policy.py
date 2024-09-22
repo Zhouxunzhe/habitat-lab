@@ -1,10 +1,13 @@
 from __future__ import annotations
-
+import os
+import datetime
 import json
 import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
+from hydra.core.hydra_config import HydraConfig
+from openai.types.chat.chat_completion import ChatCompletionMessage
 
 import gym.spaces as spaces
 import numpy as np
@@ -79,12 +82,15 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         "You have the following capabilities:\n\n"
         '"""\n{capabilities}\n"""\n\n'
         # "The physics capabilities include its mobility, perception, and manipulation capabilities."
-        'You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
-        "Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
-        "You can use the provided functions to check if task is feasible or not numerically." 
-
+        ' You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
+        " Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
+        ' You can generate python code to check if task is feasible numerically.'
+        ' Please pay attention to the shape type of the robot workspace when your generate code to check if a location is within the 3D space bounded by the shape.'
+        ' I will execute the code and give your the result to help you make decisions.'
     )
     FORMAT_INSTRUCTION = (
+        r' Please put all your code in a single python code block wrapped within ```python and ```.'
+        r' You MUST print the varible with "<name>: <value>" format you want to know in the code.'
         r" Finally, if you think the task is incorrect, you can explain the reason and ask the leader to modify it,"
         r' following this format: "{{no||<the reason>}}".'
         r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
@@ -95,7 +101,7 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         robot_key=robot_key,
         capabilities=capabilities) + FORMAT_INSTRUCTION
 
-def create_robot_start_message(task_description, scene_description):
+def create_robot_start_message(task_description, scene_description, compute_path: bool = False):
 
     ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE = (
         " Your task is to work with other agents to complete the assigned subtask described below:\n\n"
@@ -103,6 +109,13 @@ def create_robot_start_message(task_description, scene_description):
         "The scene description is as follows:\n\n"
         '"""\n{scene_description}\n"""\n\n'
     )
+    COMPUTE_PATH = (
+        "Please infer your navigation path according to regions description. "
+        "You should determine whether you can succeed based on your navigation path and capabilities."
+    )
+    if compute_path:
+        ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE += COMPUTE_PATH
+
     return ROBOT_GROUP_DISCUSS_MESSAGE_TEMPLATE.format(
         task_description=task_description, 
         scene_description=scene_description)
@@ -176,12 +189,15 @@ def parse_agent_response(text):
     return response, reason
 
 
-DISCUSSION_TOOLS = [eval_python_code, add, subtract, multiply, divide]
+# DISCUSSION_TOOLS = [eval_python_code, add, subtract, multiply, divide]
+DISCUSSION_TOOLS = []
 
 
 def group_discussion(
-    robot_resume: dict, scene_description: str, task_description: str
+    robot_resume: dict, scene_description: str, task_description: str, 
+    save_chat_history=True, save_chat_history_dir="./chat_history_output", episode_id=-1
 ) -> dict[str, AgentArguments]:
+    compute_path = "regions_description" in scene_description
     robot_resume = json.loads(robot_resume)
     robot_resume_prompt = ""
     for robot_key in robot_resume:
@@ -191,8 +207,8 @@ def group_discussion(
             capabilities=get_text_capabilities(robot_resume[robot_key]),
         )
     leader_prompt = create_leader_prompt(robot_resume_prompt)
-    leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True)
-    agents = {}
+    leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=False)
+    agents: Dict[str, OpenAIModel] = {}
     for robot_key in robot_resume:
         robot_prompt = create_robot_prompt(
             robot_resume[robot_key]["robot_type"],
@@ -200,7 +216,7 @@ def group_discussion(
             get_text_capabilities(robot_resume[robot_key]),
         )
         agents[robot_key] = OpenAIModel(
-            robot_prompt, DISCUSSION_TOOLS, discussion_stage=True
+            robot_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=True,
         )
 
     # robot_id_to_model_map = {
@@ -224,6 +240,7 @@ def group_discussion(
         robot_start_message = create_robot_start_message(
             task_description=robot_tasks[robot_id],
             scene_description=scene_description,
+            compute_path=compute_path,
         )
         response = robot_model.chat(robot_start_message)
         agent_response[robot_id] = parse_agent_response(response)
@@ -259,6 +276,35 @@ def group_discussion(
     print("===============Group Discussion Result==============")
     print(robot_tasks)
     print("====================================================")
+
+    # debug info: save all agent chat history
+    if save_chat_history:
+        # save dir format: chat_history_output/<date>/<config>/<episode_id>
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        hydra_cfg = HydraConfig.get()
+        config_str = hydra_cfg.job.config_name.split("/")[-1].replace(".yaml", "")
+        episode_save_dir = os.path.join(save_chat_history_dir, date_str, config_str, str(episode_id))
+        
+        if not os.path.exists(episode_save_dir):
+            os.makedirs(episode_save_dir)
+
+        class CustomJSONEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, ChatCompletionMessage):
+                    # Pydantic models are not serializable by json.dump by default
+                    return dict(obj)
+                return super().default(obj)
+
+        # save leader chat history
+        with open(os.path.join(episode_save_dir, "leader_chat_history.json"), "w") as f:
+            full_history = [leader.system_message] + leader.chat_history
+            json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
+            
+        for agent in agents:
+            with open(os.path.join(episode_save_dir, f"{agent}_chat_history.json"), "w") as f:
+                agent_chat_history = agents[agent].chat_history
+                full_history = [agents[agent].system_message] + agent_chat_history
+                json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
 
     return results
 
@@ -320,6 +366,8 @@ class MultiLLMPolicy(MultiPolicy):
                     robot_resume = env_text_context["robot_resume"]
                 if "scene_description" in env_text_context:
                     scene_description = env_text_context["scene_description"]
+                if "episode_id" in env_text_context:
+                    episode_id = env_text_context["episode_id"]
                 # print("===============Group Discussion===============")
                 # print(robot_resume)
                 # print("=============================================")
@@ -328,7 +376,7 @@ class MultiLLMPolicy(MultiPolicy):
                 # print(text_goal)
                 # print("=============================================")
                 agent_arguments = group_discussion(
-                    robot_resume, scene_description, text_goal
+                    robot_resume, scene_description, text_goal, episode_id=episode_id
                 )
                 envs_agent_arguments.append(agent_arguments)
 

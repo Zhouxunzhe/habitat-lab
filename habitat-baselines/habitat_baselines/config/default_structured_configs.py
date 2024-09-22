@@ -39,6 +39,7 @@ class WBConfig(HabitatBaselinesBaseConfig):
 class EvalConfig(HabitatBaselinesBaseConfig):
     # The split to evaluate on
     split: str = "val"
+    generate_fourth_rgb: bool = False
     use_ckpt_config: bool = True
     should_load_ckpt: bool = True
     # The number of time to run each episode through evaluation.
