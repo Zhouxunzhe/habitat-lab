@@ -65,9 +65,9 @@ def get_cameras_height_and_type(urdf_path: str, camera_links:List[str], robot_na
         
         
         # store the height and type of the camera
-        camera_info = {"height": height_to_feet, "type": camera_type}
         cameras_info[camera_link.name] = camera_info    
     
+        camera_info = {"height": height_to_feet, "hfov": 90, "type": camera_type}
     return cameras_info
 
 if __name__ == "__main__":

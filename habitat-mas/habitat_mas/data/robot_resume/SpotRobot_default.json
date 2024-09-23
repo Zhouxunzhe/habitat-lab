@@ -2,31 +2,33 @@
   "robot_id": "SpotRobot_default",
   "robot_type": "SpotRobot",
   "mobility": {
-    "summary": "The SpotRobot has a quadruped mobility base, with four legs each consisting of three revolute joints (hip, uleg, lleg). This configuration enables the robot to traverse diverse and uneven terrains effectively. The quadrupedal design suggests strong stability and balance, making it capable of moving across different floor types. However, there is no information to suggest aerial capability."
+    "summary": "SpotRobot has a quadruped base with multiple revolute joints per leg, enhancing its ability to move over diverse terrains. It is likely capable of navigating stairs or steps to move between floors."
   },
   "perception": {
-    "summary": "The SpotRobot is equipped with two cameras. One fixed camera is located on the arm (articulated_agent_arm_camera), and another fixed camera is on the head (head_camera). These cameras likely provide visual perception abilities necessary for tasks like object recognition, geometric information gathering, and search operations for cooperative perception tasks.",
+    "summary": "SpotRobot is equipped with two cameras: one on the articulated arm and one at the head, allowing for detailed object perception in various positions on a single floor.",
     "cameras_info": {
       "articulated_agent_arm_camera": {
-        "height": 0.5770000063180923,
+        "height": 0.577,
+        "hfov": 90,
         "type": "articulated"
       },
       "head_camera": {
         "height": 0.48,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The SpotRobot features a robotic arm with multiple revolute joints, including shoulder (sh0, sh1), human-like rotation (hr0), elbow (el0, el1), and wrist joints (wr0, wr1), culminating in a finger-like gripper (fngr). This complex arm structure, along with the revolute joints, allows for versatile and precise manipulation of objects. This capability would be particularly useful for picking, placing objects, and rearranging furniture, including accessing high shelves or areas under tables.",
+    "summary": "SpotRobot has a complex, versatile arm with multiple revolute joints and an end effector. This extends its workspace and precision in rearranging objects in abnormal positions on single and multiple floors.",
     "arm_workspace": {
       "type": "sphere",
       "center": [
-        0.218833327293396,
-        0.7876816987991333,
-        0.18432271480560303
+        0.219,
+        0.788,
+        0.184
       ],
-      "radius": 0.977087
+      "radius": 0.977
     }
   }
 }

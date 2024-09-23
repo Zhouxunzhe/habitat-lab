@@ -1,28 +1,29 @@
 {
-  "robot_id": "SpotRobot_head_only",
+  "robot_id": "SpotRobot_head_jaw",
   "robot_type": "SpotRobot",
   "mobility": {
-    "summary": "SpotRobot has a quadruped base, offering significant stability and mobility on various ground types. Each leg consists of hip, upper leg, and lower leg segments connected by revolute joints, allowing for flexible and adaptive movement across different terrains. Though primarily ground-based, the articulated legs could facilitate overcoming obstacles and navigating uneven surfaces."
+    "summary": "Quadruped robot with four legs each having three revolute joints (hip, upper leg, lower leg). Capable of traversing uneven terrain and potentially moving between floors."
   },
   "perception": {
-    "summary": "SpotRobot features a head-mounted camera attached via a fixed joint, which provides visual perception capabilities. This camera is positioned high enough to get a broad view of its surroundings, aiding in tasks like object searching and cooperative perception. The single camera might limit depth perception but is essential for acquiring geometric information necessary for manipulation tasks.",
+    "summary": "Equipped with a fixed head camera. Adequately suited for single-floor object perception tasks.",
     "cameras_info": {
       "head_camera": {
         "height": 0.48,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot is equipped with a sophisticated manipulator arm consisting of multiple revolute joints, greatly enhancing its manipulation capabilities. The arm segments include shoulder, humerus, elbow, and wrist joints, culminating in an end effector at the fingertips. This configuration allows for complex, articulated movements necessary for pick and place operations, reaching high shelves, or accessing spaces under tables. The arm's dexterity is well-suited for nuanced tasks such as object rearrangement and furniture positioning.",
+    "summary": "Single arm with eight revolute joints for complex movements. End effector at the wrist includes a flexible finger for versatile manipulation tasks. Suitable for object pick and place operations.",
     "arm_workspace": {
       "type": "sphere",
       "center": [
-        0.218833327293396,
-        0.7876816987991333,
-        0.18432271480560303
+        0.219,
+        0.788,
+        0.184
       ],
-      "radius": 0.977087
+      "radius": 0.977
     }
   }
 }

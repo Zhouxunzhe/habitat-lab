@@ -2,27 +2,28 @@
   "robot_id": "FetchRobot_arm_only",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The FetchRobot has a base with continuous joints connecting to left and right wheel links, indicating it's a wheeled robot capable of moving on the ground. This design provides mobility across different floor surfaces, which is suitable for tasks requiring cross-floor navigation."
+    "summary": "FetchRobot has a wheeled base, offering mobility on a single floor but no inherent capability to cross between different floors."
   },
   "perception": {
-    "summary": "FetchRobot is equipped with a head camera system consisting of both RGB and depth cameras. The head cameras are mounted on links with revolute joints allowing panning and tilting, which provides a wide field of view. Additionally, there is a laser sensor on the fixed link, enhancing depth perception for environment mapping. This sensor suite allows for effective searching, perceiving, and obtaining geometric information of objects in various positions.",
+    "summary": "FetchRobot is equipped with an RGB-D camera on its head which can pan and tilt, allowing for dynamic object perception in a wide field of view. It also has a laser scanner for additional environmental sensing.",
     "cameras_info": {
       "articulated_agent_arm_camera": {
-        "height": 0.7860100000000001,
+        "height": 0.786,
+        "hfov": 90,
         "type": "articulated"
       }
     }
   },
   "manipulation": {
-    "summary": "FetchRobot features a highly articulated arm with multiple revolute and continuous joints from the torso to the gripper, including shoulder, elbow, and wrist joints. The gripper link has prismatic joints to control the gripper fingers for precise gripping actions. This arm configuration allows FetchRobot to manipulate objects in a wide range of positions, including high shelves and under tables, making it well-suited for tasks involving object rearrangement and home arrangement.",
+    "summary": "FetchRobot features a highly articulated arm with multiple degrees of freedom, a gripper with prismatic joints for grasping, and a wrist and forearm that can roll and flex. This allows it to handle objects in complex positions within its reach.",
     "arm_workspace": {
       "type": "sphere",
       "center": [
-        0.14739853143692017,
-        0.899940013885498,
-        0.1324108988046646
+        0.147,
+        0.9,
+        0.132
       ],
-      "radius": 1.1041796
+      "radius": 1.1
     }
   }
 }
