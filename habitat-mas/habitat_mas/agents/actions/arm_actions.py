@@ -9,10 +9,10 @@ from ..crab_core import action
 @action
 def pick(target_obj: str):
     """
-    Pick up the any_targets object. This action can only be executed under the following conditions: (1) You must not already be holding the any_targets object, and (2) You must be exactly at the any_targets position. After successfully executing this action, you will be holding the any_targets object while remaining at the any_targets position.
+    Pick up the 'any_targets' object. This action can only be executed under the following conditions: (1) You must not already be holding the 'any_targets' object, and (2) You must be exactly at the 'any_targets' position. After successfully executing this action, you will be holding the 'any_targets' object while remaining at the 'any_targets' position.
     
     Args:
-        target_obj: The any_targets object to pick.
+        target_obj: The 'any_targets' object to pick.
     """
     pass
 
@@ -20,11 +20,11 @@ def pick(target_obj: str):
 @action
 def place(target_obj: str, target_location: str):
     """
-    Place the any_targets object at the TARGET_any_targets position. This action can only be executed under the following conditions: (1) You must be holding the any_targets object, and (2) You must be precisely at the TARGET_any_targets position. After successfully executing this action, you will no longer be holding the any_targets object, and it will be positioned at the TARGET_any_targets position.
+    Place the 'any_targets' object at the 'TARGET_any_targets' position. This action can only be executed under the following conditions: (1) You must be holding the 'any_targets' object, and (2) You must be precisely at the 'TARGET_any_targets' position. After successfully executing this action, you will no longer be holding the 'any_targets' object, and it will be positioned at the 'TARGET_any_targets' position.
     
     Args:
-        target_obj: The any_targets object to place.
-        target_lo: The TARGET_any_targets position to place the any_targets object.
+        target_obj: The 'any_targets' object you are holding.
+        target_location: The 'TARGET_any_targets' position to place the any_targets object.
     """
     pass
 

@@ -15,7 +15,7 @@ from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
 from habitat_baselines.rl.ppo.policy import PolicyActionData
 from habitat_mas.utils import AgentArguments
 
-ACTION_POOL = [get_agents, send_request, nav_to_obj, nav_to_goal, pick, place, reset_arm, wait]
+ACTION_POOL = [get_agents, send_request, nav_to_obj, pick, place, reset_arm, wait]
 
 
 class LLMHighLevelPolicy(HighLevelPolicy):
@@ -128,7 +128,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             print("==============================================")
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["20"]
+                skill_args_data[batch_idx] = ["100"]
                 continue
 
             action_name = llm_output["name"]
@@ -140,7 +140,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             else:
                 # If the action is not valid, do nothing
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["20"]
+                skill_args_data[batch_idx] = ["100"]
 
         return (
             next_skill,

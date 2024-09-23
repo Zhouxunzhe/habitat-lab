@@ -77,7 +77,7 @@ class DummyPolicy(HighLevelPolicy):
             llm_output = self._llm_agent.chat(self._skill_name_to_idx)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["20"]
+                skill_args_data[batch_idx] = ["50"]
                 continue
 
             action_name = llm_output["name"]
@@ -90,7 +90,7 @@ class DummyPolicy(HighLevelPolicy):
             else:
                 # If the action is not valid, do nothing
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["20"]
+                skill_args_data[batch_idx] = ["50"]
 
         return (
             next_skill,

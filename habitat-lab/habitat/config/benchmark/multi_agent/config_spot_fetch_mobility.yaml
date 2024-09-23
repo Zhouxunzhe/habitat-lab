@@ -98,6 +98,7 @@ habitat:
 
   environment:
     max_episode_steps: 2000
+    episode_steps_file: "test_mobility_episodes_1k5_1.json"
   simulator:
     type: RearrangeSim-v0
     seed: 100
@@ -131,3 +132,9 @@ habitat:
     randomize_agent_start: 1
     robot_config: data/robots/robot_configs/mp3d/mobility_eval.json
     mode: mobility
+    should_group_discussion: True
+    should_agent_reflection: True
+    should_robot_resume: True
+    should_numerical: True
+    
+    should_terminate_on_wait: False

@@ -102,7 +102,8 @@ class MP3DSceneDescriptionSensor(Sensor):
         # scene_description_str = json.dumps(scene_description)
         scene_description_str = 'Here are the descriptions of the scene: \n'
         scene_description_str += objects_description + '\n'
-        scene_description_str += agent_description
+        scene_description_str += agent_description + '\n'
+        scene_description_str += regions_description
         return scene_description_str   
     
 @registry.register_sensor
