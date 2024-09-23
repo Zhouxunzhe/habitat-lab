@@ -32,6 +32,9 @@ class CrabAgent:
         self.llm_model = OpenAIModel("", action_space=actions, code_execution=code_execution)
         self.initilized = False
 
+    def get_token_usage(self):
+        return self.llm_model.token_usage
+
     def init_agent(
         self,
         robot_type: str,

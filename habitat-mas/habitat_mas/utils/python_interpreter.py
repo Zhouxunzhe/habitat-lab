@@ -94,7 +94,7 @@ class SubprocessInterpreter:
             print(Fore.RED + stderr + Fore.RESET)
             print("==================")
         exec_result = f"{stdout}"
-        # exec_result += f"(stderr: {stderr})" if stderr else ""
+        exec_result += f"(stderr: {stderr})" if stderr else ""
         return exec_result
 
     def run(
@@ -119,6 +119,10 @@ class SubprocessInterpreter:
                 code type is unsupported.
         """
         code_type = self._check_code_type(code_type)
+
+        if code_type == "python":
+            # Ignore warnings in Python code
+            code = 'import warnings\nwarnings.filterwarnings("ignore")\n' + code
 
         # Print code for security checking
         if self.require_confirm:
