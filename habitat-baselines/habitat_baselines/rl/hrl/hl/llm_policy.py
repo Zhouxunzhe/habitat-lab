@@ -128,7 +128,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             print("==============================================")
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["100"]
+                skill_args_data[batch_idx] = ["500"]
                 continue
 
             action_name = llm_output["name"]
@@ -140,7 +140,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             else:
                 # If the action is not valid, do nothing
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["100"]
+                skill_args_data[batch_idx] = ["500"]
 
         return (
             next_skill,

@@ -73,7 +73,7 @@ class OpenAIModel:
         print("Internal action: ", action_name, parameters)
         return str(self.action_map[action_name].run(**parameters))
 
-    def chat(self, content: str):
+    def chat(self, content: str, crab_planning=False):
         new_message = {"role": "user", "content": content}
 
         request = [self.system_message]
@@ -150,6 +150,21 @@ class OpenAIModel:
                     if self.save_on_each_chat:
                         self.save_chat_history(self.logging_file)
                     return response_message.content
+        elif crab_planning:
+            while True:
+                response = self.client.chat.completions.create(
+                    messages=request,  # type: ignore
+                    model=self.model,
+                )
+                self.token_usage += response.usage.total_tokens
+
+                response_message = response.choices[0].message
+                self.chat_history[-1].append(response_message)
+                request.append(response_message)
+
+                if self.save_on_each_chat:
+                    self.save_chat_history(self.logging_file)
+                return response_message.content
         else:
             response = self.client.chat.completions.create(
                 messages=request,  # type: ignore
