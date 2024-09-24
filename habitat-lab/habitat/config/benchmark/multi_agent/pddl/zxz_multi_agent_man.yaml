@@ -27,13 +27,10 @@ objects:
 goal:
   expr_type: AND
   sub_exprs:
-    - robot_at(any_targets|1, agent_1)
-    - robot_at(any_targets|3, agent_3)
+    - robot_at(TARGET_any_targets|1, agent_1)
+    - robot_at(TARGET_any_targets|3, agent_3)
     - at(any_targets|0, TARGET_any_targets|0)
     - at(any_targets|2, TARGET_any_targets|2)
-    - not_holding(any_targets|0, agent_0)
-    - not_holding(any_targets|2, agent_2)
-    - not_holding(any_targets|3, agent_3)
 
 stage_goals:
   stage_1:

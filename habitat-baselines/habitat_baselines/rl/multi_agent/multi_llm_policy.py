@@ -88,6 +88,9 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         ' You can generate python code to check if task is feasible numerically.'
         ' If you are going to pick or place objects, please pay attention to the shape type of the robot workspace when your generate code to check if a location is within the 3D space bounded by the shape.'
         ' If you are going to navigate in multi-floor environments, please pay attention to your mobility capabilities and floors.'
+        ' If you need to perceive objects, you only need to pay attention to the fov, height, horizontal dist, etc. when you generate code to check if a location in within vertical perception range.'
+        ' When considering manipulation task, you only need pay attention to center point, radius, bounding box, etc.'
+        ' Notably, ALL coordinates are in [x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions.'
         ' I will execute the code and give your the result to help you make decisions.'
     )
     FORMAT_INSTRUCTION = (
@@ -110,6 +113,7 @@ def create_robot_start_message(task_description, scene_description, compute_path
         '"""\n{task_description}\n"""\n\n'
         "The scene description is as follows:\n\n"
         '"""\n{scene_description}\n"""\n\n'
+        ' Notably, ALL coordinates are in[x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions.'
     )
     COMPUTE_PATH = (
         "Please infer the navigation path based on the region descriptions and determine if the path requires crossing floors. "

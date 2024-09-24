@@ -254,8 +254,8 @@ def generate_agents_description(agent_layer, region_layer, nav_mesh):
             agent_name = agent.agent_name
             agent_pos = agent.position
             agent_pos_str = ', '.join([f'{p:.1f}' for p in agent_pos])
-            agent_description += f'"{agent_name}" is at position [{agent_pos_str}].\n'
-            
+            # agent_description += f'"{agent_name}" is at position [{agent_pos_str}].\n'
+
     else:
         agents_region_ids = agent_layer.get_agents_region_ids(nav_mesh)
         for agent_id, region_id in agents_region_ids.items():
