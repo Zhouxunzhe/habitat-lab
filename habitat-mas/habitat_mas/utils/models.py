@@ -3,8 +3,17 @@ from ..agents.crab_core import Action
 from typing import List
 import openai
 from .python_interpreter import SubprocessInterpreter
+# from openai.types.chat.chat_completion import ChatCompletionMessage
+# from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
+from pydantic import BaseModel
 
-
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, BaseModel):
+            # Pydantic models are not serializable by json.dump by default
+            return dict(obj)
+        return super().default(obj)
+        
 class OpenAIModel:
     def __init__(
         self,
@@ -14,6 +23,9 @@ class OpenAIModel:
         window_size=None,
         discussion_stage=False,
         code_execution=False,
+        enable_logging=False,
+        logging_file="",
+        save_on_each_chat=True,
     ) -> None:
         self.system_message = {
             "role": "system",
@@ -35,6 +47,24 @@ class OpenAIModel:
             else None
         )
         self.tool_calls_enable = True if action_space else False
+        
+        # Debug logging
+        self.enable_logging = enable_logging
+        self.logging_file = logging_file
+        self.save_on_each_chat = save_on_each_chat
+
+    
+    def __del__(self):
+        """Save chat history to a file if logging is enabled"""
+        if self.enable_logging:
+            self.save_chat_history(self.logging_file)
+           
+    def save_chat_history(self, file_path: str):
+
+        with open(file_path, "w") as f:
+            full_history = [self.system_message] + self.chat_history
+            json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
+
 
     def set_system_message(self, system_message: str):
         self.system_message = {"role": "system", "content": system_message}
@@ -114,6 +144,8 @@ class OpenAIModel:
                     self.chat_history[-1].append(result_message)
                     request.append(result_message)
                 else:
+                    if self.save_on_each_chat:
+                        self.save_chat_history(self.logging_file)
                     return response_message.content
         else:
             response = self.client.chat.completions.create(
@@ -145,6 +177,10 @@ class OpenAIModel:
             #     raise RuntimeError("agent output more than one action per step.")
             call = tool_calls[0]
             parameters = json.loads(call.function.arguments)
+            
+            if self.save_on_each_chat:
+                self.save_chat_history(self.logging_file)
+            
             return (call.function.name, parameters)
 
         # function_call_res = []

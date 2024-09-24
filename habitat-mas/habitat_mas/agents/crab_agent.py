@@ -27,9 +27,15 @@ class CrabAgent:
         name: str,
         actions: List[Action],
         code_execution: bool = False,
+        **kwargs,
     ):
         self.name = name
-        self.llm_model = OpenAIModel("", action_space=actions, code_execution=code_execution)
+        self.actions = actions
+        self.code_execution = code_execution
+        self.enable_logging =  kwargs.get("enable_logging", False)
+        self.logging_file = kwargs.get("logging_file", "")
+
+        self.llm_model:OpenAIModel = None
         self.initilized = False
 
     def init_agent(
@@ -37,19 +43,38 @@ class CrabAgent:
         robot_type: str,
         task_description: str,
         subtask_description: str,
+        chat_history: Optional[List] = None,
+        enable_logging: bool = False,
+        logging_file: str = "",
     ):
         """This function is a hack to intilize agent after the object is created"""
         self.robot_type = robot_type
         self.task_description = task_description
         self.subtask_description = subtask_description
-        self.llm_model.set_system_message(
-            ROBOT_EXECUTION_SYSTEM_PROMPT_TEMPLATE.format(
-                robot_type=self.robot_type,
-                robot_key=self.name,
-                task_description=task_description,
-                subtask_description=subtask_description,
-            )
+        # create system message
+        system_message = ROBOT_EXECUTION_SYSTEM_PROMPT_TEMPLATE.format(
+            robot_type=self.robot_type,
+            robot_key=self.name,
+            task_description=task_description,
+            subtask_description=subtask_description,
         )
+        # Initialize the OpenAI LLM model
+        self.llm_model = OpenAIModel(
+            system_message, 
+            action_space=self.actions,
+            code_execution=self.code_execution,
+            enable_logging=enable_logging,
+            logging_file=logging_file,
+        )
+        
+        # Inject chat history from group discussion phase
+        if chat_history is not None:
+            self.llm_model.chat_history = chat_history
+
+        # Set logging parameters
+        self.llm_model.enable_logging = enable_logging
+        self.llm_model.logging_file = logging_file
+
         self.initilized = True
 
     def chat(self, observation: str) -> Optional[dict]:
