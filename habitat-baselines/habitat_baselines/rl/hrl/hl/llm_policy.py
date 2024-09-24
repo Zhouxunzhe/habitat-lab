@@ -91,27 +91,23 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         # print(envs_text_context)
         # print("==================================================")
 
+        get_next_action_prompt = (
+            'You either finished your last action or you are at the beginning of the task. '
+            'This is the current environment description: """\n{scene_description}\n"""\n\n'
+            'Please generate the next action to take given the task and environment. '
+        )
         semantic_observation = envs_text_context[0]["scene_description"]
         # print(semantic_observation)
-
-        if not self.llm_agent.initilized:
-            print("=================agent_task_assignment===================")
-            print(agent_arguments)
-            print("======================================================")
-            args = agent_arguments[0]
-            # Inject chat history from group discussion phase
-            if args.chat_history is not None:
-                self.llm_agent.llm_model.chat_history = args.chat_history
-            self.llm_agent.init_agent(
-                robot_type=args.robot_type,
-                task_description=args.task_description,
-                subtask_description=args.subtask_description,
-            )
+        get_next_action_message = get_next_action_prompt.format(
+            scene_description=semantic_observation
+        )
 
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
         skill_args_data = [None for _ in range(batch_size)]
         immediate_end = torch.zeros(batch_size, dtype=torch.bool)
+
+        assert self.llm_agent.initilized, "Exception in LLMHighLevelPolicy.get_next_skill(): LLM agent not initialized."
 
         for batch_idx, should_plan in enumerate(plan_masks):
             if should_plan != 1.0:
@@ -119,7 +115,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
 
             # Query the LLM agent with the current observations
             # to get the next action and arguments
-            llm_output = self.llm_agent.chat(semantic_observation)
+            llm_output = self.llm_agent.chat(get_next_action_message)
             print("=================llm_output===================")
             print("Agent: ", self.llm_agent.name)
             print(llm_output)

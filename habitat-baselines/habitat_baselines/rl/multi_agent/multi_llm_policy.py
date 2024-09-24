@@ -7,7 +7,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 from hydra.core.hydra_config import HydraConfig
-from openai.types.chat.chat_completion import ChatCompletionMessage
 
 import gym.spaces as spaces
 import numpy as np
@@ -25,6 +24,8 @@ from habitat_baselines.rl.multi_agent.pop_play_wrappers import (
     MultiUpdater,
     _merge_list_dict,
 )
+from habitat_baselines.rl.hrl.hierarchical_policy import HierarchicalPolicy
+from habitat_baselines.rl.hrl.hl.llm_policy import LLMHighLevelPolicy
 from habitat_baselines.rl.multi_agent.utils import (
     add_agent_names,
     add_agent_prefix,
@@ -208,10 +209,17 @@ ROBOT_DESCRIPTION = {
 
 def group_discussion(
     robot_resume: dict, scene_description: str, task_description: str, 
-    save_chat_history=True, save_chat_history_dir="./chat_history_output", episode_id=-1, 
+    save_chat_history=True, save_chat_history_dir="", episode_id=-1, 
     should_group_discussion: bool = True, should_agent_reflection: bool = True,
     should_robot_resume: bool = True, should_numerical: bool = True
 ) -> dict[str, AgentArguments]:
+
+    if save_chat_history:
+        episode_save_dir = os.path.join(save_chat_history_dir, str(episode_id))
+        if not os.path.exists(episode_save_dir):
+            os.makedirs(episode_save_dir)
+
+    # Get robot resume from the beginning of the group discussion
     compute_path = "regions_description" in scene_description
     robot_resume = json.loads(robot_resume)
     robot_resume_prompt = ""
@@ -251,7 +259,15 @@ def group_discussion(
     
 
     leader_prompt = create_leader_prompt(robot_resume_prompt)
-    leader = OpenAIModel(leader_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=False)
+
+    leader = OpenAIModel(
+        leader_prompt,
+        DISCUSSION_TOOLS,
+        discussion_stage=True,
+        code_execution=False,
+        enable_logging=save_chat_history,
+        logging_file = os.path.join(episode_save_dir, "leader_group_chat_history.json")            
+    )
     agents: Dict[str, OpenAIModel] = {}
     for robot_key in robot_resume:
         robot_prompt = create_robot_prompt(
@@ -260,7 +276,12 @@ def group_discussion(
             capabilities_list[robot_key]
         )
         agents[robot_key] = OpenAIModel(
-            robot_prompt, DISCUSSION_TOOLS, discussion_stage=True, code_execution=True,
+            robot_prompt,
+            DISCUSSION_TOOLS,
+            discussion_stage=True,
+            code_execution=True,
+            enable_logging=save_chat_history,
+            logging_file = os.path.join(episode_save_dir, f"{robot_key}_group_chat_history.json")
         )
 
     # robot_id_to_model_map = {
@@ -328,39 +349,6 @@ def group_discussion(
     print(f"Total token usage: {total_tokens}")
     print("========================================================")
 
-    # debug info: save all agent chat history
-    if save_chat_history:
-        # save dir format: chat_history_output/<date>/<config>/<episode_id>
-        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        hydra_cfg = HydraConfig.get()
-        config_str = hydra_cfg.job.config_name.split("/")[-1].replace(".yaml", "")
-        episode_save_dir = os.path.join(save_chat_history_dir, date_str, config_str, str(episode_id))
-        
-        if not os.path.exists(episode_save_dir):
-            os.makedirs(episode_save_dir)
-
-        class CustomJSONEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, ChatCompletionMessage):
-                    # Pydantic models are not serializable by json.dump by default
-                    return dict(obj)
-                return super().default(obj)
-
-        with open(os.path.join(episode_save_dir, "group_discussion_token_usage.json"), "w") as f:
-            token_usage = {"leader": leader_tokens, "robots": robot_tokens, "total": total_tokens}
-            json.dump(token_usage, f, indent=2, cls=CustomJSONEncoder)
-
-        # save leader chat history
-        with open(os.path.join(episode_save_dir, "leader_chat_history.json"), "w") as f:
-            full_history = [leader.system_message] + leader.chat_history
-            json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
-            
-        for agent in agents:
-            with open(os.path.join(episode_save_dir, f"{agent}_chat_history.json"), "w") as f:
-                agent_chat_history = agents[agent].chat_history
-                full_history = [agents[agent].system_message] + agent_chat_history
-                json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
-
     return results
 
 
@@ -401,6 +389,22 @@ class MultiLLMPolicy(MultiPolicy):
         envs_text_context=[{}],
         **kwargs,
     ):
+        # debug info
+        # TODO: disable saving chat history for batch experiments
+        save_chat_history = kwargs.get("save_chat_history", True)
+        save_chat_history_dir = kwargs.get("save_chat_history_dir", "./chat_history_output")
+        # Create a directory to save chat history
+        if save_chat_history:
+            # save dir format: chat_history_output/<date>/<config>/<episode_id>
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+            hydra_cfg = HydraConfig.get()
+            config_str = hydra_cfg.job.config_name.split("/")[-1].replace(".yaml", "")
+            # episode_save_dir = os.path.join(save_chat_history_dir, date_str, config_str, str(episode_id))
+            save_chat_history_dir = os.path.join(save_chat_history_dir, date_str, config_str)
+
+            if not os.path.exists(save_chat_history_dir):
+                os.makedirs(save_chat_history_dir)
+            
         n_agents = len(self._active_policies)
         split_index_dict = self._build_index_split(
             rnn_hidden_states, prev_actions, kwargs
@@ -413,6 +417,7 @@ class MultiLLMPolicy(MultiPolicy):
         )
         agent_masks = masks.split([1] * n_agents, -1)
         n_envs = prev_actions.shape[0]
+        assert n_envs == 1, "Currently, the stage 2 only supports single environment with multiple agents."
 
         text_goal = observations["pddl_text_goal"][0].tolist()
         text_goal = "".join([chr(code) for code in text_goal]).strip()
@@ -439,12 +444,25 @@ class MultiLLMPolicy(MultiPolicy):
                 # print("=============================================")
                 # print(text_goal)
                 # print("=============================================")
+                
                 agent_arguments = group_discussion(
-                    robot_resume, scene_description, text_goal, episode_id=episode_id, 
-                    should_group_discussion=self.should_group_discussion, should_agent_reflection=self.should_agent_reflection,
-                    should_robot_resume=self.should_robot_resume, should_numerical=self.should_numerical
+                    robot_resume, 
+                    scene_description, 
+                    text_goal, 
+                    should_group_discussion=self.should_group_discussion, 
+                    should_agent_reflection=self.should_agent_reflection,
+                    should_robot_resume=self.should_robot_resume, 
+                    should_numerical=self.should_numerical,
+                    save_chat_history=save_chat_history,
+                    save_chat_history_dir=save_chat_history_dir,
+                    episode_id=episode_id,
                 )
                 envs_agent_arguments.append(agent_arguments)
+                
+                # Invalidate all action policies and flag them to be reinitialized
+                for agent_i, policy in enumerate(self._active_policies):
+                    policy._high_level_policy.llm_agent.initilized = False
+                    
 
         # Stage 2: Individual policy actions
         agent_actions = []
@@ -455,9 +473,31 @@ class MultiLLMPolicy(MultiPolicy):
                 agent_arguments[agent_i_handle] if agent_i_handle in arguments else None
                 for arguments in envs_agent_arguments
             ]
-
             agent_obs = self._update_obs_with_agent_prefix_fn(observations, agent_i)
 
+            # TODO: Currently, the stage 2 only supports single environment with multiple agents.
+            # TODO: Please update the code of agent initialization and policy action to support vectorized environment.
+            # Initialize action execution agent with new context information
+            policy: HierarchicalPolicy
+            llm_policy: LLMHighLevelPolicy = policy._high_level_policy
+            if not llm_policy.llm_agent.initilized:
+                print("=================agent_task_assignment===================")
+                args = select_agent_arguments[0]
+                print(args)
+                episode_id = envs_text_context[0]["episode_id"]
+                episode_save_dir = os.path.join(save_chat_history_dir, str(episode_id))
+                logging_path = os.path.join(episode_save_dir, f"{agent_i_handle}_action_history.json")
+                
+                llm_policy.llm_agent.init_agent(
+                    robot_type=args.robot_type,
+                    task_description=args.task_description,
+                    subtask_description=args.subtask_description,
+                    chat_history=args.chat_history,
+                    enable_logging=save_chat_history,
+                    logging_file=logging_path,
+                )
+
+            # Run the policy
             agent_actions.append(
                 policy.act(
                     agent_obs,
