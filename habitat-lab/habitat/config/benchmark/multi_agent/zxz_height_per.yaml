@@ -4,7 +4,7 @@ defaults:
   - /habitat: habitat_config_base
   - /habitat/task: task_config_base
 
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: SpotRobot_head_arm
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: SpotRobot_head_jaw
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: DJIDrone_default
 
   - /habitat/dataset/embodied_mas: zxz_perception
@@ -119,7 +119,7 @@ habitat:
   dataset:
     data_path: data/datasets/hssd/0/hssd_height_per.json.gz
     # new
-    randomize_agent_start: 0
+    randomize_agent_start: 1
     robot_config: data/robots/robot_configs/hssd/height_per.json
     mode: perception
     should_terminate_on_wait: False

@@ -148,6 +148,11 @@ class HabitatMASEvaluator(Evaluator):
             # Then collect the context of the episode
             if current_episodes_info[0].episode_id != cur_ep_id:
                 cur_ep_id = current_episodes_info[0].episode_id
+                print("===============================================================================")
+                print("=================================Episode ID====================================")
+                print("Current Episode ID: ", cur_ep_id)
+                print("=================================Episode ID====================================")
+                print("===============================================================================")
                 envs_text_context = envs.call(["get_task_text_context"] * envs.num_envs)
                 if 'pddl_text_goal' in batch:
                     envs_pddl_text_goal_np = batch['pddl_text_goal'].cpu().numpy()

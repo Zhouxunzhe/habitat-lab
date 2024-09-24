@@ -36,7 +36,7 @@ class CrabAgent:
         self.logging_file = kwargs.get("logging_file", "")
 
         self.llm_model:OpenAIModel = None
-        self.initilized = False
+        self.initialized = False
 
     def get_token_usage(self):
         return self.llm_model.token_usage
@@ -78,7 +78,7 @@ class CrabAgent:
         self.llm_model.enable_logging = enable_logging
         self.llm_model.logging_file = logging_file
 
-        self.initilized = True
+        self.initialized = True
 
     def chat(self, observation: str) -> Optional[dict]:
         if self.name in CrabAgent.message_pipe and CrabAgent.message_pipe[self.name]:

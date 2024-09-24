@@ -41,10 +41,10 @@ def wait():
 @action
 def nav_to_obj(target_obj: str):
     """
-    Navigate to the specified 'any_targets' or 'TARGET_any_target' object. Upon successfully completing this action, you should be positioned at the exact location of the 'any_targets' or 'TARGET_any_target'.
+    Navigate to the specified 'any_targets' or 'TARGET_any_target' object. Upon successfully completing this action, you should be positioned at the exact location of the 'any_targets' or 'TARGET_any_target'. 'target_obj' can NOT be a region name!
     
     Args:
-        target_obj: The any_targets or TARGET_any_targets object to navigate to. IMPORTANT-> 'target_obj' must follow the format: 'any_targets|x' or 'TARGET_any_targets|x', which is the unique name of the object, must NOT be a region name.
+        target_obj: The 'any_targets' or 'TARGET_any_targets' object to navigate to. 'target_obj' MUST follow the format 'any_targets|x' or 'TARGET_any_targets|x'. Must NOT be a region name.
     """ 
     pass
 
