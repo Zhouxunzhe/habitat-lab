@@ -8,14 +8,14 @@ defaults:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_1.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_fixed
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_fixed
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_llm
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_drone_multi_agent
   - /habitat/task/lab_sensors:
     # For the oracle navigation
     - has_finished_oracle_nav
-    # - all_predicates
+    - all_predicates
   - _self_
 
 
@@ -41,8 +41,8 @@ habitat_baselines:
   evaluator:
     _target_: habitat_baselines.rl.multi_agent.habitat_mas_evaluator.HabitatMASEvaluator
 
-  image_dir: "video_multi/height_per/image_dir/"
-  video_dir: "video_multi/height_per"
+  image_dir: "video_multi/emos/height_per/image_dir/"
+  video_dir: "video_multi/emos/height_per"
 
   eval:
     should_load_ckpt: False
@@ -73,7 +73,7 @@ habitat_baselines:
               - "other_agent_gps"
               - "obj_start_sensor"
               - "obj_goal_sensor"
-              # - "all_predicates"
+              - "all_predicates"
             allowed_actions:
               - wait
               - nav_to_goal
@@ -89,7 +89,7 @@ habitat_baselines:
               # action_name: "base_velocity_non_cylinder"
               action_name: "base_velocity"
               obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
-              max_skill_steps: 1000
+              max_skill_steps: 750
             pick:
               skill_name: "OraclePickPolicy"
               action_name: "arm_pick_action"
@@ -125,7 +125,7 @@ habitat_baselines:
               - "other_agent_gps"
               - "obj_start_sensor"
               - "obj_goal_sensor"
-              # - "all_predicates"
+              - "all_predicates"
             allowed_actions:
               - wait
               - nav_to_goal
@@ -137,7 +137,7 @@ habitat_baselines:
               skill_name: "OracleNavPolicy"
               action_name: "base_velocity"
               obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
-              max_skill_steps: 1000
+              max_skill_steps: 750
     ppo:
       # ppo params
       clip_param: 0.2

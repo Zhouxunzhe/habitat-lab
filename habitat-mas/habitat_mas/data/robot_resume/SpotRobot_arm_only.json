@@ -2,27 +2,28 @@
   "robot_id": "SpotRobot_arm_only",
   "robot_type": "SpotRobot",
   "mobility": {
-    "summary": "SpotRobot is equipped with a quadruped base, consisting of four legs (front-left, front-right, hind-left, hind-right) each having three revolute joints (hip, upper leg, lower leg), providing it with significant mobility across different terrains and the ability to navigate complex environments, suitable for tasks involving cross-floor movement."
+    "summary": "SpotRobot has a legged base with hip, upper leg, and lower leg joints for front-left, front-right, hind-left, and hind-right legs. It is capable of walking and climbing, making it suitable for cross-floor movement."
   },
   "perception": {
-    "summary": "SpotRobot has a dedicated arm-mounted camera located at the end of its arm (on Link(articulated_agent_arm_camera)). This camera is crucial for cooperative perception, allowing the robot to search for and perceive objects to obtain their geometric information for manipulation tasks. The camera's positioning on the arm enhances the robot's ability to inspect objects at different heights and angles, facilitating accurate object recognition and handling.",
+    "summary": "SpotRobot is equipped with an articulated camera mounted on its arm, which enhances its single-floor object perception capabilities, especially for objects in abnormal positions.",
     "cameras_info": {
       "articulated_agent_arm_camera": {
-        "height": 0.5770000063180923,
+        "height": 0.577,
+        "hfov": 90,
         "type": "articulated"
       }
     }
   },
   "manipulation": {
-    "summary": "SpotRobot's manipulation capabilities are realized through an articulated arm consisting of multiple revolute joints (shoulder, elbow, wrist, and fingers). The arm is designed to manipulate objects effectively, with the end effector (fingers) supported by a complex joint mechanism providing dexterity. This setup enables the robot to perform tasks such as pick and place operations, and rearranging objects in various positions, including high shelves and under tables.",
+    "summary": "SpotRobot's arm features multiple revolute joints from shoulder to fingertip, providing a dexterous workspace for precise object manipulation. The arm's range of motion supports tasks like picking and placing objects.",
     "arm_workspace": {
       "type": "sphere",
       "center": [
-        0.218833327293396,
-        0.7876816987991333,
-        0.18432271480560303
+        0.219,
+        0.788,
+        0.184
       ],
-      "radius": 0.977087
+      "radius": 0.977
     }
   }
 }

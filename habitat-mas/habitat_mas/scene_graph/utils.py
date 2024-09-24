@@ -130,18 +130,36 @@ def aggregate_bboxes(bboxes):
 
 def generate_region_adjacency_description(reion_layer):
     num_regions = len(reion_layer.nodes)
-    description = "There are {} regions in the scene.\n".format(num_regions)
+    description = "There are {} regions in the scene.".format(num_regions)    
+    visited = set()
+    connected_components = []
     
-    for region_node in reion_layer.nodes:
-        region_id = region_node.region_id
-        region_name = region_node.class_name + str(region_id)
-        description += "The {}-th region is named {}.\n".format(
-            region_id, region_name
-        )
+    def dfs(region_node, component):
+        if region_node in visited:
+            return
+        visited.add(region_node)
+        component.append(region_node)
         for neighbor_node in reion_layer.neighbors(region_node):
-            neighbor_id = neighbor_node.region_id
-            neighbor_name = neighbor_node.class_name + str(neighbor_id)
-            description += "{} is connected to {}.\n".format(region_name, neighbor_name)
+            if neighbor_node not in visited:
+                dfs(neighbor_node, component)
+    
+    # use dfs to find connected components
+    for region_node in reion_layer.nodes:
+        if region_node not in visited:
+            component = []
+            dfs(region_node, component)
+            connected_components.append(component)
+
+    description += " The regions are grouped into {} connected components. Within each component, all regions are directly or indirectly connected, while regions from different components have no connections to each other. \n ".format(len(connected_components))
+    
+    for i, component in enumerate(connected_components):
+        region_names = []
+        for region_node in component:
+            region_id = region_node.region_id
+            region_name = region_node.class_name + "_" + str(region_id)
+            region_names.append(region_name)
+        
+        description += "Component {}: ||{}|| are all connected. \n".format(i + 1, "<->".join(region_names))
 
     return description
 
@@ -208,16 +226,19 @@ def generate_mp3d_objects_description(object_layer):
         obj = object_layer.obj_dict[obj_id]
         assert obj.parent_region, f"{obj.full_name} has no parent region"
         parent_region = obj.parent_region
+        region_name = parent_region.class_name + "_" + str(parent_region.region_id)
+        level = parent_region.parent_level
         obj_name = obj.label
+        obj_height = obj.height
         if not obj.label:
             obj_name = obj.full_name
 
         # Remove quotes in list
-        position = np.array(obj.center)
-        position_str = ', '.join([f'{p:.1f}' for p in position])
+        # position = np.array(obj.center)
+        # position_str = ', '.join([f'{p:.1f}' for p in position])
         description += (
-            f'Object "{obj_name}" is at position [{position_str}], '
-            f'in {parent_region.class_name} on {parent_region.parent_level} floor. \n'
+            f'The object "{obj_name}" is located in {region_name} on {level} floor. '
+            f'The height of object "{obj_name}" from the floor is {obj_height:.1f}. \n'
         )
 
     return description
@@ -266,7 +287,7 @@ def generate_mp3d_agents_description(agent_layer, region_layer):
         if not find_agent_in_region:
             agent_description += f'"{agent_name}" is at position [{agent_pos_str}].\n'
         else:
-            agent_description += f'"{agent_name}" is at position [{agent_pos_str}], in {region_name} on {parent_level} floor.\n'
+            agent_description += f'"{agent_name}" is in {region_name} on {parent_level} floor.\n'
         
     return agent_description
 

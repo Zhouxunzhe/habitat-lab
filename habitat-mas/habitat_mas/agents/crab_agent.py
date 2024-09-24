@@ -38,6 +38,9 @@ class CrabAgent:
         self.llm_model:OpenAIModel = None
         self.initilized = False
 
+    def get_token_usage(self):
+        return self.llm_model.token_usage
+
     def init_agent(
         self,
         robot_type: str,
@@ -93,9 +96,9 @@ class CrabAgent:
                 CrabAgent.message_pipe[target_agent] = []
             prompt = REQUEST_TEMPLATE.format(source_agent=self.name, request=request)
             CrabAgent.message_pipe[target_agent].append(prompt)
-            return {"name": "wait", "arguments": ["20"]}
+            return {"name": "wait", "arguments": ["100"]}
         if action_name == "wait":
-            return {"name": "wait", "arguments": ["20"]}
+            return {"name": "wait", "arguments": ["100"]}
         if action_name in [
             "nav_to_obj",
             "nav_to_goal",

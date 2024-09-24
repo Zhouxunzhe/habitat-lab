@@ -661,7 +661,7 @@ class RearrangeSim(HabitatSim):
             pos, self._largest_indoor_island_idx
         )
 
-        max_iter = 10
+        max_iter = 50
         offset_distance = 1.5
         distance_per_iter = 0.5
         num_sample_points = 2000 # 1000

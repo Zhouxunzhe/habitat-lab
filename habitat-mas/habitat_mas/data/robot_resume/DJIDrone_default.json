@@ -2,19 +2,20 @@
   "robot_id": "DJIDrone_default",
   "robot_type": "DJIDrone",
   "mobility": {
-    "summary": "The DJIDrone features an aerial mobility base indicated by its name and structure. It lacks mobile joints indicating terrestrial locomotion and therefore is likely an aerial vehicle capable of multi-floor operations, suitable for tasks that involve vertical movement and cross-floor transport."
+    "summary": "The DJIDrone is a flying robot, capable of moving across different floors."
   },
   "perception": {
-    "summary": "The DJIDrone is equipped with multiple sensors for perceiving its environment. It has a Velodyne sensor and a RealSense camera, the latter of which includes a depth optical frame. These sensors provide the drone with depth perception and detailed geometric information which are critical for object detection, necessary to search for and perceive objects for manipulation.",
+    "summary": "The robot is equipped with a RealSense camera, providing depth perception and visual sensing for detecting objects. It also has a Velodyne sensor, enhancing its environmental perception.",
     "cameras_info": {
       "head_camera": {
         "height": 1.5,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "There are no specific end effectors or manipulative joints mentioned in the provided structure, suggesting the DJIDrone may not have direct manipulation capabilities built-in. However, its sensing capabilities make it suitable for cooperative manipulation tasks, likely working in tandem with other manipulators.",
+    "summary": "The robot does not have specific manipulators or end effectors, indicating a lack of direct object handling capabilities.",
     "arm_workspace": {}
   }
 }

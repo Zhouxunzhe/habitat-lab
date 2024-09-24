@@ -15,7 +15,8 @@ from habitat_mas.scene_graph.utils import (
     generate_objects_description, 
     generate_agents_description, 
     generate_mp3d_objects_description, 
-    generate_mp3d_agents_description
+    generate_mp3d_agents_description,
+    generate_region_adjacency_description
 )    
 
 @registry.register_sensor
@@ -87,10 +88,12 @@ class MP3DSceneDescriptionSensor(Sensor):
         sg.load_gt_scene_graph(self._sim)
         
         # Generate scene descriptions
+        regions_description = generate_region_adjacency_description(sg.region_layer) 
         objects_description = generate_mp3d_objects_description(sg.object_layer)
         agent_description = generate_mp3d_agents_description(sg.agent_layer, sg.region_layer)
         
         scene_description = {
+            "regions_description": regions_description,
             "objects_description": objects_description,
             "agent_description": agent_description
         }
@@ -99,7 +102,8 @@ class MP3DSceneDescriptionSensor(Sensor):
         # scene_description_str = json.dumps(scene_description)
         scene_description_str = 'Here are the descriptions of the scene: \n'
         scene_description_str += objects_description + '\n'
-        scene_description_str += agent_description
+        scene_description_str += agent_description + '\n'
+        scene_description_str += regions_description
         return scene_description_str   
     
 @registry.register_sensor

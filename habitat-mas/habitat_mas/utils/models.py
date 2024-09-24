@@ -47,6 +47,7 @@ class OpenAIModel:
             else None
         )
         self.tool_calls_enable = True if action_space else False
+        self.token_usage = 0
         
         # Debug logging
         self.enable_logging = enable_logging
@@ -64,7 +65,6 @@ class OpenAIModel:
         with open(file_path, "w") as f:
             full_history = [self.system_message] + self.chat_history
             json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
-
 
     def set_system_message(self, system_message: str):
         self.system_message = {"role": "system", "content": system_message}
@@ -101,6 +101,7 @@ class OpenAIModel:
                         messages=request,  # type: ignore
                         model=self.model,
                     )
+                self.token_usage += response.usage.total_tokens
 
                 response_message = response.choices[0].message
                 self.chat_history[-1].append(response_message)
@@ -137,6 +138,8 @@ class OpenAIModel:
                                              ])
                     result_content = self.interpreter.run(merged_code, "python")
                 
+                    print("============merged code============")
+                    print(merged_code)
                     print("============Results============")
                     print(result_content)
                     print("==============================")
@@ -156,6 +159,7 @@ class OpenAIModel:
                 ],
                 tool_choice="required",
             )
+            self.token_usage += response.usage.total_tokens
 
             response_message = response.choices[0].message
             self.chat_history[-1].append(response_message)

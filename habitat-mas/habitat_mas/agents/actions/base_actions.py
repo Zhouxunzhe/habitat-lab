@@ -41,19 +41,19 @@ def wait():
 @action
 def nav_to_obj(target_obj: str):
     """
-    Navigate to the specified TARGET_any_target object. Upon successfully completing this action, you should be positioned at the exact location of the TARGET_any_target.
+    Navigate to the specified 'any_targets' or 'TARGET_any_target' object. Upon successfully completing this action, you should be positioned at the exact location of the 'any_targets' or 'TARGET_any_target'.
     
     Args:
-        target_obj: The TARGET_any_targets object to navigate to.
-    """
+        target_obj: The any_targets or TARGET_any_targets object to navigate to. IMPORTANT-> 'target_obj' must follow the format: 'any_targets|x' or 'TARGET_any_targets|x', which is the unique name of the object, must NOT be a region name.
+    """ 
     pass
 
-@action
-def nav_to_goal(target_obj: str):
-    """
-    Navigate to the specified any_targets object. This action can only be executed if you are not currently holding or have not previously picked up the any_targets object. Upon successful completion, you should be positioned at the exact location of the any_targets.
+# @action
+# def nav_to_goal(target_obj: str):
+#     """
+#     Navigate to the specified any_targets object. This action can only be executed if you are not currently holding or have not previously picked up the any_targets object. Upon successful completion, you should be positioned at the exact location of the any_targets.
     
-    Args:
-        target_obj: The any_targets object to navigate to.
-    """
-    pass
+#     Args:
+#         target_obj: The any_targets object to navigate to. IMPORTANT: 'target_obj' must follow the format: 'any_targets|x', which is the unique name of the any_targets object, must NOT be a region name.
+#     """
+#     pass

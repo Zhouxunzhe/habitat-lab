@@ -82,6 +82,7 @@ class SceneGraphMP3D(SceneGraphBase):
                     region_label = region.category.index()
                 
                 parent_level = region.level.id
+                level_height = region.level.aabb.center[1]
 
                 region_node = self.region_layer.add_region(
                     region_bbox,
@@ -105,6 +106,13 @@ class SceneGraphMP3D(SceneGraphBase):
                         pos <= region_bbox[1]
                     )
                     if is_inside and abs_obj_id not in self.object_layer.obj_ids:
+                        snap_pos = sim.safe_snap_point(pos)
+                        if np.isnan(snap_pos[0]):
+                            height_to_floor = pos[1] - level_height
+                        else:
+                            height_to_floor = pos[1] - snap_pos[1]
+                        if height_to_floor < 0:
+                            height_to_floor = 0
                         object_node = self.object_layer.add_object(
                             center=pos,
                             rotation=rot,
@@ -112,6 +120,7 @@ class SceneGraphMP3D(SceneGraphBase):
                             full_name=object_handle,
                             label=entity_name,
                             parent_region=region_node,
+                            height=height_to_floor
                         )
                         region_node.add_object(object_node)
                 
@@ -135,6 +144,11 @@ class SceneGraphMP3D(SceneGraphBase):
                             target_pos <= region_bbox[1]
                         )
                         if is_inside and abs_obj_id not in self.object_layer.obj_ids:
+                            snap_pos = sim.safe_snap_point(target_pos)
+                            if np.isnan(snap_pos[0]):
+                                height_to_floor = target_pos[1] - level_height
+                            else:
+                                height_to_floor = target_pos[1] - snap_pos[1]
                             object_node = self.object_layer.add_object(
                                 center=target_pos,
                                 rotation=target_rot,
@@ -142,6 +156,7 @@ class SceneGraphMP3D(SceneGraphBase):
                                 full_name=goal_recep_handle,
                                 label=f"TARGET_any_targets|{target_id}",
                                 parent_region=region_node,
+                                height=height_to_floor
                             )
                             region_node.add_object(object_node)
                     

@@ -2,27 +2,28 @@
   "robot_id": "FetchRobot_head_only",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "FetchRobot has wheel-based mobility with two continuous joints for the right and left wheel links attached to the base link, allowing it to move efficiently on flat surfaces. Its prismatic joint in the torso lift link allows vertical movement, which helps in accessing different height levels, though it does not support stair traversal or vertical climbing."
+    "summary": "FetchRobot has continuous-wheel base links for mobility. It cannot move between floors on its own."
   },
   "perception": {
-    "summary": "FetchRobot is equipped with multiple cameras for perception. It has a head camera with a head_pan_link and head_tilt_link, allowing it to look around and focus on specific objects. The head camera supports both RGB and depth information (via head_camera_rgb_frame and head_camera_depth_frame), suitable for capturing detailed geometric information necessary for manipulation tasks.",
+    "summary": "FetchRobot has a head-mounted RGB and depth camera for object perception on a single floor.",
     "cameras_info": {
       "head_camera": {
-        "height": 1.2000000476837158,
+        "height": 1.2,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "FetchRobot has a dexterous arm with multiple revolute and continuous joints, including shoulder_pan_link, shoulder_lift_link, and wrist_flex_link, allowing for a wide range of motion to manipulate objects. The arm ends in a gripper with two prismatic joints for the gripper fingers, enabling precise gripping actions. The torso's vertical movement (prismatic joint) enhances its ability to reach objects on high shelves or under tables.",
+    "summary": "FetchRobot has a 7-DoF arm with a prismatic gripper, suitable for precise object manipulation within a single floor workspace.",
     "arm_workspace": {
       "type": "sphere",
       "center": [
-        0.14739853143692017,
-        0.899940013885498,
-        0.1324108988046646
+        0.147,
+        0.9,
+        0.132
       ],
-      "radius": 1.1041796
+      "radius": 1.1
     }
   }
 }

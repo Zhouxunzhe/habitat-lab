@@ -49,7 +49,7 @@ defaults:
     - other_agent_gps
     - detected_objects_sensor
     - object_to_goal_distance_sensor
-    # - pddl_text_goal
+    - pddl_text_goal
     #- arm_workspace_rgb_sensor
     #- object_masks_sensor
     #- nav_workspace_rgb_sensor
@@ -119,11 +119,11 @@ habitat:
     agents:
       agent_0:
         joint_start_noise: 0.0
-    #w2j: True
-    #json_path: "data/robots/robot_configs/hssd/height_man.json"
+    w2j: False
+    json_path: "data/robots/robot_configs/hssd/height_man.json"
   dataset:
-    data_path: data/datasets/hssd_height.json.gz
+    data_path: data/datasets/hssd/0/hssd_height_man_sample.json.gz
     # new
-    randomize_agent_start: 1
+    randomize_agent_start: 0
     robot_config: data/robots/robot_configs/hssd/height_man.json
     mode: manipulation

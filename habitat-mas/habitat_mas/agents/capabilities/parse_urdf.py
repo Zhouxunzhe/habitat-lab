@@ -28,9 +28,9 @@ from habitat_mas.agents.robots.defaults import (
 )
 
 default_tasks = """
-Cross-floor object rearrangement (pick and place objects from one floor to another);
-Cooperative Perception for manipulation: Robots need to search for and perceive the object to get geometric information, and then manipulate the object;
-Home arrangement: Robots need to rearrange the furniture in the home, especially the objects in abnormal positions like on the high shelf and under table.
+Cross-floor object rearrangement: Robot need to cross floor to pick and place objects from one floor to another;
+Single-floor object perception: Robots need to perceive the object placed in abnormal positions;
+Single-floor object rearrangement: Robots need to pick and place objects in abnormal positions.
 """
 # default_tasks = """
 # • Task 1: Cross-floor object navigation: In the multi-floor task requires the collaboration of robots with different base types to navigate to multiple objects in the scene. The wheeled robot operates on a single floor, while the legged robot can navigate between floors, emphasizing the need for coordinated planning with awareness of mobility capabilities of different robots.
@@ -271,11 +271,11 @@ def query_llm_with_urdf(urdf: URDF, model_name="gpt-4o", task_text=default_tasks
 # Please provide a summary of the robot's physics capabilities based on corresponding information and task.
 # """
     system_prompt = """
-You are a robot urdf structure reasoner. You will be given a robot's urdf tree-structured text, and you need to provide a summary of the robot's physics capabilities.
+You are a robot urdf structure reasoner. You will be given a robot's urdf tree-structured text, and you need to provide a summary of the robot's physics capabilities in brief and short sentences.
 Please pay attention to the task and summarize the mobility, perception, and manipulation capabilities of the robot that are relevant to the task.
-For the mobility capability, you should consider the robot's base type, the moving capability on/in the ground type or the air.
-For the perception capability, you should consider the robot's sensors, especially the cameras, their types and positions.
-For the manipulation capability, you should consider the robot's end effectors and the joints that allow the robot to manipulate objects.
+For the mobility capability, consider the robot's base type (e.g., flying, walking, wheeled), and evaluate the robot's ability to move between floors.
+For the perception capability, consider the robot's sensors, pay attention to different cameras' positions.
+For the manipulation capability, consider the robot's end effectors and the joints, pay attention to robots' arm workspace.
 The response should be a JSON object with each capability as a dictionary, containing a summary field:
 {
     "mobility": {"summary": ...},
@@ -288,7 +288,7 @@ The response should be a JSON object with each capability as a dictionary, conta
 The robot's name is {robot_name}. Here is the tree structure of the robot's URDF:
 {urdf_text}
 The robot task includes: {task_text}
-Please provide a summary of the robot's physics capabilities based on this information and task.
+Please provide a brief summary of the robot's physics capabilities in short sentences based on this information and task.
 """
     
     # print(prompt)

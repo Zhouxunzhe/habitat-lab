@@ -12,10 +12,10 @@ defaults:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_3.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_fixed
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_fixed
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_2: hl_fixed
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_3: hl_fixed
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_2: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_3: hl_llm
 
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_multi_agent
@@ -35,7 +35,7 @@ habitat_baselines:
   distrib_updater_name: "HRLDDPPO"
   torch_gpu_id: 0
   video_fps: 30
-  video_dir: "video_dir/multi_mobility"
+  video_dir: "video_dir/mp3d_multi_rearrange"
 
   num_environments: 32
   num_updates: -1

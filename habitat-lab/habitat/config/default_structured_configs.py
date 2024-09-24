@@ -125,6 +125,7 @@ class EnvironmentConfig(HabitatBaseConfig):
     max_episode_steps: int = 1000
     max_episode_seconds: int = 10000000
     iterator_options: IteratorOptionsConfig = IteratorOptionsConfig()
+    episode_steps_file: str = "test_log.json"
 
 
 # -----------------------------------------------------------------------------
@@ -829,8 +830,7 @@ class PddlTextGoalSensorConfig(LabSensorConfig):
     type: str = "PddlTextGoalSensor"
     text_type: str = "description" # ["compact_str", "verbose_str", "description"]
     task_description: str = """
-The task is to have the robots navigate to/ rearrange/ perceive certain objects in the scene. 
-With the following conditions:"""
+The task is for the robots to either navigate to, rearrange, or perceive specific objects in the scene. \nThe following conditions define how the robots should accomplish these tasks:"""
 
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):
@@ -2201,10 +2201,15 @@ class DatasetConfig(HabitatBaseConfig):
         "data/datasets/pointnav/"
         "habitat-test-scenes/v1/{split}/{split}.json.gz"
     )
-    # TODO(YCC): load robot config
+    # load robot config
     mode: str = "test"
     randomize_agent_start: int = 1
     robot_config: str = ""
+    should_terminate_on_wait: bool = False
+    should_group_discussion: bool = True
+    should_agent_reflection: bool = True
+    should_robot_resume: bool = True
+    should_numerical: bool = True
 
 
 @dataclass
