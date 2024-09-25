@@ -39,6 +39,8 @@ class CrabAgent:
         self.initialized = False
         self.start_act = False
 
+        self.action_prompt = _generate_action_prompt(self.actions, include_arguments=False)
+
     def get_token_usage(self):
         return self.llm_model.token_usage
 
@@ -94,6 +96,7 @@ class CrabAgent:
             subtask_to_actions_prompt = (
                 " Your task is to work with other agents to complete the task described below:\n\n"
                 f'"""\n{task_description}\n"""\n\n'
+                f"You are provided with the following actions:\n{self.action_prompt}\n"
                 "Now you should convert it into an action sequence based on your functions."
             )
         response = self.llm_model.chat(subtask_to_actions_prompt, crab_planning=True)
@@ -130,3 +133,19 @@ class CrabAgent:
             return {"name": action_name, "arguments": parameters}
         else:
             return {"name": action_name, "arguments": parameters}
+
+def _generate_action_prompt(action_space: list[Action], include_arguments: bool = False) -> str:
+    if include_arguments:
+        return "".join(
+            [
+                f"[**{action.name}**:\n"
+                f"action description: {action.description}\n"
+                f"action arguments json schema: {action.parameters.model_json_schema()}\n"
+                "]\n"
+                for action in action_space
+            ]
+        )
+    else:
+        return "".join(
+            [f"[{action.name}: {action.description}]\n" for action in action_space]
+        )
