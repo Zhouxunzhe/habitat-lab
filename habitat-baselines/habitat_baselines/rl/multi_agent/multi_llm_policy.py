@@ -297,7 +297,7 @@ def group_discussion(
             code_execution=True,
             enable_logging=save_chat_history,
             logging_file = os.path.join(episode_save_dir, f"{robot_key}_group_chat_history.json"),
-            agent_name=robot_key,
+            agent_name=robot_resume[robot_key]["robot_type"],
         )
 
     ### 5. leader get task and scene, assign initial subtask to robots
