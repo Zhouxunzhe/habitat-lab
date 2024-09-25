@@ -91,15 +91,17 @@ class CrabAgent:
                 f"Your assigned subtask is:"
                 f'"""\n{subtask_description}\n"""\n\n'
                 f"You are provided with the following actions:\n{self.action_prompt}\n"
-                "Now you should convert it into an action sequence based on your functions, remember ONLY to include robots and objects in your action sequence."
+                "Now you should convert it into a FULL subtask action sequence to complete YOUR assigned subtask."
             )
         else:
             subtask_to_actions_prompt = (
                 " Your task is to work with other agents to complete the task described below:\n\n"
                 f'"""\n{task_description}\n"""\n\n'
                 f"You are provided with the following actions:\n{self.action_prompt}\n"
-                "Now you should convert it into an action sequence based on your functions."
+                "Now you should plan a FULL subtask action sequence to complete the WHOLE task."
             )
+        print("===============CrabAgent Prompt==============")
+        print(subtask_to_actions_prompt)
         response = self.llm_model.chat(subtask_to_actions_prompt, crab_planning=True)
         print("===============CrabAgent Subtasks==============")
         print(response)
