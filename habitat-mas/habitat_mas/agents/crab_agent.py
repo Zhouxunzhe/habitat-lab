@@ -81,10 +81,18 @@ class CrabAgent:
         self.initialized = True
 
         # Guide agent to decouple subtasks into actions
-        subtask_to_actions_prompt = (
-            f"Your subtask is: {subtask_description}"
-            "Now you should convert it into an action sequence based on your functions."
-        )
+        if len(subtask_description) > 0:
+            subtask_to_actions_prompt = (
+                f"Your assigned subtask is:"
+                f'"""\n{subtask_description}\n"""\n\n'
+                "Now you should convert it into an action sequence based on your functions."
+            )
+        else:
+            subtask_to_actions_prompt = (
+                " Your task is to work with other agents to complete the task described below:\n\n"
+                f'"""\n{task_description}\n"""\n\n'
+                "Now you should convert it into an action sequence based on your functions."
+            )
         response = self.llm_model.chat(subtask_to_actions_prompt, crab_planning=True)
         print("===============CrabAgent Subtasks==============")
         print(response)
