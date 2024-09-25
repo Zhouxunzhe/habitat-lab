@@ -1,4 +1,5 @@
 import json
+import os
 from ..agents.crab_core import Action
 from typing import List
 import openai
@@ -26,6 +27,7 @@ class OpenAIModel:
         enable_logging=False,
         logging_file="",
         save_on_each_chat=True,
+        agent_name="unknown",
     ) -> None:
         self.system_message = {
             "role": "system",
@@ -53,6 +55,7 @@ class OpenAIModel:
         self.enable_logging = enable_logging
         self.logging_file = logging_file
         self.save_on_each_chat = save_on_each_chat
+        self.agent_name = agent_name
 
     
     def __del__(self):
@@ -65,6 +68,19 @@ class OpenAIModel:
         with open(file_path, "w") as f:
             full_history = [self.system_message] + self.chat_history
             json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
+        
+        episode_path = os.path.dirname(file_path)
+        token_path = os.path.join(episode_path, "token_usage.json")
+        if not os.path.exists(token_path):
+            with open(token_path, 'w') as f:
+                json.dump({}, f)
+
+        with open(token_path, 'r') as f:
+            data = json.load(f)
+        data[f"{self.agent_name}"] = self.token_usage
+
+        with open(token_path, 'w') as f:
+            json.dump(data, f, indent=4)
 
     def set_system_message(self, system_message: str):
         self.system_message = {"role": "system", "content": system_message}
