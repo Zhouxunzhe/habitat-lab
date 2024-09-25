@@ -830,7 +830,7 @@ class PddlTextGoalSensorConfig(LabSensorConfig):
     type: str = "PddlTextGoalSensor"
     text_type: str = "description" # ["compact_str", "verbose_str", "description"]
     task_description: str = """
-The task requires multiple robots to collaboratively execute a sequence of actions to accomplish specific conditional goals. Each robot may be responsible for interacting with multiple objects or, in some cases, none, depending on its capability. \nThe goals are defined by the following conditions:"""
+The task requires multiple robots to collaboratively execute a sequence of actions to accomplish specific goals. Each robot may be responsible for interacting with multiple objects or, in some cases, none, depending on its capability. \nThe goals are defined by the following |goal conditions| :\n"""
 
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):

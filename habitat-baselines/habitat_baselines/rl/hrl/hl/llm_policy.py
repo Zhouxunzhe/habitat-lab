@@ -97,9 +97,13 @@ class LLMHighLevelPolicy(HighLevelPolicy):
 
         get_next_action_prompt = (
             'You have either completed your previous action or are just starting the task. '
-            'This is the current environment description: """\n{scene_description}\n"""\n\n'
-            'Given the task and environment, please generate the most appropriate next action to take '
+            'Here is the current environment description: """\n{scene_description}\n"""\n\n'
+            'Based on the task and environment, generate the most appropriate next action. \n'
+            "Make sure that each action strictly adheres to the tool call's parameter list for that specific action. "
+            r'Before providing the action, validate that both the action and its parameters conform exactly to the defined structure. '
+            'Ensure that all required parameters are included and correctly formatted.'
         )
+
         semantic_observation = envs_text_context[0]["scene_description"]
         # print(semantic_observation)
         get_next_action_message = get_next_action_prompt.format(

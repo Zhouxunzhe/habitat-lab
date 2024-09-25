@@ -150,7 +150,7 @@ def generate_region_adjacency_description(reion_layer):
             dfs(region_node, component)
             connected_components.append(component)
 
-    description += " The regions are grouped into {} connected components. Within each component, all regions are directly or indirectly connected, while regions from different components have no connections to each other. \n ".format(len(connected_components))
+    description += " The regions are grouped into {} connected components. Within each component, all regions are connected, while regions from different components have no connections to each other. \n ".format(len(connected_components))
     
     for i, component in enumerate(connected_components):
         region_names = []
@@ -159,7 +159,7 @@ def generate_region_adjacency_description(reion_layer):
             region_name = region_node.class_name + "_" + str(region_id)
             region_names.append(region_name)
         
-        description += "Component {}: ||{}|| are all connected. \n".format(i + 1, "<->".join(region_names))
+        description += "Component {}: [{}] are all connected. \n".format(i + 1, ", ".join(region_names))
 
     return description
 

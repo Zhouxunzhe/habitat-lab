@@ -328,7 +328,7 @@ class Env:
         
         log_data[f"episode_id: {episode_data['episode_id']}"] = f"num_steps: {episode_data['num_steps']}"
         stage_goal = self._task.measurements.measures['pddl_stage_goals'].get_metric()
-        subgoal_data = stage_goal
+        subgoal_data[f"episode_id: {episode_data['episode_id']}"] = stage_goal
         with open(subgoal_file_path, 'w') as f:
             json.dump(subgoal_data, f, indent=4)
 

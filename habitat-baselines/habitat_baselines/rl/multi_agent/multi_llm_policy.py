@@ -51,9 +51,10 @@ def create_leader_prompt(robot_resume):
     FORMAT_INSTRUCTION = (
         "You should assign subtasks to each agent based on their capabilities, following this format:\n\n"
         r"{robot_id||subtask_description}\n\n"
-        "Remember you must include the brackets and you MUST include ALL the robots in your response.\n"
-        "Even if you think a robot should not assign a subtask, you can assign it with robot_id and 'Nothing to do'.\n"
-        "Remember the subtask target should always be objects and robots, do NOT include a region in subtask.\n"
+        "Remember you must include the brackets and you MUST include ALL the |robots| and |goal conditions| in your response.\n"
+        "Even if you think a robot should not assign a subtask, you should assign it with {robot_id||Nothing to do}.\n"
+        "Even if you think a robot should assign multiple subtasks, you should combine them into one {robot_id||subtask_description} format.\n"
+        "Remember the subtask target should always include 'objects', DO NOT include 'region' in |subtask description|. \n"
     )
     
     return LEADER_SYSTEM_PROMPT_TEMPLATE.format(
@@ -72,7 +73,8 @@ def create_leader_start_message(task_description, scene_description):
     
     return LEADER_MESSAGE_TEMPLATE.format(
         task_description=task_description, 
-        scene_description=scene_description) # + FORMAT_INSTRUCTION
+        scene_description=scene_description
+    )
 
 def create_robot_prompt(robot_type, robot_key, capabilities):
 
@@ -91,9 +93,10 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
     FORMAT_INSTRUCTION = (
         r" Please put all your code in a single python code block wrapped within ```python and ```."
         r' You MUST print the varible with "<name>: <value>" format you want to know in the code.'
-        r" Finally, if you think the task is incorrect, you can explain the reason, ask the leader to modify it and remind leader to assign the task to other agents,"
+        r" Finally, if you think the task is incorrect, you can explain the reason, remind leader to assign the task to other agents,"
         r' following this format: "{{no||<reason and reminder>}}".'
         r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
+        r' If the task assigned to you is "Nothing to do", simply respond with "{{yes}}".'
         r" Example responses: {{yes}}, {{no||I have no moving ability}}, {{no||The object is out of my arm workspace}}."
     )
     return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
@@ -353,10 +356,11 @@ def group_discussion(
                 all_yes = False
         if all_yes:
             break
-        prompt += "Based on the feedback, please modify the task and reassign the subtasks accordingly. "
+        prompt += r"Based on the feedback, please modify the task and reassign the subtasks accordingly. "
         prompt += (
-            "Ensure that all goal conditions are met after all robots complete their subtasks. "
-            "To achieve this, reassign tasks that some agents report as NOT feasible to other agents. "
+            r"Ensure that all goal conditions are met after all robots complete their subtasks. "
+            "To achieve this, you should reassign tasks that some agents report as not feasible to other agents. "
+            r"Each agent should still be described in the format: {robot_id||subtask_description}\n"
         )
 
         response = leader.chat(prompt)
