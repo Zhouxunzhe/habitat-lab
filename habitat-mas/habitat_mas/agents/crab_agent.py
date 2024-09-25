@@ -68,6 +68,7 @@ class CrabAgent:
             code_execution=self.code_execution,
             enable_logging=enable_logging,
             logging_file=logging_file,
+            agent_name=self.name
         )
         
         # Inject chat history from group discussion phase
@@ -85,7 +86,7 @@ class CrabAgent:
             subtask_to_actions_prompt = (
                 f"Your assigned subtask is:"
                 f'"""\n{subtask_description}\n"""\n\n'
-                "Now you should convert it into an action sequence based on your functions."
+                "Now you should convert it into an action sequence based on your functions, remember ONLY to include robots and objects in your action sequence."
             )
         else:
             subtask_to_actions_prompt = (

@@ -278,7 +278,8 @@ def group_discussion(
         discussion_stage=True,
         code_execution=False,
         enable_logging=save_chat_history,
-        logging_file = os.path.join(episode_save_dir, "leader_group_chat_history.json")            
+        logging_file = os.path.join(episode_save_dir, "leader_group_chat_history.json"),
+        agent_name="leader",
     )
 
     ### 4. create robot agents, no chat yet
@@ -295,7 +296,8 @@ def group_discussion(
             discussion_stage=True,
             code_execution=True,
             enable_logging=save_chat_history,
-            logging_file = os.path.join(episode_save_dir, f"{robot_key}_group_chat_history.json")
+            logging_file = os.path.join(episode_save_dir, f"{robot_key}_group_chat_history.json"),
+            agent_name=robot_key,
         )
 
     ### 5. leader get task and scene, assign initial subtask to robots
