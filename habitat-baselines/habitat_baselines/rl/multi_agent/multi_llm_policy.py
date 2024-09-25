@@ -76,7 +76,7 @@ def create_leader_start_message(task_description, scene_description):
         scene_description=scene_description
     )
 
-def create_robot_prompt(robot_type, robot_key, capabilities):
+def create_robot_prompt(robot_type, robot_key, capabilities, execute_code=True):
 
     ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE = (
         # 'You are a "{robot_type}" robot with id "{robot_id}".'
@@ -86,23 +86,32 @@ def create_robot_prompt(robot_type, robot_key, capabilities):
         # "The physics capabilities include its mobility, perception, and manipulation capabilities."
         ' You will receive a subtask from the leader. If you don\'t have any task to do, you will receive "Nothing to do". '
         " Your task is to check if you are able to complete the assigned task by common sense reasoning and if targets is within the range of your sensors and workspace."
+    )
+    CODE_EXECUTION = (
         " You can generate python code to check if task is feasible numerically, but you MUST make sure your code is executable, which means the variables must be defined before referencing them."
         " When considering manipulation task, you only need pay attention to center point, radius, bounding box, etc."
         " I will execute the code and give your the result to help you make decisions."
-    )
-    FORMAT_INSTRUCTION = (
         r" Please put all your code in a single python code block wrapped within ```python and ```."
         r' You MUST print the varible with "<name>: <value>" format you want to know in the code.'
+    )
+    FORMAT_INSTRUCTION = (
         r" Finally, if you think the task is incorrect, you can explain the reason, remind leader to assign the task to other agents,"
         r' following this format: "{{no||<reason and reminder>}}".'
         r' If you think the task is correct, you should confirm it by typing "{{yes}}".'
         r' If the task assigned to you is "Nothing to do", simply respond with "{{yes}}".'
         r" Example responses: {{yes}}, {{no||I have no moving ability}}, {{no||The object is out of my arm workspace}}."
     )
-    return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
-        robot_type=robot_type,
-        robot_key=robot_key,
-        capabilities=capabilities) + FORMAT_INSTRUCTION
+
+    if execute_code:
+        return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
+            robot_type=robot_type,
+            robot_key=robot_key,
+            capabilities=capabilities) + CODE_EXECUTION + FORMAT_INSTRUCTION
+    else:
+        return ROBOT_GROUP_DISCUSS_SYSTEM_PROMPT_TEMPLATE.format(
+            robot_type=robot_type,
+            robot_key=robot_key,
+            capabilities=capabilities) + FORMAT_INSTRUCTION
 
 def create_robot_start_message(task_description, scene_description, compute_path: bool = False):
 
@@ -286,18 +295,22 @@ def group_discussion(
     )
 
     ### 4. create robot agents, no chat yet
+    # robot agent only execute code if robot resume with numerical description were provided 
+    execute_code = should_numerical and should_robot_resume
+
     agents: Dict[str, OpenAIModel] = {}
     for robot_key in robot_resume:
         robot_prompt = create_robot_prompt(
             robot_resume[robot_key]["robot_type"],
             robot_key,
-            capabilities_list[robot_key]
+            capabilities_list[robot_key],
+            execute_code,
         )
         agents[robot_key] = OpenAIModel(
             robot_prompt,
             DISCUSSION_TOOLS,
             discussion_stage=True,
-            code_execution=True,
+            code_execution=execute_code,
             enable_logging=save_chat_history,
             logging_file = os.path.join(episode_save_dir, f"{robot_key}_group_chat_history.json"),
             agent_name=robot_resume[robot_key]["robot_type"],
