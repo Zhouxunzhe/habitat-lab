@@ -315,7 +315,16 @@ def group_discussion(
     
     agent_response = {} 
     if not should_agent_reflection:
-        return robot_tasks
+        results = {}
+        for agent in agents:
+            results[agent] = AgentArguments(
+                robot_id=agent,
+                robot_type=robot_resume[agent]["robot_type"],
+                task_description=task_description,
+                subtask_description=robot_tasks[agent],
+                chat_history=agents[agent].chat_history,
+            )
+        return results
 
     ### 6. agent reflection based on assigned task from leader
     for robot_id in robot_tasks:
@@ -341,7 +350,7 @@ def group_discussion(
                 prompt += f"Robot {robot_id} response: {response}, reason: {reason}\n"
                 all_yes = False
         if all_yes:
-            return robot_tasks
+            break
         prompt += "Based on the feedback, please modify the task and reassign the subtasks accordingly. "
         prompt += (
             "Ensure that all goal conditions are met after all robots complete their subtasks. "
@@ -366,6 +375,7 @@ def group_discussion(
             print("===============Robot Response==============")
             print(f"Robot {robot_id} response: {response}")
             print("===========================================")
+
     results = {}
     for agent in agents:
         results[agent] = AgentArguments(

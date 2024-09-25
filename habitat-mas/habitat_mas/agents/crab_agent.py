@@ -8,9 +8,9 @@ REQUEST_TEMPLATE = '"{source_agent}" agent sent you requests: "{request}".'
 
 ROBOT_EXECUTION_SYSTEM_PROMPT_TEMPLATE = (
     'You are a "{robot_type}" agent called "{robot_key}".'
-    " Your task is to work with other agents to complete the task described below:\n\n"
-    '"""\n{task_description}\n"""\n\n'
-    "You MUST take finish subtask assgined to you:"
+    # " Your task is to work with other agents to complete the task described below:\n\n"
+    # '"""\n{task_description}\n"""\n\n'
+    "You MUST take finish subtask assigned to you:"
     '"""\n{subtask_description}\n"""\n\n'
     # "You have the following capabilities:\n\n"
     # '"""\n{capabilities}\n"""\n\n'
@@ -50,7 +50,7 @@ class CrabAgent:
         enable_logging: bool = False,
         logging_file: str = "",
     ):
-        """This function is a hack to intilize agent after the object is created"""
+        """This function is a hack to initialize agent after the object is created"""
         self.robot_type = robot_type
         self.task_description = task_description
         self.subtask_description = subtask_description
@@ -58,7 +58,7 @@ class CrabAgent:
         system_message = ROBOT_EXECUTION_SYSTEM_PROMPT_TEMPLATE.format(
             robot_type=self.robot_type,
             robot_key=self.name,
-            task_description=task_description,
+            # task_description=task_description,
             subtask_description=subtask_description,
         )
         # Initialize the OpenAI LLM model
@@ -80,6 +80,15 @@ class CrabAgent:
 
         self.initialized = True
 
+        # Guide agent to decouple subtasks into actions
+        subtask_to_actions_prompt = (
+            f"Your subtask is: {subtask_description}"
+            "Now you should convert it into an action sequence based on your functions."
+        )
+        response = self.llm_model.chat(subtask_to_actions_prompt, crab_planning=True)
+        print("===============CrabAgent Subtasks==============")
+        print(response)
+
     def chat(self, observation: str) -> Optional[dict]:
         if self.name in CrabAgent.message_pipe and CrabAgent.message_pipe[self.name]:
             prompt = " ".join(CrabAgent.message_pipe[self.name])
@@ -96,9 +105,9 @@ class CrabAgent:
                 CrabAgent.message_pipe[target_agent] = []
             prompt = REQUEST_TEMPLATE.format(source_agent=self.name, request=request)
             CrabAgent.message_pipe[target_agent].append(prompt)
-            return {"name": "wait", "arguments": ["100"]}
+            return {"name": "wait", "arguments": ["500"]}
         if action_name == "wait":
-            return {"name": "wait", "arguments": ["100"]}
+            return {"name": "wait", "arguments": ["500"]}
         if action_name in [
             "nav_to_obj",
             "nav_to_goal",
