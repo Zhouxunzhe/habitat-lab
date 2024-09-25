@@ -38,7 +38,7 @@ class CrabAgent:
         self.llm_model:OpenAIModel = None
         self.initialized = False
 
-        self.action_prompt = _generate_action_prompt(self.actions, include_arguments=False)
+        self.action_prompt = _generate_action_prompt(self.actions, include_arguments=True)
 
     def get_token_usage(self):
         return self.llm_model.token_usage
@@ -88,6 +88,7 @@ class CrabAgent:
             subtask_to_actions_prompt = (
                 f"Your assigned subtask is:"
                 f'"""\n{subtask_description}\n"""\n\n'
+                f"You are provided with the following actions:\n{self.action_prompt}\n"
                 "Now you should convert it into an action sequence based on your functions, remember ONLY to include robots and objects in your action sequence."
             )
         else:
