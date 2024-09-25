@@ -95,10 +95,17 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         # print(envs_text_context)
         # print("==================================================")
 
-        get_next_action_prompt = (
-            'You have either completed your previous action or are just starting the task. '
+        start_action_prompt = (
+            'You are just starting the task to take actions. '
             'Here is the current environment description: """\n{scene_description}\n"""\n\n'
             'Based on the task and environment, generate the most appropriate next action. \n'
+            "Make sure that each action strictly adheres to the tool call's parameter list for that specific action. "
+            r'Before providing the action, validate that both the action and its parameters conform exactly to the defined structure. '
+            'Ensure that all required parameters are included and correctly formatted.'            
+        )
+        step_action_prompt = (
+            'You have completed your previous action. '
+            'Based on the task, generate the most appropriate next action. \n'
             "Make sure that each action strictly adheres to the tool call's parameter list for that specific action. "
             r'Before providing the action, validate that both the action and its parameters conform exactly to the defined structure. '
             'Ensure that all required parameters are included and correctly formatted.'
@@ -106,9 +113,13 @@ class LLMHighLevelPolicy(HighLevelPolicy):
 
         semantic_observation = envs_text_context[0]["scene_description"]
         # print(semantic_observation)
-        get_next_action_message = get_next_action_prompt.format(
-            scene_description=semantic_observation
-        )
+        if not self.llm_agent.start_act:
+            get_next_action_message = start_action_prompt.format(
+                scene_description=semantic_observation
+            )
+            self.llm_agent.start_act = True
+        else:
+            get_next_action_message = step_action_prompt
 
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)

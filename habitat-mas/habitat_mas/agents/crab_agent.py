@@ -37,6 +37,7 @@ class CrabAgent:
 
         self.llm_model:OpenAIModel = None
         self.initialized = False
+        self.start_act = False
 
     def get_token_usage(self):
         return self.llm_model.token_usage
@@ -80,6 +81,7 @@ class CrabAgent:
         self.llm_model.logging_file = logging_file
 
         self.initialized = True
+        self.start_act = False
 
         # Guide agent to decouple subtasks into actions
         if len(subtask_description) > 0:
