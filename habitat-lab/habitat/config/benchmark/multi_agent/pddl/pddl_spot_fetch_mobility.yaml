@@ -17,11 +17,11 @@ goal:
     - any_at(TARGET_any_targets|0)
     
 stage_goals:
-  stage_1:
+  robot_at_object_0:
     expr_type: AND
     sub_exprs:
     - any_at(any_targets|0)
-  stage_2:
+  robot_at_receptacle_0:
     expr_type: AND
     sub_exprs:
     - any_at(TARGET_any_targets|0)
