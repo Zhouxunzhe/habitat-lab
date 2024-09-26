@@ -47,6 +47,11 @@ stage_goals:
     expr_type: AND
     sub_exprs:
       - at(any_targets|1, TARGET_any_targets|1)
+  
+  drone_at_receptacle_1:
+    expr_type: AND
+    sub_exprs:
+      - robot_at(TARGET_any_targets|1, agent_2)
       
 solution:
 
