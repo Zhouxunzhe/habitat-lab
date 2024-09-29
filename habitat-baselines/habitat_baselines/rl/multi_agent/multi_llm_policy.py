@@ -128,7 +128,7 @@ def create_robot_start_message(task_description, scene_description, compute_path
         " Notably, ALL coordinates are in[x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions."
     )
     COMPUTE_SPACE = (
-        ' If you are going to pick or place objects, please check if the height of the object is beyond the robot reach, which means you need to consider the max reachable height radius away from center if workspace type is sphere, else you need to consider the max bound in height axis. For convenience, you MUST check height and horizontal distance separately.'
+        ' If you are going to pick or place objects and when you check height, please check if the height of the object is beyond the robot reach, which means you need to consider the max reachable height radius away from center if workspace type is sphere, else you need to consider the max bound in height axis. When you check horizontal distance, please check if the horizontal distance is within the radius if workspace type is sphere, else please check if the horizontal distance is within the diagonal of x-y platform of the bounding box if workspace type is box. For convenience, you MUST check height and horizontal distance SEPARATELY.'
         ' If you need to detect objects, you need to use hfov (perception angle from top to bottom), delta height, horizontal dist to check if the objects is within your vision vertical range'
         ' Notably, ALL coordinates are in[x, z, y] format, where the second coordinate represents height, and the first and third coordinates represent horizontal positions.'
     )
