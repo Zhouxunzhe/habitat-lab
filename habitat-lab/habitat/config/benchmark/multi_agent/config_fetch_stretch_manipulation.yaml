@@ -58,9 +58,10 @@ defaults:
     # - nav_workspace_rgb_sensor
     # - nav_workspace_points_sensor
     # - arm_workspace_rgb_sensor
-    - obj_bbox_sensor
-    - target_bbox_sensor
-    - rec_bbox_sensor
+    # - obj_bbox_sensor
+    # - target_bbox_sensor
+    # - rec_bbox_sensor
+    - depth_get
 
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
@@ -109,7 +110,7 @@ habitat:
     robot_at_thresh: 1.1
 
   environment:
-    max_episode_steps: 100
+    max_episode_steps: 500
     # iterator_options:
     #   shuffle: True
   simulator:

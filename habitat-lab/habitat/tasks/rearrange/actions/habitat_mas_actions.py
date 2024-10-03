@@ -71,6 +71,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         self.pathfinder = None
         self.step_sum = 0
         self.ep_id = None
+        self.start_pos = [] #此处存了一个temp，用于记录角度
 
     def _create_pathfinder(self, config):
         """
@@ -330,21 +331,29 @@ class OracleNavDiffBaseAction(OracleNavAction):
             import json
             with open('./data_temp.json','r') as f:
                 ans = json.load(f)
+            
             agent_name = self._action_arg_prefix.rstrip("_")
             temp = ans[agent_name]['position']
             if temp == [0,0,0]:
-                forward = np.array([1.0, 0, 0])
-                forward = np.array(base_T.transform_vector(forward))[[0, 2]]
-                theta = -np.pi/4
-                rotation_ma = np.array([
-                    [np.cos(theta),np.sin(theta)],
-                    [-np.sin(theta),np.cos(theta)]
-                ])
-                rotated = np.dot(rotation_ma,forward)
-                rotated_pos = np.insert(rotated,1,0)
-                robot_pos = np.array(self.cur_articulated_agent.base_pos)
-                obj_targ_pos = robot_pos + rotated_pos
-                final_nav_targ = robot_pos
+                if len(self.start_pos)==0:
+                    forward = np.array([1.0, 0.0, 0.0])
+                    forward = np.array(base_T.transform_vector(forward))[[0, 2]]
+                    theta = -0.85
+                    # print("for:")
+                    rotation_ma = np.array([
+                        [np.cos(theta),np.sin(theta)],
+                        [-np.sin(theta),np.cos(theta)]
+                    ])
+                    # print("rotation:",rotation_ma,flush=True)
+                    rotated = np.dot(rotation_ma,forward)
+                    rotated_pos = np.insert(rotated,1,0)
+                    robot_pos = np.array(self.cur_articulated_agent.base_pos)
+                    obj_targ_pos = robot_pos + rotated_pos
+                    final_nav_targ = robot_pos
+                    self.start_pos = obj_targ_pos
+                else:
+                    obj_targ_pos = self.start_pos
+                    final_nav_targ = np.array(self.cur_articulated_agent.base_pos)
             else:
                 final_nav_targ = temp
                 obj_targ_pos = final_nav_targ
@@ -432,7 +441,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
 
             angle_to_target = get_angle(robot_forward, rel_targ)
             angle_to_obj = get_angle(robot_forward, rel_pos)
-
+            
             dist_to_final_nav_targ = np.linalg.norm(
                 (final_nav_targ - robot_pos)[[0, 2]]
             )
@@ -459,6 +468,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
                 else:
                     vel = [0, 0]
                     self.skill_done = True
+                    self.start_pos = []
                 kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
                 BaseVelAction.step(self, *args, **kwargs)
                 return
@@ -481,6 +491,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
                 else:
                     vel = [0, 0]
                     self.skill_done = True
+                    self.start_pos = []
                 kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
                 BaseVelNonCylinderAction.step(self, *args, **kwargs)
                 return
@@ -502,6 +513,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
                 else:
                     self.humanoid_controller.calculate_stop_pose()
                     self.skill_done = True
+                    self.start_pos = []
 
                 base_action = self.humanoid_controller.get_pose()
                 kwargs[f"{self._action_arg_prefix}human_joints_trans"] = (

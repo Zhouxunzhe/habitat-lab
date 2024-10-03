@@ -68,6 +68,7 @@ class FixedHighLevelPolicy(HighLevelPolicy):
                 solution_actions.append(parse_func("reset_arm(0)"))
 
         # Add a wait action at the end.
+        # print("parse:",parse_func("wait(3000)"),flush=True)
         solution_actions.append(parse_func("wait(3000)"))
         return solution_actions
 

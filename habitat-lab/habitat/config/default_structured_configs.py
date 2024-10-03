@@ -902,6 +902,9 @@ class ObjBBoxSenorConfig(LabSensorConfig):
     depth_sensor_name: str = "head_depth"
     type: str = "ObjBBoxSenor"
 @dataclass
+class DepthSensorConfig(LabSensorConfig):
+    type: str = "DepthSensor"
+@dataclass
 class TargetBBoxSenorConfig(LabSensorConfig):
     agent_idx: int = 0
     pixel_threshold: int = 10
@@ -1912,8 +1915,8 @@ class HabitatSimFisheyeSemanticSensorConfig(SimulatorFisheyeSensorConfig):
 @dataclass
 class HeadRGBSensorConfig(HabitatSimRGBSensorConfig):
     uuid: str = "head_rgb"
-    width: int = 512
-    height: int = 512
+    width: int = 256
+    height: int = 256
 
 @dataclass
 class HeadDepthSensorConfig(HabitatSimDepthSensorConfig):
@@ -2067,7 +2070,7 @@ class RendererConfig(HabitatBaseConfig):
 
 @dataclass
 class HabitatSimV0Config(HabitatBaseConfig):
-    gpu_device_id: int = 1
+    gpu_device_id: int = 0
     # Use Habitat-Sim's GPU->GPU copy mode to return rendering results in
     # pytorch tensors. Requires Habitat-Sim to be built with --with-cuda.
     # This will generally imply sharing cuda tensors between processes.
@@ -2654,6 +2657,12 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="obj_bbox_sensor",
     node=ObjBBoxSenorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.depth_get",
+    group="habitat/task/lab_sensors",
+    name="depth_get",
+    node=DepthSensorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.target_bbox_sensor",

@@ -25,7 +25,7 @@ from habitat_baselines.utils.common import (
     is_continuous_action_space,
 )
 from habitat_baselines.utils.info_dict import extract_scalars_from_info
-from habitat_mas.agents.vlm_agent import VLMAgent
+from habitat_mas.agents.vlm_agent import VLMAgent,VLMAgentSingle
 from collections import OrderedDict
 import json
 # class Context:
@@ -179,9 +179,9 @@ class HabitatMASEvaluator(Evaluator):
         pbar = tqdm.tqdm(total=number_of_eval_episodes * evals_per_ep)
         agent.eval()
         if config.habitat_baselines.eval.vlm_eval:
-            vlm_agent = VLMAgent(agent_num = 2,image_dir = './video_dir/image',
+            vlm_agent = VLMAgentSingle(agent_num = 2,image_dir = './video_dir/image',
                                  json_dir = './video_dir/image_dir/episode_91/episode_91.json',
-                                 url = "http://10.140.0.143:10022/robot-chat")
+                                 url = "http://0.0.0.0:10077/robot-chat")
 
         
         while (
@@ -237,22 +237,20 @@ class HabitatMASEvaluator(Evaluator):
                     )
                 
                 agent_query = [1 if value.item() else 0 for _ , value in check_info]
-                if agent_query != [0,0]:
+                print("agent_query:",agent_query)
+                if agent_query[0] == 1:
                     agent_0_image = batch["agent_0_head_rgb"].cpu()
                     agent_1_image = batch["agent_1_head_rgb"].cpu()
-                    agent_0_trans = batch["agent_0_robot_trans_martix"].cpu()
-                    agent_1_trans = batch["agent_1_robot_trans_martix"].cpu()
-                    image = [agent_0_image,agent_1_image]
-                    agent_trans = [agent_0_trans,agent_1_trans]
-                    # print(f"agent_trans:{agent_trans}")
+                    agent_0_depth_info = batch["agent_0_depth_inf"].cpu()
+                    # agent_0_trans = batch["agent_0_robot_trans_martix"].cpu()
+                    # agent_1_trans = batch["agent_1_robot_trans_martix"].cpu()
+                    # image = [agent_0_image,agent_1_image]
+                    image = [agent_0_image]
+                    agent_trans = []
                     filter_action = vlm_agent.answer_vlm(agent_trans_list = agent_trans,
                                                          agent_query = agent_query,image = image,
-                                                         episode_id = 10)
-                    # producer_process = multiprocessing.Process(target=produce_data,args=(queue,filter_action))
-                    # producer_process.start()
-                    # com.update(filter_action)
-                    # print("data:",com.data)
-                    print("agent_query:",agent_query)
+                                                         episode_id = 10,depth_info=agent_0_depth_info)
+                    print("__________________")
                     print("filter_action",filter_action)
                     for agent_id,info in filter_action.items():
                         if info["name"] == "pick":

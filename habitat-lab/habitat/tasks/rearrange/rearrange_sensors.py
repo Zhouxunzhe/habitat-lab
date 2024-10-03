@@ -2021,6 +2021,46 @@ class RecBBoxSenor(UsesArticulatedAgentInterface, Sensor):
         else:
             return np.array([[-1,-1,-1,-1]])
 @registry.register_sensor
+class DepthSensor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "depth_inf"
+    def __init__(self, sim, config, *args, **kwargs):
+        self._sim = sim
+        # self.agent_idx = config.agent_idx
+        # self.height = config.height
+        # self.width = config.width
+        # self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
+        self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
+        # self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
+        # self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
+        # self.n = 1
+        super().__init__(config=config)
+            
+    def _get_uuid(self, *args, **kwargs):
+        # return f"agent_{self.agent_idx}_{ArmWorkspaceRGBSensor.cls_uuid}"
+        return DepthSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.COLOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        return spaces.Box(low=0.0, high=np.finfo(np.float64).max, shape=(256, 256, 1), dtype=np.float64)
+    
+    def get_observation(self, observations, *args, **kwargs):
+        if self.agent_id is not None:
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            # rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+            # semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
+        else:
+            depth_obs = observations[self.depth_sensor_name]
+            # rgb_obs = observations[self.rgb_sensor_name]
+            depth_camera_name = self.depth_sensor_name
+            # semantic_camera_name = f"head_semantic"
+
+        # rgb_obs = np.ascontiguousarray(rgb_obs)
+        depth_obs = np.ascontiguousarray(depth_obs)
+        return depth_obs
+@registry.register_sensor
 class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
     cls_uuid: str = "target_bounding_box"
     def __init__(self, sim, config, *args, **kwargs):
@@ -2130,7 +2170,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         hfov = float(self._sim._sensors[depth_name]._sensor_object.hfov) * np.pi / 180.
         W, H = depth_camera.viewport[0], depth_camera.viewport[1]
-
+        
         K = np.array([
             [1 / np.tan(hfov / 2.), 0., 0., 0.],
             [0., 1 / np.tan(hfov / 2.), 0., 0.],
@@ -2163,7 +2203,9 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         # reshape to the scale of the image
         # points_world = points_world.reshape((3, H, W)).transpose(1, 2, 0)
         points_world = points_world.transpose(1, 0)
-
+        print(f"log----depth_camera:{depth_camera},W:{W},H:{H},K:{K},hfov:{hfov},depth:{depth}",flush=True)
+        print(f"depth_rotation:{depth_rotation}",flush=True)
+        print(f"depth_translation:{depth_translation}",flush=True)
         return points_world
 
     def _3d_to_2d(self, sensor_name, point_3d,isobj = False):
@@ -2279,7 +2321,8 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
-
+        print(f"rgb_obs_0:{rgb_obs[125,125,0]};rgb_obs_1:{rgb_obs[125,125,1]};rgb_obs_2:{rgb_obs[125,125,2]}",flush=True)
+        print("depth_obs_depth:",depth_obs[125,125,0],flush=True)
         """add semantic information"""
         ep_objects = []
         # print("self._sim.ep_info:",self._sim.ep_info)
@@ -2322,7 +2365,9 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)
+        # print(f"depth_camera_name:{depth_camera_name},depth_obs:{depth_obs}",flush=True)
         # downsample the 3d-points
+        print("points_world",points_world.shape,flush=True)
         down_sampled_points = self.voxel_grid_filter(points_world, self.down_sample_voxel_size)
 
         # Check reachability and color points

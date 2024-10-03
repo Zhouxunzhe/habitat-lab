@@ -475,6 +475,7 @@ class HierarchicalPolicy(nn.Module, Policy):
             # print(f"eval:{eval_jump}")
             if eval_jump:
                 skill_info = output[self.agent_name]
+                print("fix:skillinfo:",skill_info,flush=True)
                 action = skill_info['name']
                 pos = skill_info['position']
                 i = int(self.agent_name.split('_')[-1])
@@ -485,6 +486,10 @@ class HierarchicalPolicy(nn.Module, Policy):
                     new_skills = torch.tensor([0])
                     obj_info = pos.split('-')[0]
                     new_skill_args = [[obj_info,f'robot_{i}']]
+                elif action == 'wait':
+                    new_skills = torch.tensor([2])
+                    new_skill_args = [[3000,f'robot_{i}']]
+
                 else:
                     new_skills = torch.tensor([2])
                     new_skill_args = [[1, f'robot_{i}']]
