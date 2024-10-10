@@ -16,10 +16,10 @@ num_iterations=110
 for ((i=100; i<=num_iterations; i++))
 do
     echo "运行第 $i 次..."
-    log_file="run_log_${i}.log"
+    log_file="./testlog/run_log_${i}.log"
     python -u -m habitat_baselines.run \
         --config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml \
-        habitat.dataset.data_path=data/datasets/hssd_scene/102344115/data_1.json.gz \
+        habitat.dataset.data_path=data/datasets/hssd_scene/102344115/test.json.gz \
         habitat.seed="${i}" \
         habitat_baselines.image_dir="video_dir/${i}" \
         habitat_baselines.video_dir="video_dir/${i}" \

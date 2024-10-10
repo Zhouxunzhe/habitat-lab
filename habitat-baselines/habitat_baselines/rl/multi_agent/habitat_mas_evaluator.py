@@ -68,6 +68,7 @@ class HabitatMASEvaluator(Evaluator):
         env_spec,
         rank0_keys,
     ):
+        temp = 0
         observations = envs.reset()
         observations = envs.post_step(observations)
         # queue = multiprocessing.Queue()
@@ -178,7 +179,7 @@ class HabitatMASEvaluator(Evaluator):
         envs_text_context = {}
         pbar = tqdm.tqdm(total=number_of_eval_episodes * evals_per_ep)
         agent.eval()
-        if config.habitat_baselines.eval.vlm_eval:
+        if config.habitat_baselines.eval.vlm_eval or config.habitat_baselines.eval.vlm_compare:
             vlm_agent = VLMAgentSingle(agent_num = 2,image_dir = './video_dir/image',
                                  json_dir = './video_dir/image_dir/episode_91/episode_91.json',
                                  url = "http://0.0.0.0:10077/robot-chat")
@@ -247,6 +248,7 @@ class HabitatMASEvaluator(Evaluator):
                     # image = [agent_0_image,agent_1_image]
                     image = [agent_0_image]
                     agent_trans = []
+                    print("image_shape:",image[0].shape,flush = True)
                     filter_action = vlm_agent.answer_vlm(agent_trans_list = agent_trans,
                                                          agent_query = agent_query,image = image,
                                                          episode_id = 10,depth_info=agent_0_depth_info)
@@ -290,7 +292,19 @@ class HabitatMASEvaluator(Evaluator):
                     output = filter_action,
                     **space_lengths,
                 )
-            
+                if config.habitat_baselines.eval.vlm_compare:
+                    agent_0_image = batch["agent_0_head_rgb"].cpu()
+                    agent_1_image = batch["agent_1_head_rgb"].cpu()
+                    agent_0_depth_info = batch["agent_0_depth_inf"].cpu()
+                    # agent_0_trans = batch["agent_0_robot_trans_martix"].cpu()
+                    # agent_1_trans = batch["agent_1_robot_trans_martix"].cpu()
+                    # image = [agent_0_image,agent_1_image]
+                    image = [agent_0_image]
+                    agent_trans = []
+                    filter_action = vlm_agent.send_and_receive(image_list = image,episode_id=26)
+                    print("__________________")
+                    print(f"{temp}_action",filter_action,flush = True)
+                    temp+=1
                 if action_data.should_inserts is None:
                     test_recurrent_hidden_states = (
                         action_data.rnn_hidden_states

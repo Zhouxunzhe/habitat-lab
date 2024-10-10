@@ -66,6 +66,7 @@ class EvalConfig(HabitatBaselinesBaseConfig):
         default_factory=list
     )
     vlm_eval : bool = False
+    vlm_compare : bool = True
     extra_sim_sensors: Dict[str, SimulatorSensorConfig] = field(
         default_factory=dict
     )
