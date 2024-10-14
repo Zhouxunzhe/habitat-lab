@@ -183,6 +183,8 @@ class VLMAgentSingle():
             data = json.load(file)
         step = self.step_num
         return data[step]
+    def get_episode_info(self, episode_id):
+        return True
     def send_and_receive(self,image_list,episode_id):
         images = []
         target_name = ""
@@ -196,9 +198,18 @@ class VLMAgentSingle():
         if episode_id == 69:
             target_name = "table"
             goal_name = "chair"
-        if episode_id == 70:
+        if episode_id == 70 or episode_id == 1 or episode_id == 4:
             target_name = "kitchen"
             goal_name = "chair"
+        if episode_id == 2:
+            target_name = "dresser"
+        if episode_id == 5:
+            target_name = "kitchen unit"
+        if episode_id == 3:
+            target_name = "dresser beside the bed"
+        
+        if episode_id == 7:
+            target_name == "dresser"
         headers = {
             "Content-Type": "application/json"
         }
@@ -215,8 +226,8 @@ class VLMAgentSingle():
             "image": images,
             "prompt": (
                 # f"describe what is in the picture."
-                # f"You are an AI visual assistant that can manage a single robot. You receive the robot's task, one image representing the robot's current view and what the robot has completed so far. You need to output the robot's next action. Actions the robot can perform are \"nav_to_point\", \"turn\", \"pick\" and \"place\". If you cannot determine the next action based on the robot's current view, you can command the robot to \"turn\". Your output format should be either \"turn\" or \"action_name<box>[[x1, y1, x2, y2]]</box>\".Robot's Task: The robot need to navigate to the {target_name} where the box is located, pick it up,navigate to the {goal_name} and place the box.\n    Robot's current view: <image>\n    ."
-                f"You are an AI visual assistant that can manage a single robot. You receive the robot's task, one image representing the robot's current view and what the robot has completed so far. You need to output the robot's next action. Actions the robot can perform are \"nav_to_point\", \"turn\", \"pick\" and \"place\". If you cannot determine the next action based on the robot's current view, you can command the robot to \"turn\". Your output format should be either \"turn\" or \"action_name<box>[[x1, y1, x2, y2]]</box>\".Robot's Task: The robot need to navigate to the {target_name} where the box is located, pick it up,navigate to the {goal_name} and place the box.\n    Robot's current view: <image>\n    .The robot has finished: navigate to the kitchen."
+                f"You are an AI visual assistant that can manage a single robot. You receive the robot's task, one image representing the robot's current view and what the robot has completed so far. You need to output the robot's next action. Actions the robot can perform are \"nav_to_point\", \"turn\", \"pick\" and \"place\". If you cannot determine the next action based on the robot's current view, you can command the robot to \"turn\". Your output format should be either \"turn\" or \"action_name<box>[[x1, y1, x2, y2]]</box>\".Robot's Task: The robot need to navigate to the {target_name} where the box is located, pick it up,navigate to the {goal_name} and place the box.\n    Robot's current view: <image>\n    ."
+                # f"You are an AI visual assistant that can manage a single robot. You receive the robot's task, one image representing the robot's current view and what the robot has completed so far. You need to output the robot's next action. Actions the robot can perform are \"nav_to_point\", \"turn\", \"pick\" and \"place\". If you cannot determine the next action based on the robot's current view, you can command the robot to \"turn\". Your output format should be either \"turn\" or \"action_name<box>[[x1, y1, x2, y2]]</box>\".Robot's Task: The robot need to navigate to the {target_name} where the box is located, pick it up,navigate to the {goal_name} and place the box.\n    Robot's current view: <image>\n    .The robot has finished: navigate to the kitchen,pick the box,navigate to the chair."
 
             ) ##记得改prompt
         }
@@ -234,12 +245,14 @@ class VLMAgentSingle():
             else:
                 print("Wrong status_code")
             time.sleep(0.2)
-    def _2d_to_3d_single_point(self, depth_name, depth_obs, pixel_x, pixel_y):
-        depth_camera = self._sim._sensors[depth_name]._sensor_object.render_camera
+    def _2d_to_3d_single_point(self, depth_obs, depth_rot,depth_trans,pixel_x, pixel_y):
+        # depth_camera = self._sim._sensors[depth_name]._sensor_object.render_camera
 
-        hfov = float(self._sim._sensors[depth_name]._sensor_object.hfov) * np.pi / 180.
-        W, H = depth_camera.viewport[0], depth_camera.viewport[1]
-        
+        # hfov = float(self._sim._sensors[depth_name]._sensor_object.hfov) * np.pi / 180.
+        # W, H = depth_camera.viewport[0], depth_camera.viewport[1]
+        W = 256
+        H = 256
+        hfov = 1.5707963267948966
         # Intrinsic matrix K
         K = np.array([
             [1 / np.tan(hfov / 2.), 0., 0., 0.],
@@ -253,7 +266,7 @@ class VLMAgentSingle():
         ys = 1.0 - (2.0 * pixel_y / (H - 1))  # normalized y [1, -1]
 
         # Depth value at the pixel
-        depth = depth_obs
+        depth = depth_obs[0, pixel_x,pixel_y,0]
 
         # Create the homogeneous coordinates for the pixel in camera space
         xys = np.array([xs * depth, ys * depth, -depth, 1.0]).reshape(4, 1)
@@ -262,8 +275,8 @@ class VLMAgentSingle():
         xy_c = np.matmul(np.linalg.inv(K), xys)
 
         # Get the rotation and translation of the camera
-        depth_rotation = np.array(depth_camera.camera_matrix.rotation())
-        depth_translation = np.array(depth_camera.camera_matrix.translation)
+        depth_rotation = np.array(depth_rot)
+        depth_translation = np.array(depth_trans)
 
         # Get camera-to-world transformation
         T_world_camera = np.eye(4)
@@ -277,106 +290,41 @@ class VLMAgentSingle():
         # Get non-homogeneous points in world space
         points_world = points_world[:3, :] / points_world[3, :]
         return points_world.flatten()
-    def answer_vlm(self,agent_trans_list,agent_query,image,episode_id,depth_info):
-        output = self.send_and_receive(image_list= image,episode_id=episode_id)
+    def answer_vlm(self,agent_trans_list,agent_query,image,episode_id,depth_info,depth_rot, depth_trans,debug=False,debug_str=""):
+        if debug:
+            output = debug_str
+        else:
+            output = self.send_and_receive(image_list= image,episode_id=episode_id)
         result_dict = {}
         print("vlm_output:",output)
         if "turn" in output:
             return {"agent_0": {"name": "nav_to_point", "position": [0, 0, 0]}, "agent_1": {"name": "wait", "position": [0.0, 0.0, 0]}}    
         # pattern = re.compile(r'robot_(\d+):(\w+)_\[(\-?\d+),(\-?\d+)\]')
-        match = re.search(r'(\w+)\s*\[\[(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]\]', s)
+        match = re.search(r'(\w+)\s*\[\[(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]\]', output)
         if match:
             func_name = match.group(1)  # 提取函数名
             x = int(match.group(2))      # 提取 x
             y = int(match.group(3))      # 提取 y
             w = int(match.group(4))      # 提取 w
             h = int(match.group(5))
-            # 2d_point = (int(x+(w/2)),int(y+(h/2)))
+            print(f"x:{x},y:{y},w:{w},h:{h},func:{func_name}")
+            point_2d = (int((x+(w/2))*256/1000),int((y+(h/2))*256/1000))
+            print("point2d:",point_2d,flush = True)
+            point_3d = self._2d_to_3d_single_point(depth_info,depth_rot, depth_trans,point_2d[0],point_2d[1])
+            print("point3d:",point_3d,flush = True)
+            # 3d_point = 
             # if func_name == "nav_to_point":
-            #     2d_point = 
-            # if func_name == "pick":
+            #     # 2d_point = 
+            # elif func_name == "pick":
 
-            # if func_name == "place":
-
+            # elif func_name == "place":
+            return {"agent_0": {"name": func_name, "position": point_3d.tolist()}, "agent_1": {"name": "wait", "position": [0.0, 0.0, 0]}}
         else:
             return {"agent_0": {"name": "nav_to_point", "position": [0, 0, 0]}, "agent_1": {"name": "wait", "position": [0.0, 0.0, 0]}}    
-        for match in matches:
-            robotw,action,x,y,z = match
-            z = z if z else None
-            robot_num = int(robotw) - 1
-            print("action",action)
-            a = int(x)
-            b = int(y)
-            if z:
-                c = int(z)
-            if a == 0 and b == 0 and action == "nav_to_point":
-                agent_key = f"agent_{robot_num}"
-                result_dict[agent_key] = {
-                    "name": action,
-                    "position": [a,b] 
-                }
-                
-            else:
-                x = float(x) * 0.01
-                y = float(y) * 0.01
-                if z:
-                    z = float(z) * 0.01
-                agent_key = f"agent_{robot_num}"
-                if z:
-                    result_dict[agent_key] = {
-                        "name": action,
-                        "position": [x,y,z] 
-                        }
-                else:
-                    result_dict[agent_key] = {
-                        "name": action,
-                        "position": [x,y] 
-                        }
-        num_query = 0
-        output = {}
-        print("agent___:",agent_query)
-        print("vlm_out:",result_dict)
-        for item in result_dict:
-            print("agent_query[num_query]:",agent_query[num_query])
-            print("item:",result_dict[item])
-            if agent_query[num_query] == 1:
-                pos = result_dict[item]['position']
-                print(f"pos_0:{pos[0]}_pos_1:{pos[1]}")
-                if pos == [0,0]:
-                    pos.append(0)
-                    output[item] = result_dict[item]
-                else:
-                    if len(pos) == 2:
-                        pos.append(0.0)
-                    print("pos:",pos)
-                    if len(pos) == 3:
-                        match = re.search(r'\d+',item)
-                        num = -1
-                        if match:
-                            num = int(match.group())
-                            result_dict[item]['position'] = self.pos_trans(pos=pos,
-                                                                                trans=agent_trans_list[num]).flatten()[:3].tolist()
-                    output[item] = result_dict[item]
-                print("temp:",output[item])
-            num_query+=1       
-        return output 
     def check_vlm_ans(self,json):
         return True
        
 if __name__ == "__main__":
-    test_vlmagent = VLMAgent(2,image_dir='./video_dir',json_dir='./video_dir/image_dir/episode_91/episode_91_test.json')
-    with open('./video_dir/image_dir/episode_91/episode_91_test.json','r') as file:
-        data = json.load(file)
-    i = 1
-    for item in data:
-        agent_trans_list = []
-        ele = []
-        agent_trans_list.append(item['agent_0_trans_matrix'])
-        agent_trans_list.append(item['agent_1_trans_matrix'])
-        ele.append(item['agent_0']['name'])
-        ele.append(item['agent_1']['name'])
-        agent_query = [0 if elem == "continue" else 1 for elem in ele]
-        print(f"step:{i}")
-        i+=1
-        print(test_vlmagent.answer(agent_trans_list=agent_trans_list,agent_query = agent_query))
-        
+    test_vlmagent = VLMAgentSingle(2,image_dir='./video_dir',json_dir='./video_dir/image_dir/episode_91/episode_91_test.json')
+    print("debug_output:",test_vlmagent.answer_vlm())
+        # robot:nav_to_point[[738, 613, 39, 10]]

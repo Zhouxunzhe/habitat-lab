@@ -62,6 +62,8 @@ defaults:
     # - target_bbox_sensor
     # - rec_bbox_sensor
     - depth_get
+    - depth_rot_get
+    - depth_trans_get
 
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
@@ -110,12 +112,12 @@ habitat:
     robot_at_thresh: 1.1
 
   environment:
-    max_episode_steps: 500
+    max_episode_steps: 400
     # iterator_options:
     #   shuffle: True
   simulator:
     type: RearrangeSim-v0
-    seed: 100
+    seed: 150
     additional_object_paths:
       - "data/objects/ycb/configs/"
       - "data/objects/amazon_berkeley/configs/"

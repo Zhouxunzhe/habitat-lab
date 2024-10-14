@@ -62,9 +62,10 @@ objects:
     expr_type: robot_entity_type
 
 goal:
-  expr_type: AND
+  expr_type: OR
   sub_exprs:
-    - at(any_targets|0,TARGET_any_targets|0)
+    - robot_at(any_targets|0, robot_0)
+    # - at(any_targets|0,TARGET_any_targets|0)
     # - at(any_targets|0,TARGET_any_targets|0)
     # - robot_at(TARGET_any_targets|1, robot_0)
     # - robot_at(TARGET_any_targets|0, robot_1)

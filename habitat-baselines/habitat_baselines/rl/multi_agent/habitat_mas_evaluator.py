@@ -189,9 +189,9 @@ class HabitatMASEvaluator(Evaluator):
             len(stats_episodes) < (number_of_eval_episodes * evals_per_ep)
             and envs.num_envs > 0
         ):
-            
+            # print("stats_episodes::",stats_episodes,flush = True)
             current_episodes_info = envs.current_episodes()
-            # print(f"cur:{current_episodes_info[0].episode_id}")
+            # print(f"cur:{current_episodes_info}")
             # sample_episode = config.habitat_baselines.eval.episode_stored
             
             # print(f"cur:{current_episodes_info[0].episode_id}",flush=True)
@@ -238,20 +238,23 @@ class HabitatMASEvaluator(Evaluator):
                     )
                 
                 agent_query = [1 if value.item() else 0 for _ , value in check_info]
-                print("agent_query:",agent_query)
+                # print("agent_query:",agent_query)
                 if agent_query[0] == 1:
                     agent_0_image = batch["agent_0_head_rgb"].cpu()
                     agent_1_image = batch["agent_1_head_rgb"].cpu()
                     agent_0_depth_info = batch["agent_0_depth_inf"].cpu()
+                    # print("depthinfoshape:",agent_0_depth_info.shape)
                     # agent_0_trans = batch["agent_0_robot_trans_martix"].cpu()
                     # agent_1_trans = batch["agent_1_robot_trans_martix"].cpu()
                     # image = [agent_0_image,agent_1_image]
+                    agent_0_depth_rot = batch["agent_0_depth_rot"].cpu()
+                    agent_0_depth_trans = batch["agent_0_depth_trans"].cpu()
                     image = [agent_0_image]
                     agent_trans = []
-                    print("image_shape:",image[0].shape,flush = True)
+                    # print("image_shape:",image[0].shape,flush = True)
                     filter_action = vlm_agent.answer_vlm(agent_trans_list = agent_trans,
                                                          agent_query = agent_query,image = image,
-                                                         episode_id = 10,depth_info=agent_0_depth_info)
+                                                         episode_id = int(current_episodes_info[0].episode_id),depth_info=agent_0_depth_info,depth_rot = agent_0_depth_rot,depth_trans = agent_0_depth_trans)
                     print("__________________")
                     print("filter_action",filter_action)
                     for agent_id,info in filter_action.items():
@@ -267,7 +270,7 @@ class HabitatMASEvaluator(Evaluator):
                                         mindistance = distance
                                         # print()
                             info["position"] = str(min_key)
-                    stored_path ='./data_temp.json'
+                    stored_path ='./data_temp_10.json'
                     if os.path.exists(stored_path) and os.path.getsize(stored_path) == 0:
                         with open(stored_path,'w') as f:
                             json.dump(filter_action,f)
@@ -299,7 +302,9 @@ class HabitatMASEvaluator(Evaluator):
                     # agent_0_trans = batch["agent_0_robot_trans_martix"].cpu()
                     # agent_1_trans = batch["agent_1_robot_trans_martix"].cpu()
                     # image = [agent_0_image,agent_1_image]
+                    print("image_shape",agent_0_image.shape,flush=True)
                     image = [agent_0_image]
+
                     agent_trans = []
                     filter_action = vlm_agent.send_and_receive(image_list = image,episode_id=26)
                     print("__________________")

@@ -905,6 +905,12 @@ class ObjBBoxSenorConfig(LabSensorConfig):
 class DepthSensorConfig(LabSensorConfig):
     type: str = "DepthSensor"
 @dataclass
+class DepthRotSensorConfig(LabSensorConfig):
+    type: str = "DepthRotSensor"
+@dataclass
+class DepthTransSensorConfig(LabSensorConfig):
+    type: str = "DepthTransSensor"
+@dataclass
 class TargetBBoxSenorConfig(LabSensorConfig):
     agent_idx: int = 0
     pixel_threshold: int = 10
@@ -2663,6 +2669,18 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="depth_get",
     node=DepthSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.depth_rot_get",
+    group="habitat/task/lab_sensors",
+    name="depth_rot_get",
+    node=DepthRotSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.depth_trans_get",
+    group="habitat/task/lab_sensors",
+    name="depth_trans_get",
+    node=DepthTransSensorConfig,
 )
 cs.store(
     package="habitat.task.lab_sensors.target_bbox_sensor",

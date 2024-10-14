@@ -2061,6 +2061,90 @@ class DepthSensor(UsesArticulatedAgentInterface, Sensor):
         depth_obs = np.ascontiguousarray(depth_obs)
         return depth_obs
 @registry.register_sensor
+class DepthRotSensor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "depth_rot"
+    def __init__(self, sim, config, *args, **kwargs):
+        self._sim = sim
+        # self.agent_idx = config.agent_idx
+        # self.height = config.height
+        # self.width = config.width
+        # self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
+        self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
+        # self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
+        # self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
+        # self.n = 1
+        super().__init__(config=config)
+            
+    def _get_uuid(self, *args, **kwargs):
+        # return f"agent_{self.agent_idx}_{ArmWorkspaceRGBSensor.cls_uuid}"
+        return DepthRotSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.COLOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        return spaces.Box(low=0.0, high=np.finfo(np.float64).max, shape=(3, 3), dtype=np.float64)
+    
+    def get_observation(self, observations, *args, **kwargs):
+        if self.agent_id is not None:
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            # rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+            # semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
+        else:
+            depth_obs = observations[self.depth_sensor_name]
+            # rgb_obs = observations[self.rgb_sensor_name]
+            depth_camera_name = self.depth_sensor_name
+            # semantic_camera_name = f"head_semantic"
+
+        # rgb_obs = np.ascontiguousarray(rgb_obs)
+        depth_camera = self._sim._sensors[depth_camera_name]._sensor_object.render_camera
+        depth_rotation = np.array(depth_camera.camera_matrix.rotation())
+        # print("test_rot:",depth_rotation,flush = True)
+        return depth_rotation
+@registry.register_sensor
+class DepthTransSensor(UsesArticulatedAgentInterface, Sensor):
+    cls_uuid: str = "depth_trans"
+    def __init__(self, sim, config, *args, **kwargs):
+        self._sim = sim
+        # self.agent_idx = config.agent_idx
+        # self.height = config.height
+        # self.width = config.width
+        # self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
+        self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
+        # self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
+        # self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
+        # self.n = 1
+        super().__init__(config=config)
+            
+    def _get_uuid(self, *args, **kwargs):
+        # return f"agent_{self.agent_idx}_{ArmWorkspaceRGBSensor.cls_uuid}"
+        return DepthTransSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.COLOR
+
+    def _get_observation_space(self, *args, config, **kwargs):
+        return spaces.Box(low=0.0, high=np.finfo(np.float64).max, shape=(1, 3), dtype=np.float64)
+    
+    def get_observation(self, observations, *args, **kwargs):
+        if self.agent_id is not None:
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            # rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
+            # semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
+        else:
+            depth_obs = observations[self.depth_sensor_name]
+            # rgb_obs = observations[self.rgb_sensor_name]
+            depth_camera_name = self.depth_sensor_name
+            # semantic_camera_name = f"head_semantic"
+
+        # rgb_obs = np.ascontiguousarray(rgb_obs)
+        depth_camera = self._sim._sensors[depth_camera_name]._sensor_object.render_camera
+        depth_translation = np.array(depth_camera.camera_matrix.translation)
+        # print("test_trans:",depth_translation,flush = True)
+        return depth_translation
+@registry.register_sensor
 class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
     cls_uuid: str = "target_bounding_box"
     def __init__(self, sim, config, *args, **kwargs):

@@ -248,7 +248,8 @@ def observations_to_image(observation: Dict, info: Dict,
                   "agent_0_rec_bounding_box","agent_0_camera_extrinsic","agent_0_depth_inf"]
     #"has_finished_oracle_nav"
     matched_data = {key: value.tolist() for key, value in observation.items() if any(sub in key for sub in substrings)}
-    unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic","obj_bounding_box","target_bounding_box","rec_bounding_box","depth_inf"]
+    unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic","obj_bounding_box","target_bounding_box","rec_bounding_box","depth_inf",
+    "depth_rot","depth_trans"]
     for sensor_name in observation:
         if not any(sub in sensor_name for sub in unload_name):
             if len(observation[sensor_name].shape) > 1:
