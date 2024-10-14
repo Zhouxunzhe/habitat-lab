@@ -93,7 +93,8 @@ habitat:
     robot_at_thresh: 3.0
 
   environment:
-    max_episode_steps: 1300
+    max_episode_steps: 4000
+    episode_steps_file: "dist_man.json"
     # iterator_options:
     #   shuffle: True
   simulator:
@@ -122,8 +123,13 @@ habitat:
     w2j: False
     json_path: "data/robots/robot_configs/hssd/dist_man.json"
   dataset:
-    data_path: data/datasets/hssd/0/hssd_dist_man_sample.json.gz
+    data_path: data/datasets/hssd/0/hssd_dist_man.json.gz
     # new
     randomize_agent_start: 0
     robot_config: data/robots/robot_configs/hssd/dist_man.json
     mode: manipulation
+    should_terminate_on_wait: False
+    should_group_discussion: True
+    should_agent_reflection: True
+    should_robot_resume: True
+    should_numerical: True

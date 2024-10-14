@@ -5,17 +5,9 @@ objects:
     expr_type: movable_entity_type
   - name: any_targets|1
     expr_type: movable_entity_type
-  - name: any_targets|2
-    expr_type: movable_entity_type
-  - name: any_targets|3
-    expr_type: movable_entity_type
   - name: TARGET_any_targets|0
     expr_type: goal_entity_type
   - name: TARGET_any_targets|1
-    expr_type: goal_entity_type
-  - name: TARGET_any_targets|2
-    expr_type: goal_entity_type
-  - name: TARGET_any_targets|3
     expr_type: goal_entity_type
   - name: agent_0
     expr_type: robot_entity_type
@@ -23,40 +15,45 @@ objects:
     expr_type: robot_entity_type
   - name: agent_2
     expr_type: robot_entity_type
-  - name: agent_3
-    expr_type: robot_entity_type
 
 goal:
   expr_type: AND
   sub_exprs:
     - at(any_targets|0,TARGET_any_targets|0)
     - at(any_targets|1,TARGET_any_targets|1)
-    - at(any_targets|2,TARGET_any_targets|2)
-    - at(any_targets|3,TARGET_any_targets|3)
     
 stage_goals:
-  any_targets|0_rearranged:
+  robot_at_object_0:
     expr_type: AND
     sub_exprs:
-      - at(any_targets|0,TARGET_any_targets|0)
-  any_targets|1_rearranged:
+      - any_at(any_targets|0)
+  robot_at_object_1:
     expr_type: AND
     sub_exprs:
-      - at(any_targets|1,TARGET_any_targets|1)
-  any_targets|2_rearranged:
+      - any_at(any_targets|1)
+  robot_at_receptacle_0:
     expr_type: AND
     sub_exprs:
-      - at(any_targets|2,TARGET_any_targets|2)
-  any_targets|3_rearranged:
+      - any_at(TARGET_any_targets|0)
+  robot_at_receptacle_1:
     expr_type: AND
     sub_exprs:
-      - at(any_targets|3,TARGET_any_targets|3)
-
+      - any_at(TARGET_any_targets|1)
+  object_at_receptacle_0:
+    expr_type: AND
+    sub_exprs:
+      - at(any_targets|0, TARGET_any_targets|0)
+  object_at_receptacle_1:
+    expr_type: AND
+    sub_exprs:
+      - at(any_targets|1, TARGET_any_targets|1)
+  
+  drone_at_receptacle_1:
+    expr_type: AND
+    sub_exprs:
+      - robot_at(TARGET_any_targets|1, agent_2)
+      
 solution:
-  - nav_to_goal(any_targets|0, agent_3)
-  - nav_to_goal(any_targets|1, agent_3)
-  - nav_to_goal(any_targets|2, agent_3)
-  - nav_to_goal(any_targets|3, agent_3)
 
   - nav_to_goal(any_targets|0, agent_0)
   - reset_arm(agent_0)
@@ -66,27 +63,4 @@ solution:
   - place(any_targets|0, TARGET_any_targets|0, agent_0)
   - reset_arm(agent_0)
 
-  - nav_to_goal(any_targets|1, agent_0)
-  - reset_arm(agent_0)
-  - pick(any_targets|1, agent_0)
-  - reset_arm(agent_0)
-  - nav_to_obj(TARGET_any_targets|1, agent_0)
-  - place(any_targets|1, TARGET_any_targets|1, agent_0)
-  - reset_arm(agent_0)
-
-  - nav_to_goal(any_targets|2, agent_0)
-  - reset_arm(agent_0)
-  - pick(any_targets|2, agent_0)
-  - reset_arm(agent_0)
-  - nav_to_obj(TARGET_any_targets|2, agent_0)
-  - place(any_targets|2, TARGET_any_targets|2, agent_0)
-  - reset_arm(agent_0)
-
-  - nav_to_goal(any_targets|3, agent_0)
-  - reset_arm(agent_0)
-  - pick(any_targets|3, agent_0)
-  - reset_arm(agent_0)
-  - nav_to_obj(TARGET_any_targets|3, agent_0)
-  - place(any_targets|3, TARGET_any_targets|3, agent_0)
-  - reset_arm(agent_0)
 

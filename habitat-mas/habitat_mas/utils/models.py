@@ -1,4 +1,5 @@
 import json
+import os
 from ..agents.crab_core import Action
 from typing import List
 import openai
@@ -26,6 +27,7 @@ class OpenAIModel:
         enable_logging=False,
         logging_file="",
         save_on_each_chat=True,
+        agent_name="unknown",
     ) -> None:
         self.system_message = {
             "role": "system",
@@ -53,6 +55,7 @@ class OpenAIModel:
         self.enable_logging = enable_logging
         self.logging_file = logging_file
         self.save_on_each_chat = save_on_each_chat
+        self.agent_name = agent_name
 
     
     def __del__(self):
@@ -65,6 +68,19 @@ class OpenAIModel:
         with open(file_path, "w") as f:
             full_history = [self.system_message] + self.chat_history
             json.dump(full_history, f, indent=2, cls=CustomJSONEncoder)
+        
+        episode_path = os.path.dirname(file_path)
+        token_path = os.path.join(episode_path, "token_usage.json")
+        if not os.path.exists(token_path):
+            with open(token_path, 'w') as f:
+                json.dump({}, f)
+
+        with open(token_path, 'r') as f:
+            data = json.load(f)
+        data[f"{self.agent_name}"] = self.token_usage
+
+        with open(token_path, 'w') as f:
+            json.dump(data, f, indent=4)
 
     def set_system_message(self, system_message: str):
         self.system_message = {"role": "system", "content": system_message}
@@ -73,7 +89,7 @@ class OpenAIModel:
         print("Internal action: ", action_name, parameters)
         return str(self.action_map[action_name].run(**parameters))
 
-    def chat(self, content: str):
+    def chat(self, content: str, crab_planning=False):
         new_message = {"role": "user", "content": content}
 
         request = [self.system_message]
@@ -150,6 +166,21 @@ class OpenAIModel:
                     if self.save_on_each_chat:
                         self.save_chat_history(self.logging_file)
                     return response_message.content
+        elif crab_planning:
+            while True:
+                response = self.client.chat.completions.create(
+                    messages=request,  # type: ignore
+                    model=self.model,
+                )
+                self.token_usage += response.usage.total_tokens
+
+                response_message = response.choices[0].message
+                self.chat_history[-1].append(response_message)
+                request.append(response_message)
+
+                if self.save_on_each_chat:
+                    self.save_chat_history(self.logging_file)
+                return response_message.content
         else:
             response = self.client.chat.completions.create(
                 messages=request,  # type: ignore

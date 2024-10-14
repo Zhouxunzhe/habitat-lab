@@ -4,7 +4,7 @@ defaults:
   - /habitat: habitat_config_base
   - /habitat/task: task_config_base
 
-  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: SpotRobot_head_arm
+  - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: SpotRobot_head_jaw
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: DJIDrone_default
 
   - /habitat/dataset/embodied_mas: zxz_perception
@@ -89,7 +89,8 @@ habitat:
     robot_at_thresh: 1.0
 
   environment:
-    max_episode_steps: 1300
+    max_episode_steps: 4000
+    episode_steps_file: "height_per.json"
   simulator:
     type: RearrangeSim-v0
     seed: 100
@@ -116,8 +117,13 @@ habitat:
     w2j: False
     json_path: "data/robots/robot_configs/hssd/height_per.json"
   dataset:
-    data_path: data/datasets/hssd/0/hssd_height_per_sample.json.gz
+    data_path: data/datasets/hssd/0/hssd_height_per.json.gz
     # new
     randomize_agent_start: 0
     robot_config: data/robots/robot_configs/hssd/height_per.json
     mode: perception
+    should_terminate_on_wait: False
+    should_group_discussion: True
+    should_agent_reflection: True
+    should_robot_resume: True
+    should_numerical: True

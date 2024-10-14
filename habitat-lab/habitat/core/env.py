@@ -37,6 +37,13 @@ from habitat.utils import profiling_wrapper
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+ABLATION_MODE = {
+    (True, True, True, True) : "FULL",
+    (False, True, True, True) : "GROUP_DISCUSSION",
+    (True, False, True, True) : "AGENT_REFLECTION",
+    (True, True, False, True) : "ROBOT_RESUME",
+    (True, True, True, False) : "NUMERICAL",
+}
 
 class Env:
     r"""Fundamental environment class for :ref:`habitat`.
@@ -295,18 +302,35 @@ class Env:
         print("===================================================================")
 
         dataset_name = self._config.dataset.data_path.split("/")[-1].split(".")[:-2][0]
-        log_dir_path = os.path.join("./episode_steps_log", dataset_name)
+        ablation_mode = ABLATION_MODE[
+            (
+                self._config.dataset.should_group_discussion,
+                self._config.dataset.should_agent_reflection,
+                self._config.dataset.should_robot_resume,
+                self._config.dataset.should_numerical
+            )
+        ]
+        log_dir_path = os.path.join("./episode_log", dataset_name, ablation_mode)
         log_file_path = os.path.join(log_dir_path, f"{dataset_name}_steps_log.json")
+        subgoal_file_path = os.path.join(log_dir_path, f"{dataset_name}_subgoals.json")
 
         if not os.path.exists(log_dir_path):
             os.makedirs(log_dir_path)
             with open(log_file_path, 'w') as f:
                 json.dump({}, f)
+            with open(subgoal_file_path, 'w') as f:
+                json.dump({}, f)
 
         with open(log_file_path, 'r') as f:
             log_data = json.load(f)
+        with open(subgoal_file_path, 'r') as f:
+            subgoal_data = json.load(f)
         
         log_data[f"episode_id: {episode_data['episode_id']}"] = f"num_steps: {episode_data['num_steps']}"
+        stage_goal = self._task.measurements.measures['pddl_stage_goals'].get_metric()
+        subgoal_data[f"episode_id: {episode_data['episode_id']}"] = stage_goal
+        with open(subgoal_file_path, 'w') as f:
+            json.dump(subgoal_data, f, indent=4)
 
         with open(log_file_path, 'w') as f:
             json.dump(log_data, f, indent=4)

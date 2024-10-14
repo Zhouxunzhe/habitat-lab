@@ -10,17 +10,13 @@ defaults:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_2.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
-  - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_3.obs_transforms.add_virtual_keys:
-    - add_virtual_keys_base
   - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_llm
   - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_llm
   - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_2: hl_llm
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_3: hl_llm
 
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_multi_agent
-  - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_2.hierarchical_policy.defined_skills: oracle_skills_multi_agent
-  - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_3.hierarchical_policy.defined_skills: oracle_skills_drone_multi_agent
+  - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_2.hierarchical_policy.defined_skills: oracle_skills_drone_multi_agent
   - /habitat/task/lab_sensors:
     # For the oracle navigation
     - has_finished_oracle_nav
@@ -61,9 +57,9 @@ habitat_baselines:
   rl:
     agent:
       type: "MultiAgentAccessMgr"
-      num_agent_types: 4
-      num_active_agents_per_type: [1, 1, 1, 1]
-      num_pool_agents_per_type: [1, 1, 1, 1]
+      num_agent_types: 3
+      num_active_agents_per_type: [1, 1, 1]
+      num_pool_agents_per_type: [1, 1, 1]
       agent_sample_interval: 20
       force_partner_sample_idx: -1
       use_llm_agent: True

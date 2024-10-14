@@ -49,12 +49,16 @@ class LLMHighLevelPolicy(HighLevelPolicy):
 
         return CrabAgent(agent_name, action_list)
 
-    def _parse_function_call_args(self, llm_args: Dict) -> str:
+    def _parse_function_call_args(self, action_name, action_args: Dict) -> str:
         """
         Parse the arguments of a function call from the LLM agent to the policy input argument format.
         """
-        # Tianqi: What does this function do?
-        return llm_args
+        if action_name == "place":
+            return [action_args['target_obj'], action_args['target_location'], action_args['robot']]
+        elif action_name == "pick":
+            return [action_args['target_obj'], action_args['robot']]
+
+        return action_args
 
     def apply_mask(self, mask):
         """
@@ -91,23 +95,38 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         # print(envs_text_context)
         # print("==================================================")
 
-        get_next_action_prompt = (
-            'You either finished your last action or you are at the beginning of the task. '
-            'This is the current environment description: """\n{scene_description}\n"""\n\n'
-            'Please generate the next action to take given the task and environment. '
+        start_action_prompt = (
+            'You are just starting the task to take actions. '
+            'Here is the current environment description: """\n{scene_description}\n"""\n\n'
+            'Based on the task and environment, generate the most appropriate next action. \n'
+            "Make sure that each action strictly adheres to the tool call's parameter list for that specific action. "
+            r'Before providing the action, validate that both the action and its parameters conform exactly to the defined structure. '
+            'Ensure that all required parameters are included and correctly formatted.'            
         )
+        step_action_prompt = (
+            'You have completed your previous action. '
+            'Based on the task, generate the most appropriate next action. \n'
+            "Make sure that each action strictly adheres to the tool call's parameter list for that specific action. "
+            r'Before providing the action, validate that both the action and its parameters conform exactly to the defined structure. '
+            'Ensure that all required parameters are included and correctly formatted.'
+        )
+
         semantic_observation = envs_text_context[0]["scene_description"]
         # print(semantic_observation)
-        get_next_action_message = get_next_action_prompt.format(
-            scene_description=semantic_observation
-        )
+        if not self.llm_agent.start_act:
+            get_next_action_message = start_action_prompt.format(
+                scene_description=semantic_observation
+            )
+            self.llm_agent.start_act = True
+        else:
+            get_next_action_message = step_action_prompt
 
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
         skill_args_data = [None for _ in range(batch_size)]
         immediate_end = torch.zeros(batch_size, dtype=torch.bool)
 
-        assert self.llm_agent.initilized, "Exception in LLMHighLevelPolicy.get_next_skill(): LLM agent not initialized."
+        assert self.llm_agent.initialized, "Exception in LLMHighLevelPolicy.get_next_skill(): LLM agent not initialized."
 
         for batch_idx, should_plan in enumerate(plan_masks):
             if should_plan != 1.0:
@@ -124,11 +143,11 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             print("==============================================")
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["100"]
+                skill_args_data[batch_idx] = ["500"]
                 continue
 
             action_name = llm_output["name"]
-            action_args = self._parse_function_call_args(llm_output["arguments"])
+            action_args = self._parse_function_call_args(action_name, llm_output["arguments"])
 
             if action_name in self._skill_name_to_idx:
                 next_skill[batch_idx] = self._skill_name_to_idx[action_name]
@@ -136,7 +155,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             else:
                 # If the action is not valid, do nothing
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["100"]
+                skill_args_data[batch_idx] = ["500"]
 
         return (
             next_skill,
