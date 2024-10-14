@@ -21,7 +21,7 @@ class StretchRobot(MobileManipulator):
             # TODO(zxz): modify arm_joints number here
             # arm_joints=[28, 27, 26, 25, 23, 31, 33, 34],
             arm_joints=[23, 25, 26, 27, 28, 31, 33, 34],
-            gripper_joints=[38, 36],
+            gripper_joints=[36, 38],
             wheel_joints=[4, 42],
             # arm_init_params=np.array(
             #     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -35,7 +35,7 @@ class StretchRobot(MobileManipulator):
             ee_offset=[mn.Vector3(0.08, 0, 0)],
             ee_links=[37, 39],
             ee_constraint=np.array(
-                [[[-1.2, 1.2], [-1.5, 1.5], [-1.5, 1.5]]]
+                [[[-2.0, 2.0], [-2.0, 2.0], [-2.0, 2.0]]]
             ),
             # ee_constraint=np.array(
             #     [[[-0.08, 0.29], [-0.84, -0.27], [0.01, 1.12]]]
@@ -53,6 +53,11 @@ class StretchRobot(MobileManipulator):
                     cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
                     attached_link_id=-1,
                 ),
+                "top": ArticulatedAgentCameraParams(
+                    cam_offset_pos=mn.Vector3(0., 7.5, 0),
+                    cam_look_at_pos=mn.Vector3(0, 0.0, 0.0),
+                    attached_link_id=-2,
+                ),
             },
             gripper_closed_state=np.array([0.0, 0.0], dtype=np.float32),
             gripper_open_state=np.array([0.6, 0.6], dtype=np.float32),
@@ -63,7 +68,7 @@ class StretchRobot(MobileManipulator):
             wheel_mtr_pos_gain=0.0,
             wheel_mtr_vel_gain=1.3,
             wheel_mtr_max_impulse=10.0,
-            base_offset=mn.Vector3(0.0, -0.5, 0.0),
+            base_offset=mn.Vector3(0.0, -0.0, 0.0),
             base_link_names={
                 "link_right_wheel",
                 "link_left_wheel",

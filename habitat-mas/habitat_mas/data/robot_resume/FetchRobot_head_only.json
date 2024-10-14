@@ -2,36 +2,28 @@
   "robot_id": "FetchRobot_head_only",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The robot has differential drive mobility with two continuous joints controlling two wheels (r_wheel_link and l_wheel_link) attached to the base_link. This allows the robot to move forward, backward, and rotate in place. However, there is no indication of stair-climbing capability, which may limit cross-floor tasks unless an elevator or similar device is used for transport between floors."
+    "summary": "FetchRobot has continuous-wheel base links for mobility. It cannot move between floors on its own."
   },
   "perception": {
-    "summary": "Perception capabilities are primarily provided by a head camera system with both RGB and depth sensing (head_camera_rgb_frame and head_camera_depth_frame). The camera is mounted on a head that can pan and tilt, allowing for dynamic visual scanning of the environment. This visual capability is essential for detecting and localizing objects for manipulation tasks and cooperative perception.",
+    "summary": "FetchRobot has a head-mounted RGB and depth camera for object perception on a single floor.",
     "cameras_info": {
       "head_camera": {
-        "height": 1.2000000476837158,
+        "height": 1.2,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot features a dexterous single arm manipulator that includes several joints: shoulder pan and lift, upper arm roll, elbow flex, forearm roll, wrist flex and roll, and a gripper. The gripper itself has two prismatic joints for the fingers, allowing for grasping and picking up objects of various sizes and shapes. The arm's range of motion enables it to reach objects on high shelves and under tables, fulfilling requirements for home arrangement tasks and object rearrangement.",
+    "summary": "FetchRobot has a 7-DoF arm with a prismatic gripper, suitable for precise object manipulation within a single floor workspace.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
-        0.1473979502916336,
-        0.899940013885498,
-        0.13241101801395416
+        0.147,
+        0.9,
+        0.132
       ],
-      "radius": 1.1041808,
-      "min_bound": [
-        -0.8757109642028809,
-        -0.03437383100390434,
-        -0.8868227005004883
-      ],
-      "max_bound": [
-        1.0899972915649414,
-        1.8497142791748047,
-        1.1006197929382324
-      ]
+      "radius": 1.1
     }
   }
 }

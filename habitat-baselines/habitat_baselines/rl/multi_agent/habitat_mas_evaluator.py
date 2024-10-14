@@ -144,12 +144,25 @@ class HabitatMASEvaluator(Evaluator):
             rgb_frames: List[List[np.ndarray]] = [
                 [
                     observations_to_image(
-                        {k: v[env_idx] for k, v in batch.items()}, {}, config, 0,
+                        {k: v[env_idx] for k, v in batch.items() if
+                             k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb"}, {}, config,
+                        0,
                     )
                 ]
                 for env_idx in range(config.habitat_baselines.num_environments)
             ]
+            if config.habitat_baselines.eval.generate_fourth_rgb:
+                rgb_frames_fourth: List[List[np.ndarray]] = [
+                    [
+                        observations_to_image(
+                            {k: v[env_idx] for k, v in batch.items()if
+                                 k == "agent_0_fourth_rgb"}, {}, config, 0,
+                        )
+                    ]
+                    for env_idx in range(config.habitat_baselines.num_environments)
+                ]
         else:
+            rgb_frames_fourth = None
             rgb_frames = None
 
         if len(config.habitat_baselines.eval.video_option) > 0:
@@ -184,30 +197,32 @@ class HabitatMASEvaluator(Evaluator):
                                  json_dir = './video_dir/image_dir/episode_91/episode_91.json',
                                  url = "http://0.0.0.0:10077/robot-chat")
 
-        
+        cur_ep_id = -1
         while (
             len(stats_episodes) < (number_of_eval_episodes * evals_per_ep)
             and envs.num_envs > 0
         ):
-            # print("stats_episodes::",stats_episodes,flush = True)
             current_episodes_info = envs.current_episodes()
-            # print(f"cur:{current_episodes_info}")
-            # sample_episode = config.habitat_baselines.eval.episode_stored
-            
-            # print(f"cur:{current_episodes_info[0].episode_id}",flush=True)
-            # print("flag:",config.habitat_baselines.eval.episode_stored,flush=True)
-            
+
             # If all prev_actions are zero, meaning this is the start of an episode
             # Then collect the context of the episode
-            if not prev_actions.any():
-            
+            if current_episodes_info[0].episode_id != cur_ep_id:
+                cur_ep_id = current_episodes_info[0].episode_id
+                print("===============================================================================")
+                print("=================================Episode ID====================================")
+                print("Current Episode ID: ", cur_ep_id)
+                print("=================================Episode ID====================================")
+                print("===============================================================================")
                 envs_text_context = envs.call(["get_task_text_context"] * envs.num_envs)
                 if 'pddl_text_goal' in batch:
                     envs_pddl_text_goal_np = batch['pddl_text_goal'].cpu().numpy()
                     for i in range(envs.num_envs):
-                        pddl_text_goal_np = envs_pddl_text_goal_np[i, ...] 
+                        pddl_text_goal_np = envs_pddl_text_goal_np[i, ...]
                         envs_text_context[i]['pddl_text_goal'] = ''.join(str(pddl_text_goal_np, encoding='UTF-8'))
-
+                
+                for i in range(envs.num_envs):
+                    # also add the debug/ logging info to the text context for convenience
+                    envs_text_context[i]['episode_id'] = current_episodes_info[i].episode_id
 
             space_lengths = {}
             n_agents = len(config.habitat.simulator.agents)
@@ -334,18 +349,11 @@ class HabitatMASEvaluator(Evaluator):
                     )
                     for a in action_data.env_actions.cpu()
                 ]
-                # print(f"----------------env_action\n{action_data.env_actions.cpu()}\n-----------------------------")
             else:
-                # step_data = [a.item() for a in action_data.env_actions.cpu()]
-                env_actions = action_data.env_actions.cpu()
-                if agent.num_total_agents < 2:
-                    step_data = [a.item() for a in env_actions]
-                else:
-                    # step_data = [item.item() for a in env_actions for item in a]
-                    step_data = [a for a in env_actions]
+                step_data = [a.item() for a in action_data.env_actions.cpu()]
+
             outputs = envs.step(step_data)
-            # print("end:---------------------------------------------------------------------------")
-            # print("---------------------------------------------------------------------------")
+
             observations, rewards_l, dones, infos = [
                 list(x) for x in zip(*outputs)
             ]
@@ -376,7 +384,6 @@ class HabitatMASEvaluator(Evaluator):
             ).unsqueeze(1)
             current_episode_reward += rewards
             next_episodes_info = envs.current_episodes()
-            # print(f"next:{next_episodes_info}")
             envs_to_pause = []
             n_envs = envs.num_envs
             for i in range(n_envs):
@@ -398,29 +405,50 @@ class HabitatMASEvaluator(Evaluator):
 
                 if len(config.habitat_baselines.eval.video_option) > 0:
                     # TODO move normalization / channel changing out of the policy and undo it here
-                    
                     frame = observations_to_image(
-                        {k: v[i] for k, v in batch.items()}, disp_info,
+                        {k: v[i] for k, v in batch.items()if
+                         k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb"}, disp_info,
                         config, len(rgb_frames[0]),
                         episode_id=current_episodes_info[i].episode_id,
                     )
+                    if config.habitat_baselines.eval.generate_fourth_rgb:
+                        frame_fourth = observations_to_image(
+                            {k: v[i] for k, v in batch.items() if
+                             k == "agent_0_fourth_rgb"}, infos[i],
+                            config, len(rgb_frames_fourth[0]),
+                            episode_id=current_episodes_info[i].episode_id,
+                        )
                     if not not_done_masks[i].any().item():
                         # The last frame corresponds to the first frame of the next episode
                         # but the info is correct. So we use a black frame
                         final_frame = observations_to_image(
-                            {k: v[i] * 0.0 for k, v in batch.items()},
-                            disp_info, config, 
+                            {k: v[i] * 0.0 for k, v in batch.items()if
+                             k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb"},
+                            disp_info, config,
                             frame_id=len(rgb_frames[0]),
                             episode_id=current_episodes_info[i].episode_id,
-                            
                         )
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            final_frame_fourth = observations_to_image(
+                                {k: v[i] for k, v in batch.items() if
+                                 k == "agent_0_fourth_rgb"}, infos[i],
+                                config, len(rgb_frames_fourth[0]),
+                                episode_id=current_episodes_info[i].episode_id,
+                            )
                         final_frame = overlay_frame(final_frame, disp_info)
                         rgb_frames[i].append(final_frame)
                         # The starting frame of the next episode will be the final element..
                         rgb_frames[i].append(frame)
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            final_frame_fourth = overlay_frame(final_frame_fourth, infos[i])
+                            rgb_frames_fourth[i].append(final_frame_fourth)
+                            rgb_frames_fourth[i].append(frame_fourth)
                     else:
                         frame = overlay_frame(frame, disp_info)
                         rgb_frames[i].append(frame)
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            frame_fourth = overlay_frame(frame_fourth, infos[i])
+                            rgb_frames_fourth[i].append(frame_fourth)
 
                 # episode ended
                 if not not_done_masks[i].any().item():
@@ -442,7 +470,19 @@ class HabitatMASEvaluator(Evaluator):
                     prev_actions[i] = 0
                     test_recurrent_hidden_states[i] = 0
 
-                    if len(config.habitat_baselines.eval.video_option) > 0 and config.habitat_baselines.eval.video_option_new:
+                    if len(config.habitat_baselines.eval.video_option) > 0:
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            generate_video(
+                                video_option=config.habitat_baselines.eval.video_option,
+                                video_dir=config.habitat_baselines.video_dir,
+                                images=rgb_frames_fourth[i][:-1],
+                                episode_id=f"{current_episodes_info[i].episode_id}_{ep_eval_count[k]}_fourth",
+                                checkpoint_idx=checkpoint_index,
+                                metrics=extract_scalars_from_info(disp_info),
+                                fps=config.habitat_baselines.video_fps,
+                                tb_writer=writer,
+                                keys_to_include_in_name=config.habitat_baselines.eval_keys_to_include_in_name,
+                            )
                         generate_video(
                             video_option=config.habitat_baselines.eval.video_option,
                             video_dir=config.habitat_baselines.video_dir,
@@ -457,10 +497,8 @@ class HabitatMASEvaluator(Evaluator):
                         )
 
                         # Since the starting frame of the next episode is the final frame.
-                        rgb_frames[i] = rgb_frames[i][-1:]
-                    elif len(config.habitat_baselines.eval.image_option)>0:
-                        rgb_frames[i] = rgb_frames[i][-1:]
-                    elif len(config.habitat_baselines.eval.video_option) > 0 and len(config.habitat_baselines.eval.json_option) > 0:
+                        if config.habitat_baselines.eval.generate_fourth_rgb:
+                            rgb_frames_fourth[i] = rgb_frames_fourth[i][-1:]
                         rgb_frames[i] = rgb_frames[i][-1:]
 
                     gfx_str = infos[i].get(GfxReplayMeasure.cls_uuid, "")
@@ -498,8 +536,6 @@ class HabitatMASEvaluator(Evaluator):
             if any(envs_to_pause):
                 agent.actor_critic.on_envs_pause(envs_to_pause)
 
-
-
         pbar.close()
         assert (
             len(ep_eval_count) >= number_of_eval_episodes
@@ -523,4 +559,4 @@ class HabitatMASEvaluator(Evaluator):
 
         metrics = {k: v for k, v in aggregated_stats.items() if k != "reward"}
         for k, v in metrics.items():
-            writer.add_scalar(f"eval_metrics/{k}", v, step_id)()
+            writer.add_scalar(f"eval_metrics/{k}", v, step_id)

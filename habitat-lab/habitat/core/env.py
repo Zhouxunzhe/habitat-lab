@@ -18,7 +18,9 @@ from typing import (
     cast,
 )
 
+import os
 import gym
+import json
 import numba
 import numpy as np
 from gym import spaces
@@ -35,6 +37,13 @@ from habitat.utils import profiling_wrapper
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+ABLATION_MODE = {
+    (True, True, True, True) : "FULL",
+    (False, True, True, True) : "GROUP_DISCUSSION",
+    (True, False, True, True) : "AGENT_REFLECTION",
+    (True, True, False, True) : "ROBOT_RESUME",
+    (True, True, True, False) : "NUMERICAL",
+}
 
 class Env:
     r"""Fundamental environment class for :ref:`habitat`.
@@ -135,6 +144,7 @@ class Env:
         self._elapsed_steps = 0
         self._episode_start_time: Optional[float] = None
         self._episode_over = False
+        self.log_steps_file = self._config.environment.episode_steps_file
 
     def _setup_episode_iterator(self):
         assert self._dataset is not None
@@ -229,6 +239,8 @@ class Env:
         )
 
     def _reset_stats(self) -> None:
+        if self._elapsed_steps:
+            self.log_episode_steps()
         self._episode_start_time = time.time()
         self._elapsed_steps = 0
         self._episode_over = False
@@ -279,6 +291,49 @@ class Env:
             self.episode_iterator, EpisodeIterator
         ):
             self.episode_iterator.step_taken()
+    
+    def log_episode_steps(self):
+        episode_data = {
+            "episode_id": self.current_episode.episode_id,
+            "num_steps": self._elapsed_steps,
+        }
+        print("========================Episode Step Info==========================")
+        print(f"Episode ID: {episode_data['episode_id']}, Num Steps: {episode_data['num_steps']}")
+        print("===================================================================")
+
+        dataset_name = self._config.dataset.data_path.split("/")[-1].split(".")[:-2][0]
+        ablation_mode = ABLATION_MODE[
+            (
+                self._config.dataset.should_group_discussion,
+                self._config.dataset.should_agent_reflection,
+                self._config.dataset.should_robot_resume,
+                self._config.dataset.should_numerical
+            )
+        ]
+        log_dir_path = os.path.join("./episode_log", dataset_name, ablation_mode)
+        log_file_path = os.path.join(log_dir_path, f"{dataset_name}_steps_log.json")
+        subgoal_file_path = os.path.join(log_dir_path, f"{dataset_name}_subgoals.json")
+
+        if not os.path.exists(log_dir_path):
+            os.makedirs(log_dir_path)
+            with open(log_file_path, 'w') as f:
+                json.dump({}, f)
+            with open(subgoal_file_path, 'w') as f:
+                json.dump({}, f)
+
+        with open(log_file_path, 'r') as f:
+            log_data = json.load(f)
+        with open(subgoal_file_path, 'r') as f:
+            subgoal_data = json.load(f)
+        
+        log_data[f"episode_id: {episode_data['episode_id']}"] = f"num_steps: {episode_data['num_steps']}"
+        stage_goal = self._task.measurements.measures['pddl_stage_goals'].get_metric()
+        subgoal_data[f"episode_id: {episode_data['episode_id']}"] = stage_goal
+        with open(subgoal_file_path, 'w') as f:
+            json.dump(subgoal_data, f, indent=4)
+
+        with open(log_file_path, 'w') as f:
+            json.dump(log_data, f, indent=4)
 
     def step(
         self, action: Union[int, str, Dict[str, Any]], **kwargs

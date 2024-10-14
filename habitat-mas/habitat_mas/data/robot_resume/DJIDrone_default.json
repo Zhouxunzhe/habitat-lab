@@ -2,19 +2,20 @@
   "robot_id": "DJIDrone_default",
   "robot_type": "DJIDrone",
   "mobility": {
-    "summary": "The provided URDF does not include specific joints or links that would suggest mobility components such as wheels, legs, or thrusters. Therefore, it seems that the dji_m100 lacks inherent mobility capabilities as described in this URDF tree. If it is mobile, this information is not encapsulated in the provided structure."
+    "summary": "The DJIDrone is a flying robot, capable of moving across different floors."
   },
   "perception": {
-    "summary": "The robot is equipped with a RealSense camera, specifically linked through multiple fixed joints, suggesting it is used for depth perception. Additionally, there is a 'velodyne' sensor, likely a Velodyne LiDAR, which would provide 360-degree environmental mapping and obstacle detection capabilities. This perception setup indicates the robot has strong capabilities for 3D mapping and object detection, which are essential for searching and perceiving objects to acquire geometric information for manipulation tasks.",
+    "summary": "The robot is equipped with a RealSense camera, providing depth perception and visual sensing for detecting objects. It also has a Velodyne sensor, enhancing its environmental perception.",
     "cameras_info": {
       "head_camera": {
         "height": 1.5,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "There are no explicit manipulation components such as arms or grippers detailed in the given URDF structure. Hence, it appears that the dji_m100 lacks direct manipulation capabilities based on the provided information. If manipulation is intended as part of its task, additional modules or external attachment points for manipulators would be required.",
+    "summary": "The robot does not have specific manipulators or end effectors, indicating a lack of direct object handling capabilities.",
     "arm_workspace": {}
   }
 }

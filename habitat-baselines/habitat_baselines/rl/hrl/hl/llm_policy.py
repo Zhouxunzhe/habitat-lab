@@ -1,24 +1,21 @@
 # ruff: noqa
+from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
-import socket
+
 import torch
 from habitat.tasks.rearrange.multi_task.pddl_action import PddlAction
 from habitat_mas.agents.actions.arm_actions import *
 from habitat_mas.agents.actions.base_actions import *
 from habitat_mas.agents.crab_agent import CrabAgent
-import logging
-import traceback
-import numpy as np
-import pickle
-logging.basicConfig(level=logging.INFO)
-import matplotlib.pyplot as plt
+
 # TODO: replace dummy_agent with llm_agent
 from habitat_mas.agents.dummy_agent import DummyAgent
-import os
+
 from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
 from habitat_baselines.rl.ppo.policy import PolicyActionData
-from multiprocessing import Process, Queue
-ACTION_POOL = [get_agents, send_request, nav_to_obj, nav_to_goal, pick, place]
+from habitat_mas.utils import AgentArguments
+
+ACTION_POOL = [get_agents, send_request, nav_to_obj, pick, place, reset_arm, wait]
 
 
 class LLMHighLevelPolicy(HighLevelPolicy):
@@ -31,57 +28,37 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         self._all_actions = self._setup_actions()
         self._n_actions = len(self._all_actions)
         self._active_envs = torch.zeros(self._num_envs, dtype=torch.bool)
-        self.args = kwargs
-        environment_action_name_set = set(
-            [action._name for action in self._all_actions]
-        )
 
-        llm_actions = [
-            action
-            for action in ACTION_POOL
-            if action.name in environment_action_name_set
-        ]
+        # environment_action_name_set = set(
+        #     [action._name for action in self._all_actions]
+        # )
+
+        # llm_actions = [
+        #     action
+        #     for action in ACTION_POOL
+        #     if action.name in environment_action_name_set
+        # ]
         # Initialize the LLM agent
-        self._llm_agent = self._init_llm_agent(kwargs["agent_name"], llm_actions)
-        
-
+        self.llm_agent = self._init_llm_agent(kwargs["agent_name"], ACTION_POOL)
 
     def _init_llm_agent(self, agent_name, action_list):
         # Initialize the LLM agent here based on the config
         # This could load a pre-trained model, set up prompts, etc.
         # Return the initialized agent
-        action_list.append(send_request)
-        return DummyAgent(agent_name=agent_name, action_list=action_list)
+        # return DummyAgent(agent_name=agent_name, action_list=action_list)
 
-        # return CrabAgent(
-        #     agent_name,
-        #     'Send a request " tell me your name" to another agent. If you are "agent_0", send to "agent_1". If you are "agent_1", send to "agent_0". ',
-        #     action_list,
-        # )
-    # def send_mes2vlm(self,port,data_to_send,message):
-    #     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    #         s.connect(('localhost', port))
-    #         data_serialized = pickle.dumps(data_to_send)
-    #         s.sendall(len(data_serialized).to_bytes(4, 'big'))
-    #         s.sendall(data_serialized)
-    #         print(f"Data sent from {message}")
-    # def rec_vlm2mes(self,port):
-    #     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    #         s.bind(('localhost', port))
-    #         s.listen()
-    #         print("Final receiver waiting for connection...")
-    #         conn, addr = s.accept()
-    #         with conn:
-    #             print(f"Connected to {addr}")
-    #             data_length = int.from_bytes(conn.recv(4), 'big')
-    #             data_serialized = conn.recv(data_length)
-    #             data_received = pickle.loads(data_serialized)
-    #             print("Final data received:", data_received)
-    def _parse_function_call_args(self, llm_args: Dict) -> str:
+        return CrabAgent(agent_name, action_list)
+
+    def _parse_function_call_args(self, action_name, action_args: Dict) -> str:
         """
         Parse the arguments of a function call from the LLM agent to the policy input argument format.
         """
-        return llm_args
+        if action_name == "place":
+            return [action_args['target_obj'], action_args['target_location'], action_args['robot']]
+        elif action_name == "pick":
+            return [action_args['target_obj'], action_args['robot']]
+
+        return action_args
 
     def apply_mask(self, mask):
         """
@@ -107,40 +84,70 @@ class LLMHighLevelPolicy(HighLevelPolicy):
         Get the next skill to execute from the LLM agent.
         """
         # TODO: use these text context to query the LLM agent with function call
-        # logging.info("Called get_next_skill")
-        # logging.info("\n".join(traceback.format_stack()))
         envs_text_context = kwargs.get("envs_text_context", None)
-        agent_task_assignments = kwargs.get("agent_task_assignments", None)
+        agent_arguments: AgentArguments = kwargs.get("agent_arguments", None)
+        if envs_text_context is None:
+            raise ValueError("Environment text context not provided to the policy.")
+        if agent_arguments is None:
+            raise ValueError("Agent arguments not provided to the policy.")
+
+        # print("=================env_text_context===================")
+        # print(envs_text_context)
+        # print("==================================================")
+
+        start_action_prompt = (
+            'You are just starting the task to take actions. '
+            'Here is the current environment description: """\n{scene_description}\n"""\n\n'
+            'Based on the task and environment, generate the most appropriate next action. \n'
+            "Make sure that each action strictly adheres to the tool call's parameter list for that specific action. "
+            r'Before providing the action, validate that both the action and its parameters conform exactly to the defined structure. '
+            'Ensure that all required parameters are included and correctly formatted.'            
+        )
+        step_action_prompt = (
+            'You have completed your previous action. '
+            'Based on the task, generate the most appropriate next action. \n'
+            "Make sure that each action strictly adheres to the tool call's parameter list for that specific action. "
+            r'Before providing the action, validate that both the action and its parameters conform exactly to the defined structure. '
+            'Ensure that all required parameters are included and correctly formatted.'
+        )
+
+        semantic_observation = envs_text_context[0]["scene_description"]
+        # print(semantic_observation)
+        if not self.llm_agent.start_act:
+            get_next_action_message = start_action_prompt.format(
+                scene_description=semantic_observation
+            )
+            self.llm_agent.start_act = True
+        else:
+            get_next_action_message = step_action_prompt
+
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
         skill_args_data = [None for _ in range(batch_size)]
         immediate_end = torch.zeros(batch_size, dtype=torch.bool)
-        agent_name = self.args["agent_name"]
+
+        assert self.llm_agent.initialized, "Exception in LLMHighLevelPolicy.get_next_skill(): LLM agent not initialized."
+
         for batch_idx, should_plan in enumerate(plan_masks):
             if should_plan != 1.0:
                 continue
 
             # Query the LLM agent with the current observations
             # to get the next action and arguments
-            agent_name = self.args["agent_name"]
-            # llm_output = self._llm_agent.chat(observations[batch_idx]) 
-            llm_output = None
+            llm_output = self.llm_agent.chat(get_next_action_message)
+            print("=================llm_output===================")
+            print("Agent: ", self.llm_agent.name)
+            print(llm_output)
+            print("=================total token usage=======================")
+            print("Agent: {} {}".format(self.llm_agent.name, self.llm_agent.get_token_usage()))
+            print("==============================================")
             if llm_output is None:
-                next_skill[batch_idx] = self._skill_name_to_idx["nav_to_obj"]
-                if agent_name == "agent_0":
-                    skill_args_data[batch_idx] = {
-                        "target_obj": -3,
-                        "robot_1": "robot_0",
-                    }
-                elif agent_name == "agent_1":
-                    skill_args_data[batch_idx] = {
-                        "target_obj": -4,
-                        "robot_1": "robot_0",
-                    }
+                next_skill[batch_idx] = self._skill_name_to_idx["wait"]
+                skill_args_data[batch_idx] = ["500"]
                 continue
 
             action_name = llm_output["name"]
-            action_args = self._parse_function_call_args(llm_output["arguments"])
+            action_args = self._parse_function_call_args(action_name, llm_output["arguments"])
 
             if action_name in self._skill_name_to_idx:
                 next_skill[batch_idx] = self._skill_name_to_idx[action_name]
@@ -148,7 +155,7 @@ class LLMHighLevelPolicy(HighLevelPolicy):
             else:
                 # If the action is not valid, do nothing
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
-                skill_args_data[batch_idx] = ["1"]
+                skill_args_data[batch_idx] = ["500"]
 
         return (
             next_skill,

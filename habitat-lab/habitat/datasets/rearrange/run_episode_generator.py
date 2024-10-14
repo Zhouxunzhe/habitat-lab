@@ -376,7 +376,7 @@ if __name__ == "__main__":
 
     # merge the configuration from file with the default
     cfg = get_config_defaults()
-    # logger.info(f"\n\nOriginal Config:\n{cfg}")
+    logger.info(f"\n\nOriginal Config:\n{cfg}")
     if args.config is not None:
         assert osp.exists(
             args.config
@@ -403,22 +403,11 @@ if __name__ == "__main__":
             print_metadata_mediator(ep_gen)
         else:
             import time
-            import json
-
-            resume = None
-            if args.resume is not None:
-                assert osp.exists(
-                    args.resume
-                ), f"Provided resume, '{args.resume}', does not exist."
-                with open(args.resume, 'r', encoding='utf-8') as file:
-                    resume = json.load(file)
 
             start_time = time.time()
-            
             dataset.episodes += ep_gen.generate_episodes(
-                args.num_episodes, args.verbose, args.type, resume
+                args.num_episodes, args.verbose
             )
-
             output_path = args.out
             if output_path is None:
                 # default
@@ -432,7 +421,6 @@ if __name__ == "__main__":
                 # filename
                 if not output_path.endswith(".json.gz"):
                     output_path += ".json.gz"
-            
             if (
                 not osp.exists(osp.dirname(output_path))
                 and len(osp.dirname(output_path)) > 0

@@ -55,6 +55,7 @@ __all__ = [
     "HumanoidJointActionConfig",
     "HumanoidPickActionConfig",
     "RearrangeStopActionConfig",
+    "WaitActionConfig",
     "OracleNavActionConfig",
     "SelectBaseOrArmActionConfig",
     # REARRANGEMENT LAB SENSORS
@@ -62,6 +63,8 @@ __all__ = [
     "IsHoldingSensorConfig",
     "EEPositionSensorConfig",
     "EEGlobalPositionSensorConfig",
+    "ObjectToGoalDistanceSensorConfig",
+    "EEPositionSensorConfig",
     "JointSensorConfig",
     "HumanoidJointSensorConfig",
     "TargetStartSensorConfig",
@@ -125,6 +128,7 @@ class EnvironmentConfig(HabitatBaseConfig):
     max_episode_steps: int = 1000
     max_episode_seconds: int = 10000000
     iterator_options: IteratorOptionsConfig = IteratorOptionsConfig()
+    episode_steps_file: str = "test_log.json"
 
 
 # -----------------------------------------------------------------------------
@@ -303,13 +307,13 @@ class ArmActionConfig(ActionConfig):
 class ArmPickActionConfig(ArmActionConfig):
     type: str = "ArmPickAction"
     arm_controller: str = "OraclePickAction"
-    grip_controller: str = "SuctionGraspAction"
+    grip_controller: str = "MagicGraspAction"
 
 @dataclass
 class ArmPlaceActionConfig(ArmActionConfig):
     type: str = "ArmPlaceAction"
     arm_controller: str = "OraclePlaceAction"
-    grip_controller: str = "SuctionGraspAction"
+    grip_controller: str = "MagicGraspAction"
 
 @dataclass
 class OraclePickActionConfig(ArmActionConfig):
@@ -319,8 +323,8 @@ class OraclePickActionConfig(ArmActionConfig):
     """
     type: str = "ArmPickAction"
     arm_controller: str = "OraclePickAction"
-    grip_controller: str = "SuctionGraspAction"
-    grasp_thresh_dist: float = 0.0
+    grip_controller: str = "MagicGraspAction"
+    grasp_thresh_dist: float = 0.1
     render_ee_target: bool = True
 
 @dataclass
@@ -331,8 +335,8 @@ class OraclePlaceActionConfig(ArmActionConfig):
     """
     type: str = "ArmPlaceAction"
     arm_controller: str = "OraclePlaceAction"
-    grip_controller: str = "SuctionGraspAction"
-    grasp_thresh_dist: float = 0.0
+    grip_controller: str = "MagicGraspAction"
+    grasp_thresh_dist: float = 0.05
     render_ee_target: bool = True
 
 @dataclass
@@ -343,9 +347,17 @@ class ResetArmActionConfig(ArmActionConfig):
     """
     type: str = "ResetArmAction"
     arm_controller: str = "OracleResetArmAction"
-    grip_controller: str = "SuctionGraspAction"
-    grasp_thresh_dist: float = 0.0
+    grip_controller: str = "MagicGraspAction"
+    grasp_thresh_dist: float = 0.05
     render_ee_target: bool = True
+
+@dataclass
+class WaitActionConfig(ActionConfig):
+    r"""
+    WaitAction config for Rearrangement tasks.
+    """
+    type: str = "WaitAction"
+    wait_steps: int = 1
 
 @dataclass
 class StretchOraclePickActionConfig(ArmActionConfig):
@@ -355,7 +367,7 @@ class StretchOraclePickActionConfig(ArmActionConfig):
     """
     type: str = "ArmAction"
     arm_controller: str = "StretchOraclePickAction"
-    grip_controller: str = "SuctionGraspAction"
+    grip_controller: str = "MagicGraspAction"
     render_ee_target: bool = True
     arm_joint_mask: Optional[List[int]] = field(default_factory=lambda: [1, 0, 0, 0, 1, 1, 1, 1])
     # arm_joint_dimensionality: int = 10
@@ -728,6 +740,13 @@ class IsHoldingSensorConfig(LabSensorConfig):
     """
     type: str = "IsHoldingSensor"
 
+@dataclass
+class ObjectToGoalDistanceSensorConfig(LabSensorConfig):
+    r"""
+    Rearrangement only. A single float sensor with distance from target object to goal position.
+    """
+    type: str = "ObjectToGoalDistanceSensor"
+
 
 @dataclass
 class RelativeRestingPositionSensorConfig(LabSensorConfig):
@@ -832,9 +851,15 @@ class TargetPointSensorConfig(LabSensorConfig):
     type: str = "TargetPointSensor"
 
 @dataclass
+class GlobalPredicatesSensorConfig(LabSensorConfig):
+    type: str = "GlobalPredicatesSensor"
+
+@dataclass
 class PddlTextGoalSensorConfig(LabSensorConfig):
     type: str = "PddlTextGoalSensor"
-    compact_str: bool = False
+    text_type: str = "description" # ["compact_str", "verbose_str", "description"]
+    task_description: str = """
+The task requires multiple robots to collaboratively execute a sequence of actions to accomplish specific goals. Each robot may be responsible for interacting with multiple objects or, in some cases, none, depending on its capability. \nThe goals are defined by the following |goal conditions| :\n"""
 
 @dataclass
 class MultiAgentGlobalPredicatesSensorConfig(LabSensorConfig):
@@ -986,6 +1011,10 @@ class ObjectMasksSensorConfig(LabSensorConfig):
 @dataclass
 class HSSDSceneDescriptionSensorConfig(LabSensorConfig):
     type: str = "HSSDSceneDescriptionSensor"
+
+@dataclass
+class MP3DSceneDescriptionSensorConfig(LabSensorConfig):
+    type: str = "MP3DSceneDescriptionSensor"
 
 @dataclass
 class RobotResumeSensorConfig(LabSensorConfig):
@@ -1460,12 +1489,12 @@ class DidPickObjectMeasurementConfig(MeasurementConfig):
 class DidViolateHoldConstraintMeasurementConfig(MeasurementConfig):
     type: str = "DidViolateHoldConstraintMeasure"
 
-
+#the success_dist!!!!!!!
 @dataclass
 class MoveObjectsRewardMeasurementConfig(MeasurementConfig):
     type: str = "MoveObjectsReward"
     pick_reward: float = 1.0
-    success_dist: float = 1.0
+    success_dist: float = 0.15
     single_rearrange_reward: float = 1.0
     dist_reward: float = 1.0
     constraint_violate_pen: float = 10.0
@@ -1814,8 +1843,7 @@ class TaskConfig(HabitatBaseConfig):
     # Disable drop except for when the object is at its goal.
     enable_safe_drop: bool = False
     art_succ_thresh: float = 0.15
-    robot_at_thresh: float = 0.1
-
+    robot_at_thresh: float = 2.0
     # The minimum distance between the agents at start. If < 0
     # there is no minimal distance
     min_distance_start_agents: float = -1.0
@@ -1827,6 +1855,7 @@ class SimulatorSensorConfig(HabitatBaseConfig):
     type: str = MISSING
     height: int = 480
     width: int = 640
+    uuid: str = ""
     position: List[float] = field(default_factory=lambda: [0.0, 1.25, 0.0])
     # Euler's angles:
     orientation: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])
@@ -2167,9 +2196,10 @@ class SimulatorConfig(HabitatBaseConfig):
     # Configuration for rendering
     renderer: RendererConfig = RendererConfig()
     
-    #TODO(ycc): write to json config
+    # write to json config
     w2j: bool = False
     json_path: str = "data/robots/json/test.json"
+    scene_type: str = "hssd"
 
 
 @dataclass
@@ -2255,10 +2285,15 @@ class DatasetConfig(HabitatBaseConfig):
         "data/datasets/pointnav/"
         "habitat-test-scenes/v1/{split}/{split}.json.gz"
     )
-    # TODO(YCC): load robot config
+    # load robot config
     mode: str = "test"
     randomize_agent_start: int = 1
     robot_config: str = ""
+    should_terminate_on_wait: bool = False
+    should_group_discussion: bool = True
+    should_agent_reflection: bool = True
+    should_robot_resume: bool = True
+    should_numerical: bool = True
 
 
 @dataclass
@@ -2278,7 +2313,7 @@ class HabitatConfig(HabitatBaseConfig):
     :property env_task: Indicates wether the environment is a Habitat gym environment (`GymHabitatEnv`) or a generic gym environment (`GymRegistryEnv`).
     :property env_task_gym_id: if `env_task` is `GymRegistryEnv`, env_task_gym_id is the identifier of the generic gym environment
     """
-    seed: int = 300
+    seed: int = 100
     # GymHabitatEnv works for all Habitat tasks, including Navigation and
     # Rearrange. To use a gym environment from the registry, use the
     # GymRegistryEnv. Any other environment needs to be created and registered.
@@ -2448,6 +2483,12 @@ cs.store(
     group="habitat/task/actions",
     name="rearrange_stop",
     node=RearrangeStopActionConfig,
+)
+cs.store(
+    package="habitat.task.actions.wait",
+    group="habitat/task/actions",
+    name="wait",
+    node=WaitActionConfig,
 )
 cs.store(
     package="habitat.task.actions.a_selection_of_base_or_arm",
@@ -2785,6 +2826,12 @@ cs.store(
     node=IsHoldingSensorConfig,
 )
 cs.store(
+    package="habitat.task.lab_sensors.object_to_goal_distance_sensor",
+    group="habitat/task/lab_sensors",
+    name="object_to_goal_distance_sensor",
+    node=ObjectToGoalDistanceSensorConfig,
+)
+cs.store(
     package="habitat.task.lab_sensors.relative_resting_pos_sensor",
     group="habitat/task/lab_sensors",
     name="relative_resting_pos_sensor",
@@ -2969,6 +3016,12 @@ cs.store(
     node=HSSDSceneDescriptionSensorConfig,
 )
 cs.store(
+    package="habitat.task.lab_sensors.mp3d_scene_description",
+    group="habitat/task/lab_sensors",
+    name="mp3d_scene_description",
+    node=MP3DSceneDescriptionSensorConfig,
+)
+cs.store(
     package="habitat.task.lab_sensors.robot_resume",
     group="habitat/task/lab_sensors",
     name="robot_resume",
@@ -3003,6 +3056,12 @@ cs.store(
     package="habitat.task.lab_sensors.goal_to_agent_gps_compass",
     group="habitat/task/lab_sensors",
     name="goal_to_agent_gps_compass",
+    node=NavGoalPointGoalSensorConfig,
+)
+cs.store(
+    package="habitat.task.lab_sensors.nav_goal_sensor",
+    group="habitat/task/lab_sensors",
+    name="nav_goal_sensor",
     node=NavGoalPointGoalSensorConfig,
 )
 cs.store(

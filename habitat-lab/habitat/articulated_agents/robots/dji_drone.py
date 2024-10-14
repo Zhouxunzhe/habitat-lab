@@ -14,7 +14,7 @@ from habitat_sim.physics import MotionType
 
 class DJIDrone(MobileManipulator):
     """DJI Drone with a controllable base."""
-    def _get_params(self):
+    def _get_params(self, height: float=1.5):
         return MobileManipulatorParams(
             arm_joints=[],
             gripper_joints=[],
@@ -42,6 +42,11 @@ class DJIDrone(MobileManipulator):
                     cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
                     attached_link_id=-1,
                 ),
+                "top": ArticulatedAgentCameraParams(
+                    cam_offset_pos=mn.Vector3(0., 7.5, 0),
+                    cam_look_at_pos=mn.Vector3(0, 0.0, 0.0),
+                    attached_link_id=-2,
+                ),
             },
             gripper_closed_state=np.array([], dtype=np.float32),
             gripper_open_state=np.array([], dtype=np.float32),
@@ -52,7 +57,7 @@ class DJIDrone(MobileManipulator):
             wheel_mtr_pos_gain=0.0,
             wheel_mtr_vel_gain=0.0,
             wheel_mtr_max_impulse=0.0,
-            base_offset=mn.Vector3(0, -1.5, 0),
+            base_offset=mn.Vector3(0, -height, 0),
             base_link_names={"m100_base_link"},
         )
     
@@ -66,8 +71,11 @@ class DJIDrone(MobileManipulator):
     def __init__(
         self, agent_cfg, sim, limit_robo_joints=True, fixed_base=False
     ):
+        drone_height = 1.5
+        if sim.scene_type == "mp3d":
+            drone_height = 0.8
         super().__init__(
-            self._get_params(),
+            self._get_params(drone_height),
             agent_cfg,
             sim,
             limit_robo_joints,

@@ -27,7 +27,7 @@ class FetchRobot(MobileManipulator):
             ee_offset=[mn.Vector3(0.08, 0, 0)],
             ee_links=[22],
             # ee_constraint=np.array([[[0.4, 1.2], [-0.7, 0.7], [0.25, 1.5]]]),
-            ee_constraint=np.array([[[-1.2, 1.2], [-0.7, 0.7], [-1.5, 1.5]]]),
+            ee_constraint=np.array([[[-2.0, 2.0], [-2.0, 2.0], [-2.0, 2.0]]]),
             cameras={
                 "articulated_agent_arm": ArticulatedAgentCameraParams(
                     cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
@@ -45,6 +45,11 @@ class FetchRobot(MobileManipulator):
                     cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
                     cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
                     attached_link_id=-1,
+                ),
+                "top": ArticulatedAgentCameraParams(
+                    cam_offset_pos=mn.Vector3(0., 7.5, 0),
+                    cam_look_at_pos=mn.Vector3(0, 0.0, 0.0),
+                    attached_link_id=-2,
                 ),
             },
             gripper_closed_state=np.array([0.0, 0.0], dtype=np.float32),

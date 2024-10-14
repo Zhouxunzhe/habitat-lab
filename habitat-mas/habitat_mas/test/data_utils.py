@@ -42,9 +42,7 @@ def make_hab_cfg(agent_dict, action_dict):
     task_cfg = TaskConfig(type="RearrangeEmptyTask-v0")
     task_cfg.actions = action_dict
     env_cfg = EnvironmentConfig()
-    dataset_cfg = DatasetConfig(type="RearrangeDataset-v0", data_path="data/hab3_bench_assets/episode_datasets/small_large.json.gz")
-    
-    
+    dataset_cfg = DatasetConfig(type="RearrangeDataset-v0", data_path="data/datasets/hssd_height.json.gz")
     hab_cfg = HabitatConfig()
     hab_cfg.environment = env_cfg
     hab_cfg.task = task_cfg
@@ -97,8 +95,8 @@ def get_fetch_hssd_env():
     action_dict = {
         "arm_ee_action": ArmActionConfig(
             arm_controller="ArmEEAction",
-            # grip_controller="MagicGraspAction",
-            grip_controller="SuctionGraspAction",
+            grip_controller="MagicGraspAction",
+            # grip_controller="SuctionGraspAction",
             # render_ee_target=True
         ),
         "base_velocity_non_cylinder_action": BaseVelocityNonCylinderActionConfig(),
@@ -129,8 +127,8 @@ def get_spot_hssd_env():
     action_dict = {
         "arm_ee_action": ArmActionConfig(
             arm_controller="ArmEEAction",
-            # grip_controller="MagicGraspAction",
-            grip_controller="SuctionGraspAction",
+            grip_controller="MagicGraspAction",
+            # grip_controller="SuctionGraspAction",
             # render_ee_target=True
         ),
         "base_velocity_non_cylinder_action": BaseVelocityNonCylinderActionConfig(),

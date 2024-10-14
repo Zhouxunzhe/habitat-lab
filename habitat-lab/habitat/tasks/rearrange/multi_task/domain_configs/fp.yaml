@@ -65,17 +65,31 @@ predicates:
         obj_states:
             obj: at_entity
 
-  #TODO(YCC): add new predicates for the rearrangement task.
+  # add new predicates for the rearrangement task.
   - name: detected_object
     args:
-      - name: any_targets|0
+      - name: obj
         expr_type: movable_entity_type
       - name: robot_id
         expr_type: robot_entity_type
     set_state:
       robot_states:
         robot_id:
-          detected_object: any_targets|0
+          detected_object: obj
+  
+  - name: is_detected
+    args:
+      - name: obj
+        expr_type: movable_entity_type
+    set_state:
+      is_detected: obj
+    
+  - name: any_at
+    args:
+      - name: obj
+        expr_type: static_obj_type
+    set_state:
+      any_at: obj
 
 actions:
   - name: nav_to_goal
@@ -129,7 +143,7 @@ actions:
   - name: nav_to_obj
     parameters:
       - name: obj
-        expr_type: goal_entity_type
+        expr_type: obj_type
       - name: robot
         expr_type: robot_entity_type
     precondition: null
@@ -141,7 +155,6 @@ actions:
       config_args:
         task.force_regenerate: True
         task.should_save_to_cache: False
-        
   - name: nav_to_receptacle
     parameters:
       - name: marker
@@ -238,6 +251,7 @@ actions:
       task_def: "nav_to_obj"
       config_args:
         task.force_regenerate: True
+        task.should_save_to_cache: False
   
   # Reset robot arm action      
   - name: reset_arm

@@ -1,0 +1,29 @@
+{
+  "robot_id": "SpotRobot_head_jaw",
+  "robot_type": "SpotRobot",
+  "mobility": {
+    "summary": "Quadruped robot with four legs each having three revolute joints (hip, upper leg, lower leg). Capable of traversing uneven terrain and potentially moving between floors."
+  },
+  "perception": {
+    "summary": "Equipped with a fixed head camera. Adequately suited for single-floor object perception tasks.",
+    "cameras_info": {
+      "head_camera": {
+        "height": 0.48,
+        "hfov": 90,
+        "type": "fixed"
+      }
+    }
+  },
+  "manipulation": {
+    "summary": "Single arm with eight revolute joints for complex movements. End effector at the wrist includes a flexible finger for versatile manipulation tasks. Suitable for object pick and place operations.",
+    "arm_workspace": {
+      "type": "sphere",
+      "center": [
+        0.219,
+        0.788,
+        0.184
+      ],
+      "radius": 0.977
+    }
+  }
+}

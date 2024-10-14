@@ -39,6 +39,7 @@ class WBConfig(HabitatBaselinesBaseConfig):
 class EvalConfig(HabitatBaselinesBaseConfig):
     # The split to evaluate on
     split: str = "val"
+    generate_fourth_rgb: bool = False
     use_ckpt_config: bool = True
     should_load_ckpt: bool = True
     # The number of time to run each episode through evaluation.
@@ -66,7 +67,7 @@ class EvalConfig(HabitatBaselinesBaseConfig):
         default_factory=list
     )
     vlm_eval : bool = False
-    vlm_compare : bool = True
+    vlm_compare : bool = False
     extra_sim_sensors: Dict[str, SimulatorSensorConfig] = field(
         default_factory=dict
     )
@@ -252,7 +253,7 @@ class HrlDefinedSkillConfig(HabitatBaselinesBaseConfig):
     # Overrides the config file of a neural network skill rather than loading
     # the config file from the checkpoint file.
     force_config_file: str = ""
-    at_resting_threshold: float = 0.15
+    at_resting_threshold: float = 0.05
     # If true, this will apply the post-conditions of the skill after it
     # terminates.
     apply_postconds: bool = False
@@ -400,6 +401,7 @@ class AgentAccessMgrConfig(HabitatBaselinesBaseConfig):
     allow_self_play: bool = False
     self_play_batched: bool = False
     # Whether to use llm agent for task planning and action, use MultiLLMPolicy class if enabled.
+    use_dummy_agent: bool = False
     use_llm_agent: bool = False
     # If specified, this will load the policies for the type 1 population from
     # the checkpoint file at the start of training. Used to independently train

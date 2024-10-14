@@ -402,7 +402,12 @@ class OracleNavCoordinateAction(BaseVelAction, BaseVelNonCylinderAction, Humanoi
                     high=np.finfo(np.float32).max,
                     dtype=np.float32,
                 ),
-                self._action_arg_prefix + "mode": spaces.Discrete(3),
+                self._action_arg_prefix + "mode": spaces.Box( # {0, 1, 2}
+                    shape=(1,),
+                    low=0,
+                    high=2,
+                    dtype=np.int32,
+                ),
             }
         )
 
@@ -457,12 +462,22 @@ class OracleNavCoordinateAction(BaseVelAction, BaseVelNonCylinderAction, Humanoi
         # 0 means both target and lookat are given, 1 means only lookat is given, 2 means only target is given
         self.skill_done = False
         nav_to_target_coord = kwargs.get(
-            self._action_arg_prefix + "oracle_nav_lookat_action",
-        )
+            self._action_arg_prefix + "oracle_nav_lookat_action", None)
         nav_position_coord = kwargs.get(
-            self._action_arg_prefix + "oracle_nav_coord_action",
-        )
-        mode = kwargs.get(self._action_arg_prefix + "mode")
+            self._action_arg_prefix + "oracle_nav_coord_action", None)
+        mode = kwargs.get(self._action_arg_prefix + "mode", None)
+        
+        # calculate mode based on the inputs
+        if mode is None:
+            if nav_to_target_coord is not None and nav_position_coord is not None:
+                mode = 0
+            elif nav_to_target_coord is not None:
+                mode = 1
+            elif nav_position_coord is not None:
+                mode = 2
+            else:
+                raise ValueError("Mode not provided for oracle nav action") 
+        
         if np.linalg.norm(nav_to_target_coord) == 0:
             return {}
 

@@ -159,6 +159,8 @@ class PddlDomain:
             art_states = pred_d["set_state"].get("art_states", {})
             obj_states = pred_d["set_state"].get("obj_states", {})
             robot_states = pred_d["set_state"].get("robot_states", {})
+            is_detected = pred_d["set_state"].get("is_detected", None)
+            any_at = pred_d["set_state"].get("any_at", None)
 
             all_entities = {**self.all_entities, **pred_entities}
 
@@ -187,7 +189,12 @@ class PddlDomain:
 
                 use_robot_states[use_k] = PddlRobotState(**v)
 
-            set_state = PddlSimState(art_states, obj_states, use_robot_states)
+            if pred_d['name'] == 'is_detected':
+                is_detected = all_entities.get(is_detected, is_detected)
+            elif pred_d['name'] == 'any_at':
+                any_at = all_entities.get(any_at, any_at)
+                
+            set_state = PddlSimState(art_states, obj_states, use_robot_states, is_detected, any_at)
 
             pred = Predicate(pred_d["name"], set_state, arg_entities)
             self.predicates[pred.name] = pred
@@ -370,7 +377,7 @@ class PddlDomain:
             art_handles={k.handle: i for i, k in enumerate(sim.art_objs)},
             marker_handles=sim.get_all_markers(),
             robot_ids={
-                f"robot_{agent_id}": agent_id
+                f"agent_{agent_id}": agent_id
                 for agent_id in range(sim.num_articulated_agents)
             },
             all_entities=self.all_entities,
@@ -380,12 +387,6 @@ class PddlDomain:
             receptacles=sim.receptacles,
             recep_place_shrink_factor=self._recep_place_shrink_factor,
         )
-        target_ids={
-                f"TARGET_{id_to_name[idx]}": idx
-                for idx in sim.get_targets()[0]
-            }
-        # print("target_ids:",target_ids)
-        # print("get_targets:",sim.get_targets())
         # Ensure that all objects are accounted for.
         for entity in self.all_entities.values():
             self._sim_info.search_for_entity(entity)

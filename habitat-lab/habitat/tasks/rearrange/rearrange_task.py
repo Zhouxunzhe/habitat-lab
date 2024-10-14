@@ -75,6 +75,7 @@ class RearrangeTask(NavigationTask):
         self.n_objs = len(dataset.episodes[0].targets)
 
         super().__init__(sim=sim, dataset=dataset, **kwargs)
+        self._physics_target_sps = kwargs['config'].physics_target_sps
         self.is_gripper_closed = False
         self._sim: RearrangeSim = sim
         self._ignore_collisions: List[Any] = []
@@ -114,7 +115,7 @@ class RearrangeTask(NavigationTask):
 
         # Load robot config file
         robot_config_path = dataset.config.robot_config
-        if osp.exists(robot_config_path):
+        if osp.exists(robot_config_path) and not self._dataset.config.randomize_agent_start:
             with open(robot_config_path, "r") as robot_config_file:
                 robot_config = json.load(robot_config_file)
             self._robot_config = robot_config
@@ -225,6 +226,7 @@ class RearrangeTask(NavigationTask):
                     return np.all(distances > self._min_distance_start_agents)
 
                 filter_agent_position = _filter_agent_position
+            
             if self._dataset.config.randomize_agent_start:
             
                 (
@@ -304,7 +306,7 @@ class RearrangeTask(NavigationTask):
         # Task sensors (all non-visual sensors)
         obs.update(
             self.sensor_suite.get_observations(
-                observations=obs, episode=episode, task=self, should_time=True
+                observations=obs, episode=episode, task=self, should_time=True, physics_target_sps=self._physics_target_sps
             )
         )
         return obs
@@ -351,6 +353,10 @@ class RearrangeTask(NavigationTask):
     ) -> bool:
         done = False
         if self.should_end:
+            done = True
+
+        action_stop = [v for k, v in action['action_args'].items() if 'rearrange_stop' in k]
+        if all(v == [1] for v in action_stop):
             done = True
 
         # Check that none of the articulated agents are violating the hold constraint
@@ -421,10 +427,26 @@ class RearrangeTask(NavigationTask):
         current_episode_idx = self._sim.ep_info.episode_id
 
         if not self._robot_config or current_episode_idx not in self._robot_config:
-        # load agent with dummy position
+        # load agent with new sampled position
             robot_config = []
             for agent_idx in range(self._sim.num_articulated_agents):
+                articulated_agent = self._sim.get_agent_data(
+                    agent_idx=agent_idx
+                ).articulated_agent
+                articulated_agent_pos = np.array(
+                    articulated_agent.base_pos
+                )
+                articulated_agent_rot = articulated_agent.base_rot
+                if not sum(articulated_agent_pos):
+                    (
+                        articulated_agent_pos,
+                        articulated_agent_rot,
+                    ) = self._sim.set_articulated_agent_base_to_random_point(
+                        agent_idx=agent_idx
+                    )
                 agent_config = self._sim.parse_agent_info(
+                    start_pos=articulated_agent_pos,
+                    start_rot=articulated_agent_rot,
                     agent_idx = agent_idx
                 )
                 robot_config.append(agent_config)

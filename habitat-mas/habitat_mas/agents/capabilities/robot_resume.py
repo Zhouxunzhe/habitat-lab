@@ -15,6 +15,7 @@ from habitat_mas.agents.capabilities.parse_urdf import (
 from habitat_mas.agents.robots.defaults import (
     robot_urdf_paths,
     robot_arm_workspaces,
+    robot_perception,
     dji_camera_params,
     fetch_camera_params,
     stretch_camera_params,
@@ -63,7 +64,9 @@ class RobotResume:
             urdf_path: the path to the URDF file of the robot
         """
         urdf = parse_urdf(urdf_path)
-        summary = query_llm_with_urdf(urdf)
+        summary = query_llm_with_urdf(urdf=urdf,
+                                      robot_id=robot_id, robot_type=robot_type,
+                                      manipulation=robot_arm_workspaces, perception=robot_perception)
         # convert the summary from json string to dictionary
         # {
         #     "mobility": {"summary": ...},

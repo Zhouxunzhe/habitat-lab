@@ -2,35 +2,31 @@
   "robot_id": "StretchRobot_default",
   "robot_type": "StretchRobot",
   "mobility": {
-    "summary": "The robot possesses differential drive capabilities with its 'link_right_wheel' and 'link_left_wheel' connected via continuous joints to the base, allowing it to move forward, backward, and rotate. This grants the robot the ability to navigate different environments, but no specific stair-climbing or elevator-usage capabilities are mentioned."
+    "summary": "StretchRobot has a wheeled base with two continuous joints for the wheels and a fixed caster. It is restricted to single-floor operations and cannot climb stairs or move between floors autonomously."
   },
   "perception": {
-    "summary": "The robot features multiple perception systems. It has a head mechanism with pan and tilt joints with a camera setup that includes various fixed links for depth, color, and infrared cameras, suggesting robust visual perception capabilities. There are also numerous 'aruco' links, indicating the use of ArUco marker-based visual localization and possibly object detection. Also, it includes links for 'respeaker' suggesting audio input capabilities and 'laser', indicating LIDAR usage for distance measurement and obstacle detection.",
+    "summary": "StretchRobot is equipped with multiple cameras mounted on a head that can pan and tilt. These include depth, infrared, color, accelerometer, and gyroscope cameras, providing robust object and environmental perception on a single floor.",
     "cameras_info": {
       "head_camera": {
-        "height": 1.9223901178495244,
+        "height": 1.422,
+        "hfov": 90,
         "type": "articulated"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot has a sophisticated arm mechanism with a prismatic joint at each segment (link_l4 to link_l0), allowing for significant vertical and horizontal reach adjustments. The wrist features revolute joints for yaw, pitch, and roll, providing flexible end-effector orientation. It includes a gripper with two fingers that have revolute joints, suggesting it can grasp various objects securely. This makes the robot capable of complex manipulations necessary for tasks such as 'pick and place' of objects across floors and rearranging items on high shelves or under tables.",
+    "summary": "StretchRobot features a multi-jointed, prismatic arm with revolute joints at the wrist and a gripper with movable fingers. The arm can extend and retract, allowing it to reach and manipulate objects within a reasonable workspace on a single floor.",
     "arm_workspace": {
-      "center": [
-        -2.411402463912964,
-        0.5447299480438232,
-        3.127298355102539
-      ],
-      "radius": 4.071119,
+      "type": "box",
       "min_bound": [
-        -4.981380939483643,
-        0.2309177815914154,
-        -0.0011563301086425781
+        -1.323,
+        -0.147,
+        -0.138
       ],
       "max_bound": [
-        0.11624574661254883,
-        0.8904351592063904,
-        6.301602363586426
+        -0.229,
+        1.244,
+        0.262
       ]
     }
   }

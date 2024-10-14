@@ -15,7 +15,7 @@ from ..crab_core import action
 @action
 def get_agents() -> List[str]:
     """
-    Get the list of agents in the environment.
+    Retrieve the list of agents currently present in the environment.
     """
     pass
 
@@ -32,21 +32,28 @@ def send_request(request: str, target_agent: str) -> str:
     pass
 
 @action
-def nav_to_obj(target_obj: str):
+def wait():
     """
-    Navigate to an object.
-    
-    Args:
-        target_obj: The object to navigate to.
+    Wait if no immediate action is required from you.
     """
     pass
 
 @action
-def nav_to_goal(goal: str):
+def nav_to_obj(target_obj: str):
     """
-    Navigate to a goal.
+    Navigate to the specified 'any_targets' or 'TARGET_any_target' object. Upon successfully completing this action, you should be positioned at the exact location of the 'any_targets' or 'TARGET_any_target'. 'target_obj' can NOT be a region name!
     
     Args:
-        goal: The goal to navigate to.
-    """
+        target_obj: The 'any_targets' or 'TARGET_any_targets' object to navigate to. 'target_obj' MUST follow the format 'any_targets|x' or 'TARGET_any_targets|x'. Must NOT be a region name.
+    """ 
     pass
+
+# @action
+# def nav_to_goal(target_obj: str):
+#     """
+#     Navigate to the specified any_targets object. This action can only be executed if you are not currently holding or have not previously picked up the any_targets object. Upon successful completion, you should be positioned at the exact location of the any_targets.
+    
+#     Args:
+#         target_obj: The any_targets object to navigate to. IMPORTANT: 'target_obj' must follow the format: 'any_targets|x', which is the unique name of the any_targets object, must NOT be a region name.
+#     """
+#     pass

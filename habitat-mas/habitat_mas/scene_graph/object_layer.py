@@ -17,6 +17,7 @@ class ObjectNode:
         full_name=None,
         description=None,
         parent_region=None,
+        height=None,
         vertices=None,
         colors=None,
         normals=None,
@@ -36,6 +37,7 @@ class ObjectNode:
 
         # edge to parent region node
         self.parent_region = parent_region
+        self.height = height
 
         self.vertices = vertices
         self.colors = colors
@@ -89,6 +91,8 @@ class ObjectLayer:
         colors=None,
         normals=None,
         bbox=None,
+        parent_region=None,
+        height=None,
     ):
         # add object node
         if id == None or id in self.obj_ids:
@@ -102,7 +106,13 @@ class ObjectLayer:
 
         self.obj_ids.append(id)
         obj_node = ObjectNode(
-            id, center, rotation, size, class_name=class_name, label=label, full_name=full_name, description=description
+            id, center, rotation, size, 
+            class_name=class_name, 
+            label=label, 
+            full_name=full_name, 
+            description=description, 
+            parent_region=parent_region,
+            height=height
         )
 
         if vertices is not None:

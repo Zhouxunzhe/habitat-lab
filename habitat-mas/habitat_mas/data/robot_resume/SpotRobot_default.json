@@ -2,40 +2,33 @@
   "robot_id": "SpotRobot_default",
   "robot_type": "SpotRobot",
   "mobility": {
-    "summary": "The robot has a quadrupedal design consisting of four legs (front-left, front-right, hind-left, hind-right), each with three revolute joints (hip, upper leg, lower leg). This design allows it to navigate various terrains and maintain stability on uneven surfaces, enabling it to move around efficiently for tasks including cross-floor operations."
+    "summary": "SpotRobot has a quadruped base with multiple revolute joints per leg, enhancing its ability to move over diverse terrains. It is likely capable of navigating stairs or steps to move between floors."
   },
   "perception": {
-    "summary": "The robot is equipped with a fixed head camera and a camera on the arm (articulated agent arm camera) providing it with the ability to gather visual information. This capability is crucial for identifying objects and obtaining geometric information needed for manipulation tasks.",
+    "summary": "SpotRobot is equipped with two cameras: one on the articulated arm and one at the head, allowing for detailed object perception in various positions on a single floor.",
     "cameras_info": {
       "articulated_agent_arm_camera": {
-        "height": 0.5770000063180923,
+        "height": 0.577,
+        "hfov": 90,
         "type": "articulated"
       },
       "head_camera": {
         "height": 0.48,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot is equipped with a multi-jointed arm featuring seven revolute joints and an additional gripper joint (arm0.link_fngr). This allows for precise and flexible manipulation of objects. Coupled with its perceptive capabilities, the robot can pick and place objects, including those in hard-to-reach areas like high shelves or under tables, fulfilling tasks such as cross-floor object rearrangement and home arrangement.",
+    "summary": "SpotRobot has a complex, versatile arm with multiple revolute joints and an end effector. This extends its workspace and precision in rearranging objects in abnormal positions on single and multiple floors.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
-        0.21883335709571838,
-        0.7876816987991333,
-        0.18432274460792542
+        0.219,
+        0.788,
+        0.184
       ],
-      "radius": 0.977087,
-      "min_bound": [
-        -0.6372380256652832,
-        -0.03964763879776001,
-        -0.6838083267211914
-      ],
-      "max_bound": [
-        1.1124825477600098,
-        1.5562465190887451,
-        1.0395488739013672
-      ]
+      "radius": 0.977
     }
   }
 }

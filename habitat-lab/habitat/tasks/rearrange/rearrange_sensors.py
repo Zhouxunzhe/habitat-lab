@@ -55,38 +55,39 @@ class MultiObjSensor(PointGoalSensor):
         )
 
 
-# @registry.register_sensor
-# class TargetCurrentSensor(ArticulatedAgentAction,MultiObjSensor):
-#     """
-#     This is the ground truth object position sensor relative to the robot end-effector coordinate frame.
-#     """
+@registry.register_sensor
+class TargetCurrentSensor(UsesArticulatedAgentInterface, MultiObjSensor):
+    """
+    This is the ground truth object position sensor relative to the robot end-effector coordinate frame.
+    """
 
-#     cls_uuid: str = "obj_goal_pos_sensor"
-        
-#     def _get_observation_space(self, *args, **kwargs):
-#         return spaces.Box(
-#             shape=(3,),
-#             low=np.finfo(np.float32).min,
-#             high=np.finfo(np.float32).max,
-#             dtype=np.float32,
-#         )
+    cls_uuid: str = "obj_goal_pos_sensor"
 
-#     def get_observation(self, observations, episode, *args, **kwargs):
-#         self._sim: RearrangeSim
-#         T_inv = (
-#             self._sim.get_agent_data(self.agent_id)
-#             .articulated_agent.ee_transform()
-#             .inverted()
-#         )
-        
-#         idxs, _ = self._sim.get_targets()
-#         scene_pos = self._sim.get_scene_pos()
-#         pos = scene_pos[idxs]
+    def _get_observation_space(self, *args, **kwargs):
+        return spaces.Box(
+            shape=(3,),
+            low=np.finfo(np.float32).min,
+            high=np.finfo(np.float32).max,
+            dtype=np.float32,
+        )
 
-#         for i in range(pos.shape[0]):
-#             pos[i] = T_inv.transform_point(pos[i])
+    def get_observation(self, observations, episode, *args, **kwargs):
+        self._sim: RearrangeSim
+        T_inv = (
+            self._sim.get_agent_data(self.agent_id)
+            .articulated_agent.ee_transform()
+            .inverted()
+        )
 
-#         return pos
+        idxs, _ = self._sim.get_targets()
+        scene_pos = self._sim.get_scene_pos()
+        pos = scene_pos[idxs]
+
+        for i in range(pos.shape[0]):
+            pos[i] = T_inv.transform_point(pos[i])
+
+        return pos.reshape(-1)
+
 
 @registry.register_sensor
 class TargetStartSensor(UsesArticulatedAgentInterface, MultiObjSensor):
@@ -94,15 +95,16 @@ class TargetStartSensor(UsesArticulatedAgentInterface, MultiObjSensor):
     Relative position from end effector to target object
     """
 
-    cls_uuid: str = "ee_global_pos_sensor"
+    cls_uuid: str = "obj_start_sensor"
 
     def get_observation(self, *args, observations, episode, **kwargs):
-        ee_pos = (
-            self._sim.get_agent_data(self.agent_id)
-            .articulated_agent.ee_transform()
-            .translation
-        )
-        return np.array(ee_pos, dtype=np.float32)
+        self._sim: RearrangeSim
+        global_T = self._sim.get_agent_data(
+            self.agent_id
+        ).articulated_agent.ee_transform()
+        T_inv = global_T.inverted()
+        pos = self._sim.get_target_objs_start()
+        return batch_transform_point(pos, T_inv, np.float32).reshape(-1)
 
 
 class PositionGpsCompassSensor(UsesArticulatedAgentInterface, Sensor):
@@ -336,6 +338,8 @@ class JointSensor(UsesArticulatedAgentInterface, Sensor):
         return mask_joints_pos
 
     def get_observation(self, observations, episode, *args, **kwargs):
+        if 'physics_target_sps' in kwargs:
+            self._sim.step_physics(1.0 / kwargs['physics_target_sps'])
         joints_pos = self._sim.get_agent_data(
             self.agent_id
         ).articulated_agent.arm_joint_pos
@@ -427,7 +431,6 @@ class EEPositionSensor(UsesArticulatedAgentInterface, Sensor):
         trans = self._sim.get_agent_data(
             self.agent_id
         ).articulated_agent.base_transformation
-        # print("trans:",trans.type)
         ee_pos = (
             self._sim.get_agent_data(self.agent_id)
             .articulated_agent.ee_transform()
@@ -726,6 +729,42 @@ class IsHoldingSensor(UsesArticulatedAgentInterface, Sensor):
             int(self._sim.get_agent_data(self.agent_id).grasp_mgr.is_grasped),
             dtype=np.float32,
         ).reshape((1,))
+
+
+@registry.register_sensor
+class ObjectToGoalDistanceSensor(UsesArticulatedAgentInterface, Sensor):
+    """
+    Euclidean distance from the target object to the goal.
+    """
+
+    cls_uuid: str = "object_to_goal_distance_sensor"
+
+    def __init__(self, sim, config, *args, **kwargs):
+        super().__init__(config=config)
+        self._sim = sim
+
+    @staticmethod
+    def _get_uuid(*args, **kwargs):
+        return ObjectToGoalDistanceSensor.cls_uuid
+
+    def _get_sensor_type(self, *args, **kwargs):
+        return SensorTypes.TENSOR
+
+    def _get_observation_space(self, *args, **kwargs):
+        return spaces.Box(shape=(1,), low=0, high=1, dtype=np.float32)
+
+    def get_observation(self, *args, episode, **kwargs):
+        task = kwargs['task']
+        assert 'object_to_goal_distance' in task.measurements.measures
+        task.measurements.measures[
+            ObjectToGoalDistance.cls_uuid
+        ].update_metric(episode=episode)
+        obj_to_goal_dist = task.measurements.measures[
+            ObjectToGoalDistance.cls_uuid
+        ].get_metric()
+
+        dist_to_goal = obj_to_goal_dist[str(task.targ_idx)]
+        return dist_to_goal
 
 
 @registry.register_measure
@@ -1643,14 +1682,13 @@ class HasFinishedArmActionSensor(UsesArticulatedAgentInterface, Sensor):
         return spaces.Box(shape=(1,), low=0, high=1, dtype=np.float32)
 
     def get_observation(self, observations, episode, *args, **kwargs):
-    
         if self.agent_id is not None:
             use_k = f"agent_{self.agent_id}_arm_action"
         else:
             use_k = "arm_action"
             
         if use_k not in self._task.actions:
-            return np.array(-1, dtype=np.float32)[..., None]
+            return np.array(False, dtype=np.float32)[..., None]
         else:
             pick_action = self._task.actions[use_k]
             return np.array(pick_action.skill_done, dtype=np.float32)[..., None]
@@ -2232,8 +2270,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         super().__init__(config=config)
                 
-        # self._debug_tf = config.get("debug_tf", False)
-        self._debug_tf = True
+        self._debug_tf = config.get("debug_tf", False)
         if self._debug_tf:
             self.pcl_o3d_list = []
             self._debug_save_counter = 0
@@ -2254,7 +2291,6 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         hfov = float(self._sim._sensors[depth_name]._sensor_object.hfov) * np.pi / 180.
         W, H = depth_camera.viewport[0], depth_camera.viewport[1]
-        
         K = np.array([
             [1 / np.tan(hfov / 2.), 0., 0., 0.],
             [0., 1 / np.tan(hfov / 2.), 0., 0.],
@@ -2287,51 +2323,26 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         # reshape to the scale of the image
         # points_world = points_world.reshape((3, H, W)).transpose(1, 2, 0)
         points_world = points_world.transpose(1, 0)
-        print(f"log----depth_camera:{depth_camera},W:{W},H:{H},K:{K},hfov:{hfov},depth:{depth}",flush=True)
-        print(f"depth_rotation:{depth_rotation}",flush=True)
-        print(f"depth_translation:{depth_translation}",flush=True)
+
         return points_world
 
-    def _3d_to_2d(self, sensor_name, point_3d,isobj = False):
+    def _3d_to_2d(self, sensor_name, point_3d):
         # get the scene render camera and sensor object
         render_camera = self._sim._sensors[sensor_name]._sensor_object.render_camera
         W, H = render_camera.viewport[0], render_camera.viewport[1]
+
         # use the camera and projection matrices to transform the point onto the near plane
         projected_point_3d = render_camera.projection_matrix.transform_point(
             render_camera.camera_matrix.transform_point(point_3d)
         )
-        
-        anstemp = np.dot(np.array(render_camera.camera_matrix),np.append(point_3d,1))
-        anst = mn.Vector3(anstemp[:3])
-        anstt = mn.Matrix4(np.array(render_camera.projection_matrix)).transform_point(anst)
-        answ = np.dot(np.array(render_camera.projection_matrix),
-                      anstemp)
-        # if isobj:
-        #     print(f"----------------------------------{self.agent_id}-------------",flush = True)
-        #     print("3dpoint:",point_3d,flush=True)
-        #     print("camera_matrix:",render_camera.camera_matrix,flush = True)
-        #     print("temp:",render_camera.camera_matrix.transform_point(point_3d),flush=True)
-        #     print("trytemp:",anstemp,flush = True)
-        #     print("projection_matrix:",render_camera.projection_matrix,flush = True)
-        #     print("answer:",projected_point_3d,flush = True)
         # convert the 3D near plane point to integer pixel space
         point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
-        # if isobj:
-        #     print("2d_1:",point_2d)
         point_2d = point_2d / render_camera.projection_size()[0]
-        # if isobj:
-        #     print("2d_2:",point_2d)
         point_2d += mn.Vector2(0.5)
-        # if isobj:
-        #     print("2d_3:",point_2d)
         point_2d *= render_camera.viewport
-        # if isobj:
-        #     print("2d_4:",point_2d)
+
         out_bound = 10
         point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
-        # if isobj:
-        #     print("2d_5:",point_2d)
-        #     print(f"----------------------------------{self.agent_id}-------------",flush = True)
         return point_2d.astype(int)
 
     def voxel_grid_filter(self, points, voxel_size):
@@ -2405,11 +2416,9 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
-        print(f"rgb_obs_0:{rgb_obs[125,125,0]};rgb_obs_1:{rgb_obs[125,125,1]};rgb_obs_2:{rgb_obs[125,125,2]}",flush=True)
-        print("depth_obs_depth:",depth_obs[125,125,0],flush=True)
+
         """add semantic information"""
         ep_objects = []
-        # print("self._sim.ep_info:",self._sim.ep_info)
         for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
             ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
         for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
@@ -2428,30 +2437,21 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         semantic_obs = observations[semantic_camera_name].squeeze()
 
         mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
-        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        bounding_box = []
         colored_mask = np.zeros_like(rgb_obs)
         colored_mask[mask == 1] = [0, 0, 255]
         rgb_obs = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
-        for contour in contours:
-            if cv2.contourArea(contour) > 0:  # 过滤掉面积为0的轮廓
-                x, y, w, h = cv2.boundingRect(contour)
-                bounding_box.append((x, y, w, h))
-                # 可选：在原始图像上绘制边界框
-                cv2.rectangle(rgb_obs, (x, y), (x + w, y + h), (255, 0, 0), 1)
-        # for obj_id in objects_info.keys():
-        #     positions = np.where(semantic_obs == obj_id + obj_id_offset)
-        #     if positions[0].size > 0:
-        #         center_x = int(np.mean(positions[1]))
-        #         center_y = int(np.mean(positions[0]))
-        #         cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
-        #                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+
+        for obj_id in objects_info.keys():
+            positions = np.where(semantic_obs == obj_id + obj_id_offset)
+            if positions[0].size > 0:
+                center_x = int(np.mean(positions[1]))
+                center_y = int(np.mean(positions[0]))
+                cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)
-        # print(f"depth_camera_name:{depth_camera_name},depth_obs:{depth_obs}",flush=True)
         # downsample the 3d-points
-        print("points_world",points_world.shape,flush=True)
         down_sampled_points = self.voxel_grid_filter(points_world, self.down_sample_voxel_size)
 
         # Check reachability and color points
@@ -2469,7 +2469,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         pixel_coords = []
         if self._debug_tf and 'obj_pos' in kwargs:
             if kwargs['obj_pos'] is not None:
-                pixel_coord = self._3d_to_2d(depth_camera_name, np.array(list(kwargs['obj_pos'])),isobj = True)
+                pixel_coord = self._3d_to_2d(depth_camera_name, np.array(list(kwargs['obj_pos'])))
                 if np.any(np.isnan(pixel_coord)) or np.any(np.isinf(pixel_coord)):
                     print("obj_pos is invalid")
                 else:
@@ -2482,13 +2482,12 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         for pixel_coord, color in zip(pixel_coords, colors):
             x, y = pixel_coord.astype(int)
-            
             if color == [0, 255, 0]:
-                # if self._debug_tf:
-                #     if x < 256 and y < 256:
-                #         print(f"obj_pos can be seen: {x}, {y}")
-                #     else:
-                #         print(f"obj_pos can not be seen: {x}, {y}")
+                if self._debug_tf:
+                    if x < 256 and y < 256:
+                        print(f"obj_pos can be seen: {x}, {y}")
+                    else:
+                        print(f"obj_pos can not be seen: {x}, {y}")
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
 
         return rgb_obs

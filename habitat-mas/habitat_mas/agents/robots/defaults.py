@@ -37,30 +37,86 @@ robot_base_offset_map = {
     "KinematicHumanoid": np.array([0, -0.9, 0]),
     "FetchRobot": np.array([0, 0, 0]),
     "SpotRobot": np.array([0, -0.48, 0]),
-    "StretchRobot": np.array([0, -0.5, 0]),
+    "StretchRobot": np.array([0, -0.0, 0]),
     "DJIDrone": np.array([0, -1.5, 0]),
 }
 
 # Pre-computed ego-centric arm workspace, w.r.t. base footprint link. TOO SLOW to compute in real-time.
 robot_arm_workspaces = {
-    "FetchRobot": {
-        "center": np.array([0.14739795, 0.89994, 0.13241102], dtype=np.float32),
-        "radius": 1.1041808,
-        "min_bound": np.array([-0.87571096, -0.03437383, -0.8868227], dtype=np.float32),
-        "max_bound": np.array([1.0899973, 1.8497143, 1.1006198], dtype=np.float32),
+    'FetchRobot': {
+        "type": "sphere",
+        'center': np.array([0.14739853, 0.89994   , 0.1324109 ], dtype=np.float32),
+        'radius': 1.1041796,
     },
-    "SpotRobot": {
-        "center": np.array([0.21883336, 0.7876817, 0.18432274], dtype=np.float32),
-        "radius": 0.977087,
-        "min_bound": np.array([-0.637238, -0.03964764, -0.6838083], dtype=np.float32),
-        "max_bound": np.array([1.1124825, 1.5562465, 1.0395489], dtype=np.float32),
+    'SpotRobot': {
+        "type": "sphere",
+        'center': np.array([0.21883333, 0.7876817 , 0.18432271], dtype=np.float32),
+        'radius': 0.977087,
     },
-    "StretchRobot": {
-        "center": np.array([-2.4114025, 0.54472995, 3.1272984], dtype=np.float32),
-        "radius": 4.071119,
-        "min_bound": np.array([-4.9813809e00, 2.3091778e-01, -1.1563301e-03], dtype=np.float32),
-        "max_bound": np.array([0.11624575, 0.89043516, 6.3016024], dtype=np.float32),
+    'StretchRobot': {
+        'type': 'box',
+        'min_bound': np.array([-1.3228146, -0.1473276, -0.1384921], dtype=np.float32),
+        'max_bound': np.array([-0.22937274,  1.2440531 ,  0.26185083], dtype=np.float32)
+    }
+}
+
+robot_perception = {
+    'FetchRobot_default': {
+        'articulated_agent_arm_camera': {
+            'height': 0.786,
+            'type': 'articulated'
+        },
+        'head_camera': {
+            'height': 1.2,
+            'type': 'fixed'
+        }
     },
+    'FetchRobot_head_only': {
+        'head_camera': {
+            'height': 1.2,
+            'type': 'fixed'
+        }
+    },
+    'FetchRobot_arm_only': {
+        'articulated_agent_arm_camera': {
+            'height': 0.786,
+            'type': 'articulated'
+        }
+    },
+    'SpotRobot_default': {
+        'articulated_agent_arm_camera': {
+            'height': 0.577,
+            'type': 'articulated'
+        },
+        'head_camera': {
+            'height': 0.48,
+            'type': 'fixed'
+        }
+    },
+    'SpotRobot_head_only': {
+        'head_camera': {
+            'height': 0.48,
+            'type': 'fixed'
+        }
+    },
+    'SpotRobot_arm_only': {
+        'articulated_agent_arm_camera': {
+            'height': 0.577,
+            'type': 'articulated'
+        }
+    },
+    'StretchRobot_default': {
+        'head_camera': {
+            'height': 1.422,
+            'type': 'articulated'
+        }
+    },
+    'DJIDrone_default': {
+        'head_camera': {
+            'height': 1.5,
+            'type': 'fixed'
+        }
+    }
 }
 
 # The link id to name map of the robots.
@@ -226,7 +282,7 @@ spot_camera_params = {
                     ),
                     cam_look_at_pos=mn.Vector3(1.0, 0.0, 0.0),
                     attached_link_id=-1,
-        ),   
+        ),
         "third": ArticulatedAgentCameraParams(
             cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
             cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
@@ -240,7 +296,7 @@ spot_camera_params = {
             ),
             cam_look_at_pos=mn.Vector3(1.0, 0.0, 0.0),
             attached_link_id=-1,
-        ),  
+        ),
     },
     "arm_only": {
         "articulated_agent_arm": ArticulatedAgentCameraParams(

@@ -4,11 +4,13 @@ from habitat_baselines.rl.hrl.hl.neural_policy import NeuralHighLevelPolicy
 from habitat_baselines.rl.hrl.hl.planner_policy import PlannerHighLevelPolicy
 from habitat_baselines.rl.hrl.hl.llm_policy import LLMHighLevelPolicy
 from habitat_baselines.rl.hrl.hl.vlm_policy import VLMPolicy
+from habitat_baselines.rl.hrl.hl.dummy_policy import DummyPolicy
 __all__ = [
     "HighLevelPolicy",
     "FixedHighLevelPolicy",
     "NeuralHighLevelPolicy",
     "PlannerHighLevelPolicy",
     "LLMHighLevelPolicy",
-    "VLMPolicy"
+    "VLMPolicy",
+    "DummyPolicy",
 ]

@@ -88,7 +88,6 @@ class RearrangeEpisodeGenerator:
         """
         # load and cache the config
         self.cfg = cfg
-        self.episode_id = 0
         self.start_cfg = self.cfg.copy()
         self._limit_scene_set = limit_scene_set
 
@@ -453,68 +452,21 @@ class RearrangeEpisodeGenerator:
             self.dbv.debug_obs.append(self.dbv.get_observation())
 
     def generate_episodes(
-        self, num_episodes: int = 1, verbose: bool = False,
-        episode_type=None, resume=None
+        self, num_episodes: int = 1, verbose: bool = False
     ) -> List[RearrangeEpisode]:
         """
         Generate a fixed number of episodes.
         """
         generated_episodes: List[RearrangeEpisode] = []
         failed_episodes = 0
-        total_episodes = 0
         if verbose:
             pbar = tqdm(total=num_episodes)
         while len(generated_episodes) < num_episodes:
-            logger.info(f"Generating... succeeded / total: {len(generated_episodes)} / {total_episodes}")
-            total_episodes += 1
             try:
                 self._scene_sampler.set_cur_episode(len(generated_episodes))
                 new_episode = self.generate_single_episode()
-                if new_episode is None and new_episode.target_receptacles[0][0]==new_episode.goal_receptacles[0][0]:
-                    continue
-                rigid_objs = new_episode.rigid_objs
-                target_objs = new_episode.targets
-                if resume is not None:
-                    cameras_info = resume['perception']['cameras_info']
-                    arm_workspace = resume['manipulation']['arm_workspace']
-                    mobility_summary = resume['mobility']['summary']
-
-                # TODO(zxz): modify episode generation algorithm
-                if episode_type == 'perception':
-                    # beyond SPOT robot's reach
-                    for obj in rigid_objs:
-                        transform = obj[1]
-                        # if SPOT can detect or DRONE can't, then drop the episode
-                        if (transform[1][3] < 1.0):
-                            logger.error("Drop episode...")
-                            new_episode = None
-                            break
-                elif episode_type == 'manipulation':
-                    # beyond STRETCH robot's reach
-                    # if STRETCH can pick and FETCH can't, then drop the episode
-                    for rigid_obj in rigid_objs:
-                        if (0.2 < rigid_obj[1][1][3] < 1.0 or
-                                rigid_obj[1][1][3] > 1.8497142791748):
-                            logger.error("Drop episode...")
-                            new_episode = None
-                            break
-                elif episode_type == 'hssd':
-                    for rigid_obj in rigid_objs:
-                        if (0.4 < rigid_obj[1][1][3] < 0.8 or
-                                rigid_obj[1][1][3] > 1.8497142791748):
-                            logger.error("Drop episode...")
-                            new_episode = None
-                            break
-                elif episode_type == 'mobility':
-                    pass
-
-                else:
-                    raise ValueError(f"Unknown type: {episode_type}")
-
-            except Exception as e:
+            except Exception:
                 new_episode = None
-                trace = traceback.format_exc()
-                logger.error(f"An error occurred: {trace}")
                 logger.error("Generation failed with exception...")
             if new_episode is None:
                 failed_episodes += 1
@@ -526,7 +478,7 @@ class RearrangeEpisodeGenerator:
             pbar.close()
 
         logger.info(
-            f"Generated {num_episodes} episodes in {num_episodes + failed_episodes} tries."
+            f"Generated {num_episodes} episodes in {num_episodes+failed_episodes} tries."
         )
 
         return generated_episodes
@@ -544,10 +496,8 @@ class RearrangeEpisodeGenerator:
 
         self._reset_samplers()
         self.episode_data: Dict[str, Dict[str, Any]] = {
-            "sampled_objects": {},
-            # object sampler name -> sampled object instances
-            "sampled_targets": {},
-            # target sampler name -> (object, target state)
+            "sampled_objects": {},  # object sampler name -> sampled object instances
+            "sampled_targets": {},  # target sampler name -> (object, target state)
         }
 
         ep_scene_handle = self.generate_scene()
@@ -640,8 +590,7 @@ class RearrangeEpisodeGenerator:
                     self.sim, [new_receptacle], nav_island
                 )  # type: ignore
                 if len(new_receptacle) != 0:  # type: ignore
-                    new_target_receptacles.append(
-                        new_receptacle[0])  # type: ignore
+                    new_target_receptacles.append(new_receptacle[0])  # type: ignore
 
             target_receptacles[obj_sampler_name].extend(new_target_receptacles)
             all_target_receptacles.extend(new_target_receptacles)
@@ -677,8 +626,7 @@ class RearrangeEpisodeGenerator:
                     self.sim, [new_receptacle], nav_island
                 )  # type: ignore
                 if len(new_receptacle) != 0:  # type: ignore
-                    new_goal_receptacles.append(
-                        new_receptacle[0])  # type: ignore
+                    new_goal_receptacles.append(new_receptacle[0])  # type: ignore
             assert (
                 len(new_goal_receptacles) == num_targets
             ), "Unable to sample goal Receptacles for all requested targets."
@@ -730,8 +678,8 @@ class RearrangeEpisodeGenerator:
                 [
                     obj.handle
                     for obj in new_objects[
-                               : len(target_receptacles[sampler_name])
-                               ]
+                        : len(target_receptacles[sampler_name])
+                    ]
                 ]
             )
             for obj, rec in zip(new_objects, receptacles):
@@ -905,11 +853,11 @@ class RearrangeEpisodeGenerator:
             k: v.unique_name
             for k, v in self.object_to_containing_receptacle.items()
         }
-        self.episode_id +=1
+
         return RearrangeEpisode(
             scene_dataset_config=self.cfg.dataset_path,
             additional_obj_config_paths=self.cfg.additional_object_paths,
-            episode_id=str(self.episode_id - 1),
+            episode_id=str(self.num_ep_generated - 1),
             start_position=[0, 0, 0],
             start_rotation=[
                 0,
@@ -1046,7 +994,7 @@ class RearrangeEpisodeGenerator:
                 settle_db_obs.append(self.dbv.get_observation())
 
         logger.info(
-            f"   ...done with placement stability analysis in {time.time() - settle_start_time} seconds."
+            f"   ...done with placement stability analysis in {time.time()-settle_start_time} seconds."
         )
         # check stability of placements
         logger.info(
@@ -1081,7 +1029,7 @@ class RearrangeEpisodeGenerator:
                         ],
                     ).save(self.dbv.output_path, prefix="unstable_")
         logger.info(
-            f" : unstable={len(unstable_placements)}|{len(self.ep_sampled_objects)} ({len(unstable_placements) / len(self.ep_sampled_objects) * 100}%) : {unstable_placements}."
+            f" : unstable={len(unstable_placements)}|{len(self.ep_sampled_objects)} ({len(unstable_placements)/len(self.ep_sampled_objects)*100}%) : {unstable_placements}."
         )
         logger.info(
             f" : Maximum displacement from settling = {max_settle_displacement}"

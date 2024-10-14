@@ -65,13 +65,15 @@ class OracleNavDiffBaseAction(OracleNavAction):
             self._task.pddl_problem.get_ordered_entities_list()
         )
         self._prev_ep_id = None
-        self.skill_done = -1.0
+        self.skill_done = False
         self._targets = {}
         self.config = config
         self.pathfinder = None
         self.step_sum = 0
         self.ep_id = None
         self.start_pos = [] #此处存了一个temp，用于记录角度
+        self.prev_match_target_id = None
+        self.prev_nav_done = False
 
     def _create_pathfinder(self, config):
         """
@@ -257,10 +259,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
 
     def reset(self, *args, **kwargs):
         super().reset(*args, **kwargs)
+        self.prev_nav_done = False
+        self.skill_done = False
         if self._task._episode_id != self._prev_ep_id:
             self._targets = {}
             self._prev_ep_id = self._task._episode_id
-            self.skill_done = False
+
 
     def _get_target_for_idx(self, nav_to_target_idx: int):
         if nav_to_target_idx not in self._targets:
@@ -441,7 +445,6 @@ class OracleNavDiffBaseAction(OracleNavAction):
 
             angle_to_target = get_angle(robot_forward, rel_targ)
             angle_to_obj = get_angle(robot_forward, rel_pos)
-            
             dist_to_final_nav_targ = np.linalg.norm(
                 (final_nav_targ - robot_pos)[[0, 2]]
             )
@@ -465,10 +468,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
                         vel = OracleNavAction._compute_turn(
                             rel_targ, self._config.turn_velocity, robot_forward
                         )
+                    self.prev_nav_done = False
                 else:
                     vel = [0, 0]
                     self.skill_done = True
-                    self.start_pos = []
+                    self.prev_nav_done = True
+                    self.prev_match_target_id = nav_to_target_idx
                 kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
                 BaseVelAction.step(self, *args, **kwargs)
                 return
@@ -488,10 +493,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
                         vel = OracleNavAction._compute_turn(
                             rel_targ, self._config.turn_velocity, robot_forward
                         )
+                    self.prev_nav_done = False
                 else:
                     vel = [0, 0]
                     self.skill_done = True
-                    self.start_pos = []
+                    self.prev_nav_done = True
+                    self.prev_match_target_id = nav_to_target_idx
                 kwargs[f"{self._action_arg_prefix}base_vel"] = np.array(vel)
                 BaseVelNonCylinderAction.step(self, *args, **kwargs)
                 return
@@ -510,10 +517,12 @@ class OracleNavDiffBaseAction(OracleNavAction):
                         self.humanoid_controller.calculate_walk_pose(
                             mn.Vector3([rel_targ[0], 0.0, rel_targ[1]])
                         )
+                    self.prev_nav_done = False
                 else:
                     self.humanoid_controller.calculate_stop_pose()
                     self.skill_done = True
-                    self.start_pos = []
+                    self.prev_nav_done = True
+                    self.prev_match_target_id = nav_to_target_idx
 
                 base_action = self.humanoid_controller.get_pose()
                 kwargs[f"{self._action_arg_prefix}human_joints_trans"] = (

@@ -71,7 +71,7 @@ class OracleNavCoordAction(OracleNavAction):  # type: ignore
             self.humanoid_controller.reset(
                 self.cur_articulated_agent.base_transformation
             )
-        return (start_pos, np.array(obj_pos))
+        return (np.array(start_pos), np.array(obj_pos))
 
     def step(self, *args, **kwargs):
         self.skill_done = False

@@ -2,40 +2,33 @@
   "robot_id": "FetchRobot_default",
   "robot_type": "FetchRobot",
   "mobility": {
-    "summary": "The robot has a mobile base with two continuous joints corresponding to left and right wheel links, allowing it to move in a differential drive manner. This enables the robot to navigate across different floors and environments for tasks such as cross-floor object rearrangement and home arrangement."
+    "summary": "FetchRobot has a wheeled base with continuous joints for left and right wheels, providing mobility on a single floor but no capability to cross floors."
   },
   "perception": {
-    "summary": "The robot is equipped with a head-mounted camera system that includes RGB and depth cameras, providing it with detailed visual and spatial information about the environment and objects. This camera setup supports tasks requiring cooperative perception and geometric information collection for effective manipulation.",
+    "summary": "FetchRobot is equipped with head-mounted RGB and depth cameras for object perception. It also has an articulated arm camera for close-range sensing.",
     "cameras_info": {
       "articulated_agent_arm_camera": {
-        "height": 0.7860100000000001,
+        "height": 0.786,
+        "hfov": 90,
         "type": "articulated"
       },
       "head_camera": {
-        "height": 1.2000000476837158,
+        "height": 1.2,
+        "hfov": 90,
         "type": "fixed"
       }
     }
   },
   "manipulation": {
-    "summary": "The robot has a sophisticated arm with multiple degrees of freedom, including prismatic and revolute joints (shoulder, elbow, wrist, gripper). This allows for complex manipulation tasks such as picking and placing objects, rearranging furniture, and handling objects in challenging positions like high shelves and under tables. The gripper with prismatic joints on both fingers further enhances precise object handling capabilities.",
+    "summary": "FetchRobot has a multi-jointed arm with a prismatic gripper, allowing for precise object manipulation within a broad workspace on a single floor.",
     "arm_workspace": {
+      "type": "sphere",
       "center": [
-        0.1473979502916336,
-        0.899940013885498,
-        0.13241101801395416
+        0.147,
+        0.9,
+        0.132
       ],
-      "radius": 1.1041808,
-      "min_bound": [
-        -0.8757109642028809,
-        -0.03437383100390434,
-        -0.8868227005004883
-      ],
-      "max_bound": [
-        1.0899972915649414,
-        1.8497142791748047,
-        1.1006197929382324
-      ]
+      "radius": 1.1
     }
   }
 }
