@@ -8,8 +8,8 @@ defaults:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_1.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_llm
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_llm
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_dummy
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_dummy
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat/task/lab_sensors:
@@ -29,7 +29,7 @@ habitat_baselines:
 
   num_environments: 32
   num_updates: -1
-  total_num_steps: 1e8
+  total_num_steps: 100
   log_interval: 1
   num_checkpoints: 10
   force_torch_single_threaded: True
@@ -46,8 +46,8 @@ habitat_baselines:
 
   eval:
     should_load_ckpt: False
-    video_option: ["disk"]
-    image_option: []
+    # video_option: ["disk"]
+    image_option: ["disk"]
 
   rl:
     agent:
@@ -57,6 +57,7 @@ habitat_baselines:
       num_pool_agents_per_type: [1, 1]
       agent_sample_interval: 20
       force_partner_sample_idx: -1
+      use_dummy_agent: True
       use_llm_agent: True
     policy:
       agent_0:
@@ -82,29 +83,6 @@ habitat_baselines:
               - pick
               - place
               - nav_to_receptacle_by_name
-          # Override to use the oracle navigation skill (which will actually execute navigation).
-          defined_skills:
-            nav_to_obj:
-              skill_name: "OracleNavPolicy"
-              # action_name: "base_velocity_non_cylinder"
-              action_name: "base_velocity"
-              obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
-              max_skill_steps: 1500
-            pick:
-              skill_name: "OraclePickPolicy"
-              action_name: "arm_pick_action"
-              obs_skill_inputs: ["is_holding"]
-              max_skill_steps: 100
-            place:
-              skill_name: "OraclePlacePolicy"
-              action_name: "arm_place_action"
-              obs_skill_inputs: []
-              max_skill_steps: 100
-            reset_arm:
-              skill_name: "ResetArmSkill"
-              action_name: "arm_reset_action"
-              obs_skill_inputs: []
-              max_skill_steps: 100
 
           ignore_skills:
             - open_cab
@@ -134,29 +112,6 @@ habitat_baselines:
               - pick
               - place
               - nav_to_receptacle_by_name
-          # Override to use the oracle navigation skill (which will actually execute navigation).
-          defined_skills:
-            nav_to_obj:
-              skill_name: "OracleNavPolicy"
-              # action_name: "base_velocity_non_cylinder"
-              action_name: "base_velocity"
-              obs_skill_inputs: ["obj_start_sensor", "abs_obj_start_sensor", "obj_goal_sensor", "abs_obj_goal_sensor"]
-              max_skill_steps: 1500
-            pick:
-              skill_name: "OraclePickPolicy"
-              action_name: "arm_pick_action"
-              obs_skill_inputs: ["is_holding"]
-              max_skill_steps: 100
-            place:
-              skill_name: "OraclePlacePolicy"
-              action_name: "arm_place_action"
-              obs_skill_inputs: []
-              max_skill_steps: 100
-            reset_arm:
-              skill_name: "ResetArmSkill"
-              action_name: "arm_reset_action"
-              obs_skill_inputs: []
-              max_skill_steps: 100
 
           ignore_skills:
             - open_cab

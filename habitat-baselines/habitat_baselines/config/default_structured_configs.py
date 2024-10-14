@@ -385,6 +385,7 @@ class AgentAccessMgrConfig(HabitatBaselinesBaseConfig):
     allow_self_play: bool = False
     self_play_batched: bool = False
     # Whether to use llm agent for task planning and action, use MultiLLMPolicy class if enabled.
+    use_dummy_agent: bool = False
     use_llm_agent: bool = False
     # If specified, this will load the policies for the type 1 population from
     # the checkpoint file at the start of training. Used to independently train

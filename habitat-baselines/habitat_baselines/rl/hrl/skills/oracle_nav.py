@@ -4,7 +4,7 @@
 
 import os.path as osp
 from dataclasses import dataclass
-
+from typing import List
 import torch
 
 from habitat.core.spaces import ActionSpace
@@ -174,13 +174,22 @@ class OracleNavPolicy(NnSkillPolicy):
 class OracleNavCoordPolicy(OracleNavPolicy):
     """The function produces a sequence of navigation targets and the oracle nav navigates to those targets"""
 
-    @dataclass
-    class OracleNavActionArgs:
-        """
-        :property action_idx: The index of the oracle action we want to execute
-        """
+    # @dataclass
+    # class OracleNavCoordinateActionArgs:
+    #     """
+    #     :property target_position: (3, ) The target position to navigate to
+    #     :property lookat_position: (3, ) The target position to look at
+    #     """
 
-        action_idx: int
+    #     target_position: List[float]
+    #     lookat_position: List[float]
+
+    @dataclass
+    class OracleNavCoordActionArgs:
+        """
+        :property target_position: (3, ) The target position to navigate to
+        """
+        target_position: List[float]
 
     def __init__(
         self,
@@ -204,13 +213,22 @@ class OracleNavCoordPolicy(OracleNavPolicy):
             batch_size,
         )
         # Random coordinate means that the navigation target is chosen randomly
-        action_name = "oracle_nav_randcoord_action"
+        # action_name = "oracle_nav_randcoord_action"
+        coord_action_name = "oracle_nav_coord_action"
         self._oracle_nav_ac_idx, _ = find_action_range(
-            action_space, action_name
+            action_space, coord_action_name
         )
+        # TODO: add lookat_action in habitat action space
+        # lookat_action_name = "oracle_nav_lookat_action"
+        # self._oracle_lookat_ac_idx, _ = find_action_range(
+        #     action_space, lookat_action_name
+        # )
 
-    def _parse_skill_arg(self, skill_arg):
-        return OracleNavCoordPolicy.OracleNavActionArgs(skill_arg)
+    def _parse_skill_arg(self, skill_name: str, skill_arg):
+        
+        target_position = skill_arg.get("target_position", [0, 0, 0])
+        
+        return OracleNavCoordPolicy.OracleNavCoordActionArgs(target_position)
 
     def _internal_act(
         self,
@@ -224,12 +242,17 @@ class OracleNavCoordPolicy(OracleNavPolicy):
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device
         )
-        action_idxs = torch.FloatTensor(
-            [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
+
+        target_positions = torch.FloatTensor(
+            [self._cur_skill_args[i].target_position for i in cur_batch_idx]
         )
-
-        full_action[:, self._oracle_nav_ac_idx] = action_idxs
-
+        # lookat_positions = torch.FloatTensor(
+        #     [self._cur_skill_args[i].lookat_position for i in cur_batch_idx]
+        # )
+        
+        full_action[:, self._oracle_nav_ac_idx: self._oracle_nav_ac_idx + 3] = target_positions
+        # full_action[:, self._oracle_lookat_ac_idx: self._oracle_lookat_ac_idx + 3] = lookat_positions
+        
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )

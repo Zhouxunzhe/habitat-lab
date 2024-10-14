@@ -24,6 +24,13 @@ from habitat_baselines.rl.multi_agent.multi_llm_policy import (
     MultiLLMUpdater,
 )
 
+from habitat_baselines.rl.multi_agent.dummy_multi_policy import (
+    DummyMultiPolicy,
+    DummyMultiStorage,
+    DummyMultiUpdater
+)
+
+
 from habitat_baselines.rl.ppo.agent_access_mgr import AgentAccessMgr
 from habitat_baselines.rl.ppo.single_agent_access_mgr import (
     SingleAgentAccessMgr,
@@ -124,7 +131,13 @@ class MultiAgentAccessMgr(AgentAccessMgr):
         is multi-agent training or self-play training.
         """
 
-        if self._pop_config.use_llm_agent:
+        #TODO: refactor the config system from flag to choice for multi-agent policy initialization 
+        if self._pop_config.use_dummy_agent:
+            policy_cls: Type = DummyMultiPolicy
+            updater_cls: Type = DummyMultiUpdater
+            storage_cls: Type = DummyMultiStorage
+
+        elif self._pop_config.use_llm_agent:
             policy_cls: Type = MultiLLMPolicy
             updater_cls: Type = MultiLLMUpdater
             storage_cls: Type = MultiLLMStorage

@@ -28,7 +28,7 @@ class DummyPolicy(HighLevelPolicy):
         )
 
         # Initialize the LLM agent
-        self._llm_agent = self._init_llm_agent(**kwargs)
+        self.llm_agent = self._init_llm_agent(**kwargs)
 
     def _init_llm_agent(self, **kwargs):
         return DummyAgent(**kwargs)
@@ -74,7 +74,7 @@ class DummyPolicy(HighLevelPolicy):
 
             # Query the LLM agent with the current observations
             # to get the next action and arguments
-            llm_output = self._llm_agent.chat(self._skill_name_to_idx)
+            llm_output = self.llm_agent.chat(self._skill_name_to_idx)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["50"]
