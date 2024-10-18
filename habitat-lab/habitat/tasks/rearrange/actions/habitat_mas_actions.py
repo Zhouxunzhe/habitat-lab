@@ -74,7 +74,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         self.start_pos = [] #此处存了一个temp，用于记录角度
         self.prev_match_target_id = None
         self.prev_nav_done = False
-
+        
     def _create_pathfinder(self, config):
         """
         Create a pathfinder for the current agent base
@@ -315,7 +315,14 @@ class OracleNavDiffBaseAction(OracleNavAction):
     def step(self, *args, **kwargs):
         # Get episode id
         ep_id = self._sim.ep_info.episode_id
-
+        # print("kwargs:",kwargs,flush = True)
+        # nav_to_target_coord_args = kwargs.get(
+        #     self._action_arg_prefix + "pddl_action"
+        # )
+        print("_______________________________________________________")
+        # print("kwargs:",kwargs,flush = True)
+        # nav_to_target_coord = nav_to_target_coord_args[:3]
+        # print("nav_to_target_coord:",nav_to_target_coord,flush = True)
         # if pathfinder is not created, create it
         if self.ep_id != ep_id:
             self.ep_id = ep_id
@@ -372,7 +379,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
                     nav_to_target_idx
                 )
 
-        
+        # print("final:",final_nav_targ,flush = True)
         curr_path_points = self._path_to_point(final_nav_targ)
         
         # print("currpathpoint:",curr_path_points)
@@ -390,7 +397,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         # maps.draw_path(top_down_map=colorize_topdown_map,path_points=curr_path_points_2d)
         
         robot_pos = np.array(self.cur_articulated_agent.base_pos)
-
+        # print("robot_pos:",robot_pos,flush = True)
         # DEBUG: plot the map and path
         if DEBUG_SAVE_PATHFINDER_MAP:
             sim_map = self._plot_map_and_path(kwargs, self._sim.pathfinder, save_name="sim")

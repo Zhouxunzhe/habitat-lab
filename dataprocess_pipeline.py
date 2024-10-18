@@ -86,7 +86,7 @@ def run_script(args):
     with ThreadPoolExecutor() as executor:
         future_set = executor.submit(datatrans_2_end_single_agent_waypoint, process_dir=f"{scene}/{file_path}", skip_len=skip_len, sample_clip=max_step)
         try:
-            result = future_set.result(timeout=4)
+            result = future_set.result(timeout=5)
             sample_info = result
         except:
             # print(f"break:{file_path}",flush=True)

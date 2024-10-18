@@ -9,7 +9,7 @@ episode_id_sum = []
 from camera_3dto2d import _3d_to_2d
 
 def check_if_in_range(t):
-    if t>=0 and t<=256:
+    if t>=0 and t<256:
         return True
 def check_bounding_box(data):
     if len(data) != 1:
@@ -18,7 +18,14 @@ def check_bounding_box(data):
     if check_if_in_range(x) and check_if_in_range(y) and check_if_in_range(x+w) and check_if_in_range(y+h):
         return True
     return False
-    
+
+def limit_to_range(num):
+    if num<0:
+        return 0
+    elif num>255:
+        return 255
+    else:
+        return num
 def datatrans_2_end_single_agent_objectcentric(process_dir:str,skip_len:int,pick_place_sample_num=3) -> list:
     find_episode = []
     skip_len_start = skip_len
@@ -207,32 +214,33 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                     action_point_index.append(i)
                     late_action = data[i]["agent_0_action"]
                 i+=1
+            # print("action_point_index:",action_point_index)
             assert len(action_point_index) == 5,"Wrong episode"
-            turn1 = {
-                "step":1,
-                "action":{
-                    "name":"turn",
-                    "position":None
-                },
-                "image":f"frame_1"+"_agent_0_head_rgbFetchRobot_head_rgb.png"
-            }
-            data_final_0.append(turn1)
+            # turn1 = {
+            #     "step":1,
+            #     "action":{
+            #         "name":"turn",
+            #         "position":None
+            #     },
+            #     "image":f"frame_1"+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+            # }
+            # data_final_0.append(turn1)
             nav_1_point = [action_point_index[0]]
             i = action_point_index[0]
-            skip_len = skip_len_start +random.randint(-5,5)
+            skip_len = skip_len_start +random.randint(-3,3)
             while i +skip_len < action_point_index[1]:
                 now_step = i
                 if i+skip_len+14 >= action_point_index[1]:
                     i = action_point_index[1]
                 else:
                     i +=skip_len
-                skip_len = skip_len_start +random.randint(-5,5)
+                skip_len = skip_len_start +random.randint(-3,3)
                 test_step = i
                 for a in range(now_step,test_step):
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not (0 <= x <= 256 and 0 <= y <= 256):
+                    if not (0 <= x < 256 and 0 <= y < 256):
                         test_step -=1
                     else:
                         break
@@ -242,18 +250,23 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                 nav_1_point.append(action_point_index[1])
             for i in range(len(nav_1_point)):
                 if i+1< len(nav_1_point):
+                    x,y = _3d_to_2d(matrix=data[nav_1_point[i]]["agent_0_martix"],
+                                                 point_3d=data[nav_1_point[i+1]]["agent_0_now_worldloc"][:3])
+                    x = limit_to_range(x)
+                    y = limit_to_range(y)
                     nav_temp = {
                         "step":data[nav_1_point[i]]["step"],
                         "action":{
                             "name":"nav_to_point",
-                            "position":_3d_to_2d(matrix=data[nav_1_point[i]]["agent_0_martix"],
-                                                 point_3d=data[nav_1_point[i+1]]["agent_0_now_worldloc"][:3])
+                            "position":[x,y]
                         },
                         "image":f"frame_"+str(data[nav_1_point[i]]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
                     }
                     data_final_0.append(nav_temp)
+            pick_step_num = (action_point_index[2]-action_point_index[1])*0.4
+            pick_step_jump = float(pick_step_num/pick_place_sample_num)
             for i in range(0,pick_place_sample_num):
-                pick_skip = i*20
+                pick_skip = int(i*pick_step_jump)
                 if pick_skip+action_point_index[1] < len(data):
                     pick_temp = {
                         "step":data[pick_skip+action_point_index[1]]["step"],
@@ -264,31 +277,31 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                         "image":f"frame_"+str(data[pick_skip+action_point_index[1]]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
                     }
                     data_final_0.append(pick_temp)
-            turn2 = {
-                "step":action_point_index[2],
-                "action":{
-                    "name":"turn",
-                    "position":None
-                },
-                "image":f"frame_"+str(action_point_index[2])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
-            }
-            data_final_0.append(turn2)
+            # turn2 = {
+            #     "step":action_point_index[2],
+            #     "action":{
+            #         "name":"turn",
+            #         "position":None
+            #     },
+            #     "image":f"frame_"+str(action_point_index[2])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
+            # }
+            # data_final_0.append(turn2)
             nav_2_point = [action_point_index[3]]
             i = action_point_index[3]
-            skip_len = skip_len_start +random.randint(-5,5)
+            skip_len = skip_len_start +random.randint(-3,3)
             while i +skip_len < action_point_index[4]:
                 now_step = i
                 if i+skip_len+14 >= action_point_index[4]:
                     i = action_point_index[4]
                 else:
                     i +=skip_len
-                skip_len = skip_len_start +random.randint(-5,5)
+                skip_len = skip_len_start +random.randint(-3,3)
                 test_step = i
                 for a in range(now_step,test_step):
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not (0 <= x <= 256 and 0 <= y <= 256):
+                    if not (0 <= x < 256 and 0 <= y < 256):
                         test_step -=1
                     else:
                         break
@@ -298,19 +311,23 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                 nav_2_point.append(action_point_index[4])
             for i in range(len(nav_2_point)):
                 if i+1< len(nav_2_point):
+                    x,y = _3d_to_2d(matrix=data[nav_2_point[i]]["agent_0_martix"],
+                                                 point_3d=data[nav_2_point[i+1]]["agent_0_now_worldloc"][:3])
+                    x = limit_to_range(x)
+                    y = limit_to_range(y)
                     nav_temp = {
                         "step":data[nav_2_point[i]]["step"],
                         "action":{
                             "name":"nav_to_point",
-                            "position":_3d_to_2d(matrix=data[nav_2_point[i]]["agent_0_martix"],
-                                                 point_3d=data[nav_2_point[i+1]]["agent_0_now_worldloc"][:3])
-                        },
+                            "position": [x,y]
+                            },
                         "image":f"frame_"+str(data[nav_2_point[i]]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png"
                     }
                     data_final_0.append(nav_temp)
+            
             for i in range(0,pick_place_sample_num):
-                place_skip = i*20
-                if place_skip+action_point_index[4] < len(data):
+                place_skip = i*15
+                if place_skip+action_point_index[4] < len(data)-1:
                     place_temp = {
                         "step":data[place_skip+action_point_index[4]]["step"],
                         "action":{
@@ -820,4 +837,4 @@ def datatrans_2_end(process_dir:str) -> list:
 
     
 if __name__ == "__main__":
-    print(datatrans_2_end_single_agent_objectcentric(process_dir="process_0.json.gz",skip_len=50))
+    print(datatrans_2_end_single_agent_waypoint(process_dir="107733912_175999623/data_0.json.gz",skip_len=25))

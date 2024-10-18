@@ -14,11 +14,12 @@ class DummyAgent:
         self.initilized = True
 
     def _get_action(self, object, receptacle=None):
+        print("agent_name:",self.agent_name)
         return [
             {
                 "name": "nav_to_position",
                 "arguments": {
-                    "target_position": [0.1, 0.1, 0.1],
+                    "target_position": [-3.7474467754364014,0.1160174161195755,-0.7777489423751831],
                     "robot": self.agent_name,
                 }
             }
@@ -92,7 +93,7 @@ class DummyAgent:
         return {
             "name": "nav_to_position",
             "arguments": {
-                "target_position": [0.1, 0.1, 0.1],
+                "target_position": [-3.7735161781311035,0.1160174161195755,-1.5337603092193604,],
                 "robot": self.agent_name,
             }
         }

@@ -228,7 +228,7 @@ class OracleNavCoordPolicy(OracleNavPolicy):
     def _parse_skill_arg(self, skill_name: str, skill_arg):
         
         target_position = skill_arg.get("target_position", [0, 0, 0])
-        
+        # print("targetposition:",target_position,flush = True)
         return OracleNavCoordPolicy.OracleNavCoordActionArgs(target_position)
 
     def _internal_act(

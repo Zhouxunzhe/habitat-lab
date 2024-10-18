@@ -323,3 +323,6 @@ def test_eqa_task():
 
         with pytest.raises(AssertionError):
             env.step({"action": MoveForwardAction.name})
+
+if __name__ == "__main__":
+    test_eqa_task()

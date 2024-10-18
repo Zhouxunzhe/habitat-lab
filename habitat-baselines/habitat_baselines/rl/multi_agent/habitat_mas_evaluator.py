@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import numpy as np
 import torch
 import tqdm
-
+import pdb
 from habitat import logger
 from habitat.tasks.rearrange.rearrange_sensors import GfxReplayMeasure
 from habitat.tasks.rearrange.utils import write_gfx_replay
@@ -238,6 +238,7 @@ class HabitatMASEvaluator(Evaluator):
                 eval_jump = True
             else:
                 eval_jump = False
+            
             if config.habitat_baselines.eval.vlm_eval:
                 
                 with inference_mode():
@@ -251,9 +252,9 @@ class HabitatMASEvaluator(Evaluator):
                         check_info = True,
                         **space_lengths,
                     )
-                
-                agent_query = [1 if value.item() else 0 for _ , value in check_info]
-                # print("agent_query:",agent_query)
+                print("check_info:",check_info)
+                agent_query = [1 if item else 0 for item in check_info.should_inserts[0]]
+                print("agent_query:",agent_query)
                 if agent_query[0] == 1:
                     agent_0_image = batch["agent_0_head_rgb"].cpu()
                     agent_1_image = batch["agent_1_head_rgb"].cpu()
@@ -297,7 +298,7 @@ class HabitatMASEvaluator(Evaluator):
                                 data[key] = filter_action[key]
                         with open(stored_path,'w') as f:
                             json.dump(data,f)
-
+            
             with inference_mode():
                 action_data = agent.actor_critic.act(
                     batch,
@@ -351,7 +352,7 @@ class HabitatMASEvaluator(Evaluator):
                 ]
             else:
                 step_data = [a.item() for a in action_data.env_actions.cpu()]
-
+            # pdb.set_trace()
             outputs = envs.step(step_data)
 
             observations, rewards_l, dones, infos = [

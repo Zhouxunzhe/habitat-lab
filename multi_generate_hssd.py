@@ -28,11 +28,11 @@ def run_episode_generator(args):
 
 if __name__ == '__main__':
     sum_episode = 5000
-    process_num = 34
+    process_num = 8
     batch_num = 4
-    gpu_num = 2
+    gpu_num = 1
     num = int(sum_episode / batch_num)
-    output_dir = 'data/datasets/hssd_scene'
+    output_dir = 'data/datasets/hssd_scene_new'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     zip_files = [f"data_{i}" for i in range(0,int(sum_episode/batch_num))]

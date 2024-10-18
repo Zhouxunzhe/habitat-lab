@@ -97,7 +97,7 @@ habitat:
     task_spec_base_path: benchmark/multi_agent/
     task_spec: pddl/zxz_fetch_stretch_man
     pddl_domain_def: fp
-    robot_at_thresh: 3.0
+    robot_at_thresh: 1.0
 
   environment:
     max_episode_steps: 750
@@ -127,7 +127,7 @@ habitat:
       agent_0:
         joint_start_noise: 0.0
   dataset:
-    data_path: data/datasets/hssd_scene/108736689_177263340/data_123.json.gz
+    data_path: data/datasets/test_scene/policy_test.json.gz
     # new
     randomize_agent_start: 1
     robot_config: data/robots/robot_configs/replica_cad/two_agent_manipulation_eval.json

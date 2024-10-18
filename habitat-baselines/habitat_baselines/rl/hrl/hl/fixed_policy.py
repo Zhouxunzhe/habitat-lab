@@ -146,6 +146,7 @@ class FixedHighLevelPolicy(HighLevelPolicy):
 
                 self._next_sol_idxs[batch_idx] += 1
                 # print("skill_args_data:",skill_args_data)
+        print(f"hl_fixed_return_info:{next_skill},{skill_args_data}",flush = True)
         return next_skill, skill_args_data, immediate_end, PolicyActionData()
 
     def filter_envs(self, curr_envs_to_keep_active):

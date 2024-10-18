@@ -247,8 +247,8 @@ class PddlTextGoalSensor(Sensor):
         else:
             raise ValueError(f"Unknown text type {self.text_type}")
         description = f"""
-{self.task_description}
-{goal_str}"""
+                        {self.task_description}
+                        {goal_str}"""
         return description
 
     def get_observation(self, observations, episode, *args, **kwargs):

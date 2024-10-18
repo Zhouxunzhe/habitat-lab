@@ -10,14 +10,15 @@ def process_directory(base_dir,skip_len):
             dir_path = os.path.join(root, dir_name)
             json_path = os.path.join(dir_path, 'sum_data.json')
             
-            if os.path.exists(json_path) and dir_name != "episode_0":
-                try:
+            if os.path.exists(json_path):
+                # try:
                 # print("dir_name---------------------:",dir_name)
                     with open(json_path, 'r') as file:
                         data = json.load(file)
                     result = []
                     data_trans = []
-                    action = ["turn","nav_to_point", "pick","turn","nav_to_point", "place"]
+                    action = ["turn","nav_to_point", "pick","turn","nav_to_point", "place"] 
+                    #now 'turn' also include the answer that the robot can not see the target object
                     agent_0_action = 0
                     nav_slide = []
                     i = 0
@@ -26,6 +27,7 @@ def process_directory(base_dir,skip_len):
                             nav_slide.append(i+1)
                             i+=1
                         i+=1
+                    place_index = 0
                     for i in range(0, len(data['entities'])):
                         step_data = data['entities'][i]
                         # agent_0_trans_matrix = step_data['data']['agent_0_robot_trans_martix']
@@ -38,12 +40,12 @@ def process_directory(base_dir,skip_len):
                         agent_0_obj = step_data['data']['agent_0_obj_bounding_box']
                         # agent_1_objpos = step_data['data']['agent_1_obj_pos']
                         agent_0_camera = step_data['data']['agent_0_camera_extrinsic']
-                        agent_0_target = step_data['data']['agent_0_target_bounding_box']
-                        agent_0_rec_old = step_data['data']['agent_0_rec_bounding_box']
-                        agent_0_rec = [[min(b[0] for b in agent_0_rec_old),
-                                       min(b[1] for b in agent_0_rec_old),
-                                       max(b[2] for b in agent_0_rec_old),
-                                       max(b[3] for b in agent_0_rec_old)]]
+                        if agent_0_action == 5:
+                            agent_0_target = data['entities'][place_index]['data']['agent_0_target_bounding_box']
+                        else:
+                            agent_0_target = step_data['data']['agent_0_target_bounding_box']
+                        agent_0_rec = step_data['data']['agent_0_rec_bounding_box']
+
                         # agent_0_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_0_eeglobal)
                         # agent_1_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_1_eeglobal)
                         # agent_0_pre_robotloc = trans_worldloc_to_robotloc(np.array(agent_0_trans_matrix), agent_0_pre_worldloc[:3])
@@ -52,12 +54,23 @@ def process_directory(base_dir,skip_len):
                         # agent_1_obj_ro = trans_worldloc_to_robotloc(np.array(agent_1_trans_matrix), agent_1_objpos[:3])
                         # agent_0_prepix = _project_points_to_image(points_3d=agent_0_obj_ro, point_3d_match=agent_0_pre_robotloc[:3], camera_info=camera_info, cam_trans=camera_extrinsic_old)
                         # agent_1_prepix = _project_points_to_image(points_3d=agent_1_obj_ro, point_3d_match=agent_1_pre_robotloc[:3], camera_info=camera_info, cam_trans=camera_extrinsic_old)
-                        if (agent_0_action == 0 or agent_0_action == 3) and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
-                            agent_0_action+=1
+                        if agent_0_action == 0:
+                            x,y,w,h = agent_0_rec[0]
+                            if w*h > 2500 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
+                                agent_0_action+=1
+                        if agent_0_action == 3:
+                            x,y,w,h = agent_0_target[0]
+                            # print("target",agent_0_target[0])
+                            if w*h > 2500 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
+                                agent_0_action+=1
+                                
                         if (agent_0_action == 1 or agent_0_action == 4) and step_data['data']['agent_0_has_finished_oracle_nav'] == [1.0]:
+                            if agent_0_action == 4:
+                                place_index = i
                             agent_0_action += 1
                         if agent_0_action == 2 and data['entities'][i]['data']['agent_0_localization_sensor'] != data['entities'][i-1]['data']['agent_0_localization_sensor']:
                             agent_0_action += 1
+                        # annotation of the agent_0's action
                         # if (agent_1_action == 0 or agent_1_action == 2) and step_data['data']['agent_1_has_finished_oracle_nav'] == [1.0]:
                         #     agent_1_action += 1
                         # if agent_1_action == 1 and data['entities'][i]['data']['agent_1_localization_sensor'] != data['entities'][i-1]['data']['agent_1_localization_sensor']:
@@ -89,12 +102,12 @@ def process_directory(base_dir,skip_len):
                     # output_json_path = os.path.join(dir_path, 'data_trans.json')
                     with open(output_json_path, 'w') as file:
                         json.dump(data_trans, file, indent=2)
-                except:
-                    continue    
+                # except Exception as e:
+                #     print(f"ERROR:{e}")   
 
 # base_directory = './video_dir/'
 # gz_name = f"manipulation_eval_process_0.json.gz"
 # num_gz = 50
 # for i in range(0,num_gz):
 #     process_directory(os.path.join(base_directory,f"process_{i}.json.gz"))
-process_directory('./video_dir/process_1.json.gz',30)
+process_directory('./video_dir/test_scene_graph_1',30)

@@ -34,7 +34,7 @@ habitat:
     reward_measure: num_steps
     success_measure: num_steps
     success_reward: 10.0
-    min_distance_start_agents: 5.0
+     min_distance_start_agents: 5.0
     slack_reward: -0.0005
     end_on_success: True
     constraint_violation_ends_episode: False

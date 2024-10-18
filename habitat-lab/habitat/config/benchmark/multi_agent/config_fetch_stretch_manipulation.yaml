@@ -39,6 +39,7 @@ defaults:
     - composite_stage_goals
     - pddl_subgoal_reward
     - rearrange_cooperate_reward
+    - object_to_goal_distance
   - /habitat/task/lab_sensors:
     - relative_resting_pos_sensor
     - target_start_sensor
@@ -61,14 +62,17 @@ defaults:
     # - nav_workspace_rgb_sensor
     # - nav_workspace_points_sensor
     # - arm_workspace_rgb_sensor
-    # - obj_bbox_sensor
-    # - target_bbox_sensor
-    # - rec_bbox_sensor
-    - depth_get
+    - obj_bbox_sensor
+    - target_bbox_sensor
+    - rec_bbox_sensor
+    - object_to_goal_distance_sensor
+    # - depth_get
     - pddl_text_goal
-    - depth_rot_get
-    - depth_trans_get
-
+    # - object_sensor
+    - has_finished_oracle_nav
+    # - has_finished_arm_action
+    # - depth_rot_get
+    # - depth_trans_get
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_0_agents_within_threshold: agents_within_threshold
   - /habitat/task/lab_sensors@habitat.task.lab_sensors.agent_1_agents_within_threshold: agents_within_threshold
   - _self_
@@ -113,10 +117,10 @@ habitat:
     #     lin_speed: 40.0
     #     ang_speed: 20.0
 
-    robot_at_thresh: 1.1
+    robot_at_thresh: 1.0
 
   environment:
-    max_episode_steps: 40
+    max_episode_steps: 600
     # iterator_options:
     #   shuffle: True
   simulator:

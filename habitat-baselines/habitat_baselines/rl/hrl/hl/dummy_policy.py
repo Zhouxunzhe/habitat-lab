@@ -62,7 +62,8 @@ class DummyPolicy(HighLevelPolicy):
         """
         Get the next skill to execute from the LLM agent.
         """
-
+        # print("obserations:",observations,flush = True)
+        print("plan_mask:",plan_masks,flush = True)
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
         skill_args_data = [None for _ in range(batch_size)]
@@ -74,6 +75,8 @@ class DummyPolicy(HighLevelPolicy):
 
             # Query the LLM agent with the current observations
             # to get the next action and arguments
+            # print("plan_mask:",plan_masks,flush=True)
+            # print("skillidex:",self._skill_name_to_idx,flush = True)
             llm_output = self.llm_agent.chat(self._skill_name_to_idx)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
@@ -91,6 +94,7 @@ class DummyPolicy(HighLevelPolicy):
                 # If the action is not valid, do nothing
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["50"]
+        print(f"return_info:{next_skill};{skill_args_data}",flush =True)
 
         return (
             next_skill,

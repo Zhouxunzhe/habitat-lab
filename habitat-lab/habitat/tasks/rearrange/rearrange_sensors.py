@@ -15,7 +15,7 @@ from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression
-
+import re
 from habitat.articulated_agents.humanoids import KinematicHumanoid
 from habitat.core.embodied_task import Measure
 from habitat.core.registry import registry
@@ -82,8 +82,9 @@ class TargetCurrentSensor(UsesArticulatedAgentInterface, MultiObjSensor):
         idxs, _ = self._sim.get_targets()
         scene_pos = self._sim.get_scene_pos()
         pos = scene_pos[idxs]
-
+        print(f"{self.agent_id}_info:{idxs}")
         for i in range(pos.shape[0]):
+            print(f"position{i}:{pos[i]}")
             pos[i] = T_inv.transform_point(pos[i])
 
         return pos.reshape(-1)
@@ -1516,6 +1517,7 @@ class HasFinishedOracleNavSensor(UsesArticulatedAgentInterface, Sensor):
 
     def get_observation(self, observations, episode, *args, **kwargs):
         # print('aa',self._task.actions)
+        # print("kwargs",kwargs,flush = True)
         if self.agent_id is not None:
             use_k = f"agent_{self.agent_id}_oracle_nav_action"
         else:
@@ -1556,13 +1558,25 @@ class NavObjPointSensor(UsesArticulatedAgentInterface, Sensor):
             high=1,
             dtype=np.float32,)
     def get_observation(self, task, *args, **kwargs):
-        
-        
         if self.agent_id == 0:
             nav_to_target_idx = 0
         else:
             nav_to_target_idx = 1
+        try:
+            nav_to_target_idx = kwargs['action']['action_args'][
+                f"agent_{self.agent_id}_oracle_nav_action"
+            ]
+            
+            nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+
+            # final_nav_targ, obj_targ_pos = self._get_target_for_idx(
+            #     nav_to_target_idx
+            # )
+            # print(f"{self.agent_id}:nav_to_target_idx:{nav_to_target_idx}//self._get_target_for_idx:{self._get_target_for_idx}//",flush = True)
+        except Exception as e:
+            print(f"Error loading navigation action: {e}")
         nav_to_obj = self._entities[nav_to_target_idx]
+        # print(f"agent_{self.agent_id}_target_obj_num_index:{nav_to_obj}",flush = True)
         obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
             nav_to_obj
         )
@@ -1980,11 +1994,13 @@ class ObjBBoxSenor(UsesArticulatedAgentInterface, Sensor):
 @registry.register_sensor
 class RecBBoxSenor(UsesArticulatedAgentInterface, Sensor):
     cls_uuid: str = "rec_bounding_box"
-    def __init__(self, sim, config, *args, **kwargs):
+    def __init__(self, sim,task, config, *args, **kwargs):
         self._sim = sim
         # self.agent_idx = config.agent_idx
         self.height = config.height
         self.width = config.width
+        self._task = task
+        self._entities = self._task.pddl_problem.get_ordered_entities_list()
         self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
         self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
         self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
@@ -2027,6 +2043,31 @@ class RecBBoxSenor(UsesArticulatedAgentInterface, Sensor):
 
         """add semantic information"""
         ep_objects = []
+        nav_to_obj_number = -1
+        try:
+            nav_to_target_idx = kwargs['action']['action_args'][
+                f"agent_{self.agent_id}_oracle_nav_action"
+            ]    
+            nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+            nav_to_obj = self._entities[nav_to_target_idx]
+            nav_to_obj = str(nav_to_obj)
+            if 'any_targets' in nav_to_obj:
+                match = re.search(r'\|(\d+)-', str(nav_to_obj))
+                if match:
+                    nav_to_obj_number = int(match.group(1))
+            else:
+                return np.array([[-1,-1,-1,-1]])
+        except Exception as e:
+            print("e:",e,flush = True)
+            return np.array([[-1,-1,-1,-1]])
+        
+        # print("info::",self._sim.ep_info.target_receptacles)
+        print("nav_to_obj_number:",nav_to_obj_number,flush = True)
+        if nav_to_obj_number!= -1:
+            for i in range(len(self._sim.ep_info.target_receptacles[nav_to_obj_number]) - 1):
+                ep_objects.append(self._sim.ep_info.target_receptacles[nav_to_obj_number][i])
+        else:
+            return np.array([[-1,-1,-1,-1]])
         for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
             ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
         # for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
@@ -2055,6 +2096,19 @@ class RecBBoxSenor(UsesArticulatedAgentInterface, Sensor):
             
         if bounding_box:
             self.n = len(bounding_box)
+            min_x, min_y = float('inf'), float('inf')
+            max_x, max_y = float('-inf'), float('-inf')
+            for x, y, w, h in bounding_box:
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x + w)
+                max_y = max(max_y, y + h)
+            union_x = int(min_x)
+            union_y = int(min_y)
+            union_w = int(max_x - min_x)
+            union_h = int(max_y - min_y)
+            self.n = len(bounding_box)
+            return np.array([[union_x,union_y,union_w,union_h]])
             return bounding_box
         else:
             return np.array([[-1,-1,-1,-1]])
@@ -2185,7 +2239,7 @@ class DepthTransSensor(UsesArticulatedAgentInterface, Sensor):
 @registry.register_sensor
 class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
     cls_uuid: str = "target_bounding_box"
-    def __init__(self, sim, config, *args, **kwargs):
+    def __init__(self, sim,task, config, *args, **kwargs):
         self._sim = sim
         # self.agent_idx = config.agent_idx
         self.height = config.height
@@ -2195,6 +2249,9 @@ class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
         self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
         self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
         self.n = 1
+        self._task = task
+        self._entities = self._task.pddl_problem.get_ordered_entities_list()
+        self.store_bbox_num = None
         super().__init__(config=config)
             
     def _get_uuid(self, *args, **kwargs):
@@ -2225,10 +2282,30 @@ class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
 
         """add semantic information"""
         ep_objects = []
+        if self.store_bbox_num:
+            nav_to_obj_number = self.store_bbox_num
+        else:
+            try:
+                nav_to_target_idx = kwargs['action']['action_args'][
+                    f"agent_{self.agent_id}_oracle_nav_action"
+                ]    
+                nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+                nav_to_obj = self._entities[nav_to_target_idx]
+                nav_to_obj = str(nav_to_obj)
+                
+                if 'TARGET_any_targets' in nav_to_obj:
+                    match = re.search(r'\|(\d+)-', str(nav_to_obj))
+                    if match:
+                        nav_to_obj_number = int(match.group(1))
+                else:
+                    return np.array([[-1,-1,-1,-1]])
+            except Exception as e:
+                print("e:",e,flush = True)
+                return np.array([[-1,-1,-1,-1]])
         # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
         #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
-        for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
-            ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
+        for i in range(len(self._sim.ep_info.goal_receptacles[nav_to_obj_number]) - 1):
+            ep_objects.append(self._sim.ep_info.goal_receptacles[nav_to_obj_number][i])
         objects_info = {}
         rom = self._sim.get_rigid_object_manager()
         for i, handle in enumerate(rom.get_object_handles()):
@@ -2248,8 +2325,19 @@ class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
                 # x,y,w,h = bound
                 bounding_box.append((x, y, w, h))
         if bounding_box:
+            min_x, min_y = float('inf'), float('inf')
+            max_x, max_y = float('-inf'), float('-inf')
+            for x, y, w, h in bounding_box:
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x + w)
+                max_y = max(max_y, y + h)
+            union_x = int(min_x)
+            union_y = int(min_y)
+            union_w = int(max_x - min_x)
+            union_h = int(max_y - min_y)
             self.n = len(bounding_box)
-            return bounding_box
+            return np.array([[union_x,union_y,union_w,union_h]])
         else:
             return np.array([[-1,-1,-1,-1]])
 @registry.register_sensor
@@ -2257,9 +2345,10 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
     """ Sensor to visualize the reachable workspace of an articulated arm """
     cls_uuid: str = "arm_workspace_rgb"
 
-    def __init__(self, sim, config, *args, **kwargs):
+    def __init__(self, sim, task,config, *args, **kwargs):
         self._sim = sim
         # self.agent_idx = config.agent_idx
+        self._task = task
         self.pixel_threshold = config.pixel_threshold
         self.height = config.height
         self.width = config.width
@@ -2267,6 +2356,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
         self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
         self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
+        self._entities = self._task.pddl_problem.get_ordered_entities_list()
 
         super().__init__(config=config)
                 
@@ -2419,13 +2509,36 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         """add semantic information"""
         ep_objects = []
-        for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
-            ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
-        for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
-            ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
-        for key, val in self._sim.ep_info.info['object_labels'].items():
-            ep_objects.append(key)
-
+        nav_to_obj_number = -1
+        try:
+            nav_to_target_idx = kwargs['action']['action_args'][
+                f"agent_{self.agent_id}_oracle_nav_action"
+            ]    
+            nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+            nav_to_obj = self._entities[nav_to_target_idx]
+            match = re.search(r'\|(\d+)-', str(nav_to_obj))
+            if match:
+                nav_to_obj_number = int(match.group(1))
+        except Exception as e:
+            print(f"Error loading navigation action: {e}")
+        
+        # print("info::",self._sim.ep_info.target_receptacles)
+        print("nav_to_obj_number:",nav_to_obj_number,flush = True)
+        if nav_to_obj_number!= -1:
+            for i in range(len(self._sim.ep_info.target_receptacles[nav_to_obj_number]) - 1):
+                ep_objects.append(self._sim.ep_info.target_receptacles[nav_to_obj_number][i])
+            for i in range(len(self._sim.ep_info.goal_receptacles[nav_to_obj_number]) - 1):
+                ep_objects.append(self._sim.ep_info.goal_receptacles[nav_to_obj_number][i])
+        else:
+            for item in range(len(self._sim.ep_info.target_receptacles)):
+                for i in range(len(self._sim.ep_info.target_receptacles[item]) - 1):
+                    ep_objects.append(self._sim.ep_info.target_receptacles[item][i])
+        
+            for i in range(len(self._sim.ep_info.goal_receptacles[item]) - 1):
+                ep_objects.append(self._sim.ep_info.goal_receptacles[item][i])
+            # for key, val in self._sim.ep_info.info['object_labels'].items():
+            #     ep_objects.append(key)
+        print("ep_objects:",ep_objects,flush=True)
         objects_info = {}
         rom = self._sim.get_rigid_object_manager()
         for i, handle in enumerate(rom.get_object_handles()):
@@ -2437,17 +2550,24 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         semantic_obs = observations[semantic_camera_name].squeeze()
 
         mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
+        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        bounding_box = []
         colored_mask = np.zeros_like(rgb_obs)
         colored_mask[mask == 1] = [0, 0, 255]
         rgb_obs = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
-
-        for obj_id in objects_info.keys():
-            positions = np.where(semantic_obs == obj_id + obj_id_offset)
-            if positions[0].size > 0:
-                center_x = int(np.mean(positions[1]))
-                center_y = int(np.mean(positions[0]))
-                cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+        for contour in contours:
+            if cv2.contourArea(contour) > 0:  # 过滤掉面积为0的轮廓
+                x, y, w, h = cv2.boundingRect(contour)
+                bounding_box.append((x, y, w, h))
+                # 可选：在原始图像上绘制边界框
+                cv2.rectangle(rgb_obs, (x, y), (x + w, y + h), (255, 0, 0), 1)
+        # for obj_id in objects_info.keys():
+        #     positions = np.where(semantic_obs == obj_id + obj_id_offset)
+        #     if positions[0].size > 0:
+        #         center_x = int(np.mean(positions[1]))
+        #         center_y = int(np.mean(positions[0]))
+        #         cv2.putText(rgb_obs, objects_info[obj_id], (center_x, center_y),
+        #                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
         # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)
