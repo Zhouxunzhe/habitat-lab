@@ -55,10 +55,10 @@ def clear_directory(path):
             print(f'Failed to delete {file_path}. Reason: {e}')
 
 def run_script(args):
-    file_path,skip_len, base_directory,gpu_id,scene = args
+    file_path,skip_len, base_directory,gpu_id,scene,scene_dataset_dir = args
     
     a = ["disk"]
-    seed = random.randint(100, 400)
+    seed = random.randint(10, 10000)
     cmd = [
         "python", "-u", "-m", "habitat_baselines.run",
         "--config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml",
@@ -72,7 +72,7 @@ def run_script(args):
         f"habitat_baselines.image_dir=video_dir/{scene}/{file_path}",
         f"habitat.seed={seed}",
         f"habitat.environment.max_episode_steps={max_step}",
-        f"habitat.dataset.data_path=data/datasets/hssd_scene/{scene}/{file_path}"
+        f"habitat.dataset.data_path=data/datasets/{scene_dataset_dir}/{scene}/{file_path}"
     ]
     log_file = f"./log/example_{file_path}.log"
     with open(log_file, "w") as f:
@@ -127,7 +127,7 @@ def run_script(args):
         f"habitat.seed={seed}",
         f"habitat.environment.max_episode_steps={max_step}",
         # f"habitat_baselines.eval.episode_stored={sample_info}",
-        f"habitat.dataset.data_path=data/datasets/hssd_scene/{scene}/{file_path}"
+        f"habitat.dataset.data_path=data/datasets/{scene_dataset_dir}/{scene}/{file_path}"
     ]
     log_file = f"./log/example_new_{file_path}.log"
     with open(log_file, "w") as f:
@@ -144,6 +144,7 @@ if __name__ == "__main__":
     clear_directory('./habitat-baselines/habitat_baselines/config/override/')
     clear_directory('./log')
     max_step = dp_config.max_step
+    scene_dataset_dir = dp_config.scene_dataset_dir
     # for scene in dp_config.sample_scene:
     #     sum_episode = dp_config.sum_episode
     #     epnum_per_gz = dp_config.epnum_per_gz
@@ -168,38 +169,47 @@ if __name__ == "__main__":
     #                 print(f"Skipped file: {futures[future]}",flush=True)
     #     print(f"FINISH------{scene}")
     #     time.sleep(1)
+    
     sum_episode = dp_config.sum_episode
     epnum_per_gz = dp_config.epnum_per_gz
     gz_sum = int(sum_episode/epnum_per_gz)
-    jump_gz = dp_config.jump_gz
+    # jump_gz = dp_config.jump_gz
     repeat_time = dp_config.repeat_time
     skip_len = dp_config.skip_len
     gpu_num = dp_config.gpu_num
     base_directory = './video_dir'
     for it in range(repeat_time):
+        it = 1
         for scene in dp_config.sample_scene:
             sum_episode = dp_config.sum_episode
             # epnum_per_gz = dp_config.epnum_per_gz
             # gz_start = dp_config.gz_start
             gpu_num = dp_config.gpu_num
             # num_gz = int((sum_episode/epnum_per_gz)-gz_start)
-            gz_start = jump_gz*it
+            gz_start_gz = dp_config.gz_start
             gz_end = gz_sum
-            # num_gz = int((sum_episode / epnum_per_gz) - gz_start)
-            zip_files = [(f"data_{i}.json.gz", int(i % gpu_num)) for i in range(gz_start, gz_end)]
-            with multiprocessing.Pool(processes=dp_config.process_num) as pool:
-                args = [(file_path, skip_len,base_directory,gpu_id,scene) for file_path,gpu_id in zip_files]
+            process_num = dp_config.process_num
+            gz_start = process_num*it
+            num_gz = int((sum_episode / epnum_per_gz) - gz_start_gz)
+            zip_files = [(f"data_{i}.json.gz", int(i % gpu_num)) for i in range(gz_start_gz+gz_start,gz_start_gz+gz_start+process_num)]
+            # print(f"Processing ",zip_files)
+            with multiprocessing.Pool(processes=process_num) as pool:
+                args = [(file_path, skip_len,base_directory,gpu_id,scene,scene_dataset_dir) for file_path,gpu_id in zip_files]
+                results = []
+                for arg in args:
+                    result = pool.apply_async(run_script, (arg,), error_callback=lambda e: print(f"Error: {e}"))
+                    results.append(result)
                 try:
                     for result in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
-                        stop_id = str((it+1)*jump_gz-1)
-                        if os.path.exists(f'./video_dir/{scene}/data_{stop_id}.json.gz'):
-                            pool.terminate()
-                            break 
-                except:
-                    continue
-            pool.join()
+                        result.get(timeout=800)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                    pool.terminate()
+                finally:
+                    pool.close()
+                    pool.join()
 
-            print(f"FINISH------{scene}------{it}")
+            print(f"FINISH------{scene}------{it*process_num}/{num_gz}")
             # with concurrent.futures.ThreadPoolExecutor(max_workers=dp_config.process_num) as executor:
             #     futures = {
             #         executor.submit(run_script, file_path, dp_config.skip_len, dp_config.base_directory, gpu_id, scene): (file_path, gpu_id)
