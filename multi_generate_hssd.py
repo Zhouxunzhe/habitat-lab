@@ -7,14 +7,14 @@ def run_episode_generator(args):
     # 获取当前进程的名称
     process_name = multiprocessing.current_process().name
     
-    data_name,gpu_id,item = args
+    data_name,gpu_id,item,yaml_dir,output_dir = args
     # 生成基于进程名称的输出文件名
-    output_file = f"hssd_scene/{item}/{data_name}.json.gz"
+    output_file = f"./{output_dir}/{item}/{data_name}.json.gz"
     command = [
         "python",
         "./habitat-lab/habitat/datasets/rearrange/run_episode_generator.py",
         "--run",
-        "--config", f"data/hssd_dataset/{item}.yaml",
+        "--config", f"{yaml_dir}/{item}.yaml",
         "--gpu_id", f"{gpu_id}",
         "--num-episodes", f"{batch_num}",
         "--out", f"{output_file}",
@@ -28,22 +28,25 @@ def run_episode_generator(args):
 
 if __name__ == '__main__':
     sum_episode = 5000
-    process_num = 8
+    process_num = 18
     batch_num = 4
-    gpu_num = 1
+    gpu_num = 2
     num = int(sum_episode / batch_num)
-    output_dir = 'data/datasets/hssd_scene_new'
+    yaml_dir = "data/hssd_dataset_toys/hssd_dataset"
+    output_dir = 'hssd_scene_toys'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     zip_files = [f"data_{i}" for i in range(0,int(sum_episode/batch_num))]
     # scene_sample
-    scene_sample = ["108294465_176709960","102344115","103997919_171031233","104348463_171513588","103997970_171031287",
+    # 108294465_176709960
+    scene_sample = ["102344115","103997919_171031233","104348463_171513588","103997970_171031287",
     "108736689_177263340","102344193","107733912_175999623"]
     for item in scene_sample:
         if not os.path.exists(os.path.join(output_dir, item)):
             os.makedirs(os.path.join(output_dir, item))
         with multiprocessing.Pool(processes=process_num) as pool:
-            args = [(f"data_{i}",int(i%gpu_num),item) for i in range(0,int(sum_episode/batch_num))]
+            args = [(f"data_{i}",int(i%gpu_num),item,yaml_dir,output_dir) for i in range(0,int(sum_episode/batch_num))]
+
             for _ in tqdm(pool.imap_unordered(run_episode_generator,args), total=num, desc="Process Files"):
                 pass
     # with tqdm(total=num,desc="Sample_Episode") as pbar:

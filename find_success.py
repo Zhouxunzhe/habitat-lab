@@ -327,7 +327,7 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
             
             for i in range(0,pick_place_sample_num):
                 place_skip = i*15
-                if place_skip+action_point_index[4] < len(data)-1:
+                if place_skip+action_point_index[4] < len(data)-2:
                     place_temp = {
                         "step":data[place_skip+action_point_index[4]]["step"],
                         "action":{

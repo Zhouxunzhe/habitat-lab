@@ -1,3 +1,4 @@
+
 import multiprocessing
 import subprocess
 import time
@@ -178,8 +179,8 @@ if __name__ == "__main__":
     skip_len = dp_config.skip_len
     gpu_num = dp_config.gpu_num
     base_directory = './video_dir'
-    for it in range(repeat_time):
-        it = 1
+    for it in range(gz_sum):
+        # print("it:",it)
         for scene in dp_config.sample_scene:
             sum_episode = dp_config.sum_episode
             # epnum_per_gz = dp_config.epnum_per_gz
@@ -201,7 +202,7 @@ if __name__ == "__main__":
                     results.append(result)
                 try:
                     for result in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
-                        result.get(timeout=800)
+                        result.get(timeout=880)
                 except Exception as e:
                     print(f"An error occurred: {e}")
                     pool.terminate()

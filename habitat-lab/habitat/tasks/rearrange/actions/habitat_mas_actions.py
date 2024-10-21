@@ -319,7 +319,7 @@ class OracleNavDiffBaseAction(OracleNavAction):
         # nav_to_target_coord_args = kwargs.get(
         #     self._action_arg_prefix + "pddl_action"
         # )
-        print("_______________________________________________________")
+        # print("_______________________________________________________")
         # print("kwargs:",kwargs,flush = True)
         # nav_to_target_coord = nav_to_target_coord_args[:3]
         # print("nav_to_target_coord:",nav_to_target_coord,flush = True)

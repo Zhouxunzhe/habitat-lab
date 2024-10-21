@@ -2058,11 +2058,11 @@ class RecBBoxSenor(UsesArticulatedAgentInterface, Sensor):
             else:
                 return np.array([[-1,-1,-1,-1]])
         except Exception as e:
-            print("e:",e,flush = True)
+            # print("e:",e,flush = True)
             return np.array([[-1,-1,-1,-1]])
         
         # print("info::",self._sim.ep_info.target_receptacles)
-        print("nav_to_obj_number:",nav_to_obj_number,flush = True)
+        # print("nav_to_obj_number:",nav_to_obj_number,flush = True)
         if nav_to_obj_number!= -1:
             for i in range(len(self._sim.ep_info.target_receptacles[nav_to_obj_number]) - 1):
                 ep_objects.append(self._sim.ep_info.target_receptacles[nav_to_obj_number][i])
@@ -2300,7 +2300,7 @@ class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
                 else:
                     return np.array([[-1,-1,-1,-1]])
             except Exception as e:
-                print("e:",e,flush = True)
+                # print("e:",e,flush = True)
                 return np.array([[-1,-1,-1,-1]])
         # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
         #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
