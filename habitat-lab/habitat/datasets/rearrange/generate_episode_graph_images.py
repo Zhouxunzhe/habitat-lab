@@ -1,6 +1,7 @@
 import os
 import json
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 from typing import List, Tuple
 import habitat
 from habitat.config.default import get_config
@@ -37,10 +38,12 @@ def get_hssd_single_agent_config(cfg_path="single_rearrange/zxz_llm_fetch.yaml")
 def random_quaternion_xz_plane():
     # Restrict the orientation to the x-z plane (no y component)
     theta = np.random.uniform(0, 2 * np.pi)  # random angle in the x-z plane
-    qx = np.sin(theta / 2)
-    qy = 0  # No rotation around the y-axis
-    qz = np.cos(theta / 2)
-    qw = 0  # Unit quaternion constraint
+    qx = 0
+    qy = np.sin(theta / 2)  # No rotation around the y-axis
+    qz = 0
+    qw = np.cos(theta / 2)
+    # qz = np.cos(theta / 2)
+    # qw = 0  # Unit quaternion constraint
     
     return [qx, qy, qz, qw]
 
@@ -55,12 +58,34 @@ def calculate_orientation_xz_plane(position, goal_position):
     theta = np.arctan2(dz, dx)
     
     # Convert the angle to a quaternion
-    qx = np.sin(theta / 2)
-    qy = 0  # No rotation around the y-axis
-    qz = np.cos(theta / 2)
-    qw = 0  # Unit quaternion constraint
+    qx = 0
+    qy = np.sin(theta / 2)  # No rotation around the y-axis
+    qz = 0
+    qw = np.cos(theta / 2)
+    # qz = np.cos(theta / 2)
+    # qw = 0  # Unit quaternion constraint
     
     return [qx, qy, qz, qw]
+
+def set_articulated_agent_base_state(sim: RearrangeSim, base_pos, base_rot, agent_id=0):
+    """
+    Set the base position and rotation of the articulated agent.
+    
+    Args:
+        sim: RearrangeSim object
+        base_pos: np.ndarray of shape (3,) representing the base position of the agent
+        base_rot: Optional[(4,), (1)] representing the base rotation of the agent, can be quaternion or rotation_y_rad
+    """
+    agent = sim.agents_mgr[agent_id].articulated_agent
+    agent.base_pos = base_pos
+    if len(base_rot) == 1:
+        agent.base_rot = base_rot
+    elif len(base_rot) == 4:
+        # convert quaternion to rotation_y_rad with scipy 
+        r = R.from_quat(base_rot)
+        agent.base_rot = r.as_euler('xyz', degrees=False)[1]
+    else:
+        raise ValueError("base_rot should be either quaternion or rotation_y_rad")
 
 def get_target_objects_info(sim: RearrangeSim) -> Tuple[List[int], List[np.ndarray], List[np.ndarray]]:
     """
@@ -184,8 +209,13 @@ def main(args):
             os.makedirs(episode_dir)
 
         for idx, (position, orientation) in enumerate(zip(graph_positions, graph_orientations)):
-            observations = env.sim.get_observations_at(position=position, rotation=orientation)
-
+            # observations = env.sim.get_observations_at(position=position, rotation=orientation)
+            set_articulated_agent_base_state(sim, position, orientation, agent_id=0)
+            observations = env.step({"action": (), "action_args": {}})
+            
+            # Force the episode to be active
+            env._episode_over = False
+            
             obs_file_list = []
             for obs_key in args.obs_keys:
                 if obs_key in observations:
@@ -202,7 +232,9 @@ def main(args):
                 "rotation": orientation,
                 # "detected_objects": observations["objectgoal"],
             })
-
+        
+        env._episode_over = True
+        
     # Save metadata to JSON
     metadata_file_path = os.path.join(args.output_dir, "metadata.json")
     class NumpyEncoder(json.JSONEncoder):
