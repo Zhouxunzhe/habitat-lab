@@ -2725,8 +2725,8 @@ class NavWorkspaceRGBSensor(ArmWorkspaceRGBSensor, UsesArticulatedAgentInterface
     """ Sensor to visualize the reachable workspace of an articulated arm """
     cls_uuid: str = "nav_workspace_rgb"
 
-    def __init__(self, sim, config, *args, **kwargs):
-        super().__init__(sim=sim, config=config)
+    def __init__(self, sim, config, task,*args, **kwargs):
+        super().__init__(sim=sim, config=config,task=task)
 
     def _get_uuid(self, *args, **kwargs):
         return NavWorkspaceRGBSensor.cls_uuid

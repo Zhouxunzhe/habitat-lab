@@ -146,7 +146,7 @@ class VLMPolicy(HighLevelPolicy):
                 skill_args_data[batch_idx] = skill_args  # type: ignore[call-overload]
 
                 self._next_sol_idxs[batch_idx] += 1
-    
+        print("It's vlm policy")
         return next_skill, skill_args_data, immediate_end, PolicyActionData()
 
     def filter_envs(self, curr_envs_to_keep_active):

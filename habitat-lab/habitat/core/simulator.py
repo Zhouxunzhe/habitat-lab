@@ -219,6 +219,7 @@ class SensorSuite:
         """
         self.sensors = OrderedDict()
         ordered_spaces: OrderedDict[str, Space] = OrderedDict()
+        
         for sensor in sensors:
             assert (
                 sensor.uuid not in self.sensors

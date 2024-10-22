@@ -180,6 +180,7 @@ class OracleNavAction(BaseVelAction, BaseVelNonCylinderAction, HumanoidJointActi
         return path.points
 
     def step(self, *args, **kwargs):
+        
         self.skill_done = False
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"

@@ -3,14 +3,10 @@ defaults:
   - _self_
 
 # type: OracleNavCoordinateAction # to control both position and look at position
-type: OracleNavCoordAction # to control only position
+type: OracleNavDiffBaseAction # to control only position
 motion_control: base_velocity
-lin_speed: 10.0
-ang_speed: 10.0
-# type: OracleNavDiffBaseAction
-# motion_control: base_velocity
-# lin_speed: 10.0
-# ang_speed: 10.0
+lin_speed: 2.5
+ang_speed: 2.5
 spawn_max_dist_to_obj: -1.0
 # For noncylinder navmesh action
 # If we allow the agent to do sliding
@@ -30,4 +26,3 @@ base_type: "wheel"
 agent_height: 1.0
 agent_max_climb: 0.05
 agent_max_slope: 10.0
-

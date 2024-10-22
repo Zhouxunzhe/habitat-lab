@@ -59,7 +59,7 @@ def run_script(args):
     file_path,skip_len, base_directory,gpu_id,scene,scene_dataset_dir = args
     
     a = ["disk"]
-    seed = random.randint(10, 10000)
+    seed = random.randint(10001, 1000000)
     cmd = [
         "python", "-u", "-m", "habitat_baselines.run",
         "--config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml",
@@ -202,7 +202,7 @@ if __name__ == "__main__":
                     results.append(result)
                 try:
                     for result in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
-                        result.get(timeout=880)
+                        result.get(timeout=900)
                 except Exception as e:
                     print(f"An error occurred: {e}")
                     pool.terminate()

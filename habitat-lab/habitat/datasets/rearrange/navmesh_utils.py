@@ -652,6 +652,7 @@ def get_largest_island_index(
         largest_indoor_island = island_areas[
             island_outdoor_classifications.index(False)
         ][0]
+        # print("flag!")
         return largest_indoor_island
 
     return island_areas[0][0]

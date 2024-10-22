@@ -1,11 +1,11 @@
 sum_episode = 2500
 epnum_per_gz = 4
-gz_start = 200
+gz_start = 400
 skip_len = 28
 base_directory = './video_dir/'
 process_num = 12
 gpu_num = 6
-max_step = 750
+max_step = 800
 jump_gz = 13
 repeat_time = 500
 scene_dataset_dir = 'hssd_scene_new'

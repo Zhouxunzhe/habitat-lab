@@ -12,6 +12,7 @@ class DummyAgent:
         self.pddl_problem = kwargs.get("pddl_problem", None)
         # self.all_entities = self.pddl_problem.all_entities
         self.initilized = True
+        self.return_num = -1
 
     def _get_action(self, object, receptacle=None):
         print("agent_name:",self.agent_name)
@@ -90,10 +91,25 @@ class DummyAgent:
         #     return random.choice(
         #         [action for action in action_list if action['name'] == 'nav_to_goal']
         #     )
+        print("self.agent_name:",self.agent_name)
+        if self.agent_name == "agent_0":
+            self.return_num += 1
+        else:
+            return {
+                "name": "nav_to_position",
+                "arguments": {
+                    "target_position": [0,0,0],
+                    "robot": self.agent_name,
+                }
+            }
+        print("self.return_num:",self.return_num)
+        target_position = [[-3.7735161781311035,0.1160174161195755,-1.5337603092193604],[-2.0869526863098145,
+          0.1160174161195755,-0.19013549387454987],[-1.985478401184082,0.1160174161195755,3.3729171752929688],
+          [-3.7735161781311035,0.1160174161195755,-1.5337603092193604],[-1.985478401184082,0.1160174161195755,3.3729171752929688]]
         return {
             "name": "nav_to_position",
             "arguments": {
-                "target_position": [-3.7735161781311035,0.1160174161195755,-1.5337603092193604,],
+                "target_position": target_position[self.return_num],
                 "robot": self.agent_name,
             }
         }

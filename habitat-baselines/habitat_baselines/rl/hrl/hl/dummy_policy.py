@@ -76,7 +76,7 @@ class DummyPolicy(HighLevelPolicy):
             # Query the LLM agent with the current observations
             # to get the next action and arguments
             # print("plan_mask:",plan_masks,flush=True)
-            # print("skillidex:",self._skill_name_to_idx,flush = True)
+            print("skillidex:",self._skill_name_to_idx,flush = True)
             llm_output = self.llm_agent.chat(self._skill_name_to_idx)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]

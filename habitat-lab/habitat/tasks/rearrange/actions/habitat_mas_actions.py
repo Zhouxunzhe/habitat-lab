@@ -315,14 +315,6 @@ class OracleNavDiffBaseAction(OracleNavAction):
     def step(self, *args, **kwargs):
         # Get episode id
         ep_id = self._sim.ep_info.episode_id
-        # print("kwargs:",kwargs,flush = True)
-        # nav_to_target_coord_args = kwargs.get(
-        #     self._action_arg_prefix + "pddl_action"
-        # )
-        # print("_______________________________________________________")
-        # print("kwargs:",kwargs,flush = True)
-        # nav_to_target_coord = nav_to_target_coord_args[:3]
-        # print("nav_to_target_coord:",nav_to_target_coord,flush = True)
         # if pathfinder is not created, create it
         if self.ep_id != ep_id:
             self.ep_id = ep_id
@@ -332,52 +324,63 @@ class OracleNavDiffBaseAction(OracleNavAction):
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
         ]
+
         base_T = self.cur_articulated_agent.base_transformation
-        # print(f"agent:{self._action_arg_prefix}_nav_to_target_idx",nav_to_target_idx,flush=True)
-        if nav_to_target_idx == -2:
-            # from habitat_baselines.rl.multi_agent.habitat_mas_evaluator import get_context
-            
-            # # print("id:",id(com))
-            # ans = get_context().get_data()
-            import json
-            with open('./data_temp.json','r') as f:
-                ans = json.load(f)
-            
-            agent_name = self._action_arg_prefix.rstrip("_")
-            temp = ans[agent_name]['position']
-            if temp == [0,0,0]:
-                if len(self.start_pos)==0:
-                    forward = np.array([1.0, 0.0, 0.0])
-                    forward = np.array(base_T.transform_vector(forward))[[0, 2]]
-                    theta = -0.85
-                    # print("for:")
-                    rotation_ma = np.array([
-                        [np.cos(theta),np.sin(theta)],
-                        [-np.sin(theta),np.cos(theta)]
-                    ])
-                    # print("rotation:",rotation_ma,flush=True)
-                    rotated = np.dot(rotation_ma,forward)
-                    rotated_pos = np.insert(rotated,1,0)
-                    robot_pos = np.array(self.cur_articulated_agent.base_pos)
-                    obj_targ_pos = robot_pos + rotated_pos
-                    final_nav_targ = robot_pos
-                    self.start_pos = obj_targ_pos
-                else:
-                    obj_targ_pos = self.start_pos
-                    final_nav_targ = np.array(self.cur_articulated_agent.base_pos)
-            else:
-                final_nav_targ = temp
-                obj_targ_pos = final_nav_targ
+        nav_to_target_coord = kwargs.get(
+            self._action_arg_prefix + "pddl_action",
+                # self._action_arg_prefix + "oracle_nav_human_action",
+        )[:3]
+        if not (nav_to_target_coord == 0).all():
+            print("_______________________________________________________")
+            print("nav_to_target_coord:",nav_to_target_coord,flush = True)
+            final_nav_targ = nav_to_target_coord
+            obj_targ_pos = nav_to_target_coord
         else:
-            if (nav_to_target_idx <= 0) or nav_to_target_idx > len(
-                self._poss_entities
-            ):
-                return
+        # print(f"agent:{self._action_arg_prefix}_nav_to_target_idx",nav_to_target_idx,flush=True)
+            if nav_to_target_idx == -2:
+                # from habitat_baselines.rl.multi_agent.habitat_mas_evaluator import get_context
+                
+                # # print("id:",id(com))
+                # ans = get_context().get_data()
+                import json
+                with open('./data_temp.json','r') as f:
+                    ans = json.load(f)
+                
+                agent_name = self._action_arg_prefix.rstrip("_")
+                temp = ans[agent_name]['position']
+                if temp == [0,0,0]:
+                    if len(self.start_pos)==0:
+                        forward = np.array([1.0, 0.0, 0.0])
+                        forward = np.array(base_T.transform_vector(forward))[[0, 2]]
+                        theta = -0.85
+                        # print("for:")
+                        rotation_ma = np.array([
+                            [np.cos(theta),np.sin(theta)],
+                            [-np.sin(theta),np.cos(theta)]
+                        ])
+                        # print("rotation:",rotation_ma,flush=True)
+                        rotated = np.dot(rotation_ma,forward)
+                        rotated_pos = np.insert(rotated,1,0)
+                        robot_pos = np.array(self.cur_articulated_agent.base_pos)
+                        obj_targ_pos = robot_pos + rotated_pos
+                        final_nav_targ = robot_pos
+                        self.start_pos = obj_targ_pos
+                    else:
+                        obj_targ_pos = self.start_pos
+                        final_nav_targ = np.array(self.cur_articulated_agent.base_pos)
+                else:
+                    final_nav_targ = temp
+                    obj_targ_pos = final_nav_targ
             else:
-                nav_to_target_idx = int(nav_to_target_idx[0]) - 1
-                final_nav_targ,obj_targ_pos = self._get_target_for_idx(
-                    nav_to_target_idx
-                )
+                if (nav_to_target_idx <= 0) or nav_to_target_idx > len(
+                    self._poss_entities
+                ):
+                    return
+                else:
+                    nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+                    final_nav_targ,obj_targ_pos = self._get_target_for_idx(
+                        nav_to_target_idx
+                    )
 
         # print("final:",final_nav_targ,flush = True)
         curr_path_points = self._path_to_point(final_nav_targ)
