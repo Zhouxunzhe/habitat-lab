@@ -143,10 +143,11 @@ class FixedHighLevelPolicy(HighLevelPolicy):
                 next_skill[batch_idx] = self._skill_name_to_idx[skill_name]
 
                 skill_args_data[batch_idx] = skill_args  # type: ignore[call-overload]
-
+                # print("skill_args:",skill_args,flush = True)
+                # print("batch_idx:",batch_idx,flush = True)
                 self._next_sol_idxs[batch_idx] += 1
                 # print("skill_args_data:",skill_args_data)
-        print(f"hl_fixed_return_info:{next_skill},{skill_args_data}",flush = True)
+        # print(f"hl_fixed_return_info:{next_skill},{skill_args_data}",flush = True)
         return next_skill, skill_args_data, immediate_end, PolicyActionData()
 
     def filter_envs(self, curr_envs_to_keep_active):

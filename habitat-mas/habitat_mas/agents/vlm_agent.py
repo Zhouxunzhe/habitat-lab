@@ -189,27 +189,6 @@ class VLMAgentSingle():
         images = []
         target_name = ""
         goal_name = ""
-        if episode_id == 26:
-            target_name = "kitchen"
-            goal_name = "chair"
-        if episode_id == 27:
-            target_name = "kitchen"
-            goal_name = "toilet shelf"
-        if episode_id == 69:
-            target_name = "table"
-            goal_name = "chair"
-        if episode_id == 70 or episode_id == 1 or episode_id == 4:
-            target_name = "kitchen"
-            goal_name = "chair"
-        if episode_id == 2:
-            target_name = "dresser"
-        if episode_id == 5:
-            target_name = "kitchen unit"
-        if episode_id == 3:
-            target_name = "dresser beside the bed"
-        
-        if episode_id == 7:
-            target_name == "dresser"
         headers = {
             "Content-Type": "application/json"
         }

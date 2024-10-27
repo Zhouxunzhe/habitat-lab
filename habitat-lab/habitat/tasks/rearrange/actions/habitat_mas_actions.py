@@ -329,12 +329,26 @@ class OracleNavDiffBaseAction(OracleNavAction):
         nav_to_target_coord = kwargs.get(
             self._action_arg_prefix + "pddl_action",
                 # self._action_arg_prefix + "oracle_nav_human_action",
-        )[:3]
+        )[:5]
         if not (nav_to_target_coord == 0).all():
-            print("_______________________________________________________")
-            print("nav_to_target_coord:",nav_to_target_coord,flush = True)
-            final_nav_targ = nav_to_target_coord
-            obj_targ_pos = nav_to_target_coord
+            # print("_______________________________________________________")
+            # print("nav_to_target_coord:",nav_to_target_coord,flush = True)
+            # print("infooo:",kwargs.get(self._action_arg_prefix + "pddl_action"))
+            if nav_to_target_coord[3] != 0:
+                final_nav_targ = nav_to_target_coord[:3]
+                theta = nav_to_target_coord[3]
+                is_z_positive = nav_to_target_coord[4]
+                if is_z_positive == 1:
+                    dz = 10.0
+                else:
+                    dz = -10.0
+                dx = dz / np.tan(theta)
+                x_obj = nav_to_target_coord[0] + dx
+                z_obj = nav_to_target_coord[2] + dz
+                obj_targ_pos = [x_obj,nav_to_target_coord[1],z_obj]
+            else:
+                final_nav_targ = nav_to_target_coord[:3]
+                obj_targ_pos = final_nav_targ
         else:
         # print(f"agent:{self._action_arg_prefix}_nav_to_target_idx",nav_to_target_idx,flush=True)
             if nav_to_target_idx == -2:

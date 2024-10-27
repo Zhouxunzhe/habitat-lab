@@ -35,14 +35,18 @@ defaults:
     - target_goal_gps_compass_sensor
     - localization_sensor
     #- other_agent_gps
-    - detected_objects_sensor
-    - arm_workspace_rgb_sensor
-    - object_masks_sensor
+    # - detected_objects_sensor
+    # - arm_workspace_rgb_sensor
+    # - object_masks_sensors
+    - obj_bbox_sensor
+    - target_bbox_sensor
+    - rec_bbox_sensor
     # - nav_workspace_rgb_sensor
     # - arm_workspace_points_sensor
     # - nav_workspace_points_sensor
 #  - /habitat/task/lab_sensors@habitat.task.lab_sensors.agents_within_threshold: agents_within_threshold
   - _self_
+# habitat.simulator.habitat_sim_v0.gpu_device_id: 0
 
 habitat:
   task:
@@ -93,6 +97,7 @@ habitat:
     habitat_sim_v0:
       allow_sliding: True
       enable_physics: True
+      gpu_device_id: 0
     agents:
       agent_0:
         joint_start_noise: 0.0

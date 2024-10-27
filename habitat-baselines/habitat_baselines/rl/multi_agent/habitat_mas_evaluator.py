@@ -198,12 +198,12 @@ class HabitatMASEvaluator(Evaluator):
                                  url = "http://0.0.0.0:10077/robot-chat")
 
         cur_ep_id = -1
+        dataset_info = config.habitat.dataset.data_path
         while (
             len(stats_episodes) < (number_of_eval_episodes * evals_per_ep)
             and envs.num_envs > 0
         ):
             current_episodes_info = envs.current_episodes()
-
             # If all prev_actions are zero, meaning this is the start of an episode
             # Then collect the context of the episode
             if current_episodes_info[0].episode_id != cur_ep_id:
@@ -298,16 +298,25 @@ class HabitatMASEvaluator(Evaluator):
                                 data[key] = filter_action[key]
                         with open(stored_path,'w') as f:
                             json.dump(data,f)
-            
+            # print("current_episodes_info",current_episodes_info)
+            # agent_0_image = batch["agent_0_head_rgb"].cpu()
+            # agent_0_depth_info = batch["agent_0_depth_inf"].cpu()
+            # agent_0_depth_rot = batch["agent_0_depth_rot"].cpu()
+            # agent_0_depth_trans = batch["agent_0_depth_trans"].cpu()
+            # print("agent_0_depth_info.shape:",agent_0_depth_info.shape)
+            # print("agent_0_depth_rot.shape:",agent_0_depth_rot)
+            # print("agent_0_depth_trans.shape:",agent_0_depth_trans)
+
             with inference_mode():
+                ep_info = [int(cur_ep_id),dataset_info]
                 action_data = agent.actor_critic.act(
                     batch,
                     test_recurrent_hidden_states,
                     prev_actions,
                     not_done_masks,
-                    deterministic=False,
+                    ep_info,
+                    # deterministic=False,
                     envs_text_context=envs_text_context,
-                    eval_jump = eval_jump,
                     output = filter_action,
                     **space_lengths,
                 )

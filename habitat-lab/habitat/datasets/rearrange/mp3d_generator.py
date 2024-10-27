@@ -627,10 +627,10 @@ class MP3DGenerator:
 
 if __name__ == "__main__":
     config_path = "habitat-lab/habitat/datasets/rearrange/configs/mp3d.yaml" 
-    output_dir = "data/datasets/mp3d"
+    output_dir = "data/datasets/mp3d_new"
     scene_dataset_path = "data/scene_datasets/mp3d/"     
-    num_episodes = 200
-    num_objects = 2
+    num_episodes = 1
+    num_objects = 1
     num_object_filter_height = 0
     min_height = 1.7
     max_height = None

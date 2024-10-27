@@ -2,10 +2,9 @@
 python -u -m habitat_baselines.run \
     --config-name=social_rearrange/llm_test_lht.yaml \
     habitat.dataset.data_path=data/datasets/test_scene_graph/107733912_175999623test.json.gz \
-    habitat.seed=888 \
-    habitat_baselines.image_dir="video_dir_new/test_vlm_agent" \
-    habitat_baselines.video_dir="video_dir_new/test_vlm_agent" \
-
+    habitat.seed=88 \
+    habitat_baselines.image_dir="video_dir_mp3d/test_vlm_agent_dummy" \
+    habitat_baselines.video_dir="video_dir_mp3d/test_vlm_agent_dummy" \
 #运行机制：habitat_mas_evaluator中调用agent.actor_critic.act执行，此处方法是HierarchicalPolicy的方法
 #HierarchicalPolicy的方法act中_update_skills()，分别对上下层的skill都进行更新
 #_update_skills()方法中self._high_level_policy.get_next_skill()调用着hl_xxx

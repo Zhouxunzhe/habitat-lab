@@ -56,12 +56,12 @@ def process_directory(base_dir,skip_len):
                         # agent_1_prepix = _project_points_to_image(points_3d=agent_1_obj_ro, point_3d_match=agent_1_pre_robotloc[:3], camera_info=camera_info, cam_trans=camera_extrinsic_old)
                         if agent_0_action == 0:
                             x,y,w,h = agent_0_rec[0]
-                            if w*h > 2500 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
+                            if w*h > 3000 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
                                 agent_0_action+=1
                         if agent_0_action == 3:
                             x,y,w,h = agent_0_target[0]
                             # print("target",agent_0_target[0])
-                            if w*h > 2500 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
+                            if w*h > 3000 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
                                 agent_0_action+=1
                                 
                         if (agent_0_action == 1 or agent_0_action == 4) and step_data['data']['agent_0_has_finished_oracle_nav'] == [1.0]:
@@ -110,4 +110,5 @@ def process_directory(base_dir,skip_len):
 # num_gz = 50
 # for i in range(0,num_gz):
 #     process_directory(os.path.join(base_directory,f"process_{i}.json.gz"))
-process_directory('./video_dir/test_scene_graph_1',30)
+if __name__ == "__main__":
+    process_directory('./video_dir_new_1/test_vlm_agent_dummy',28)

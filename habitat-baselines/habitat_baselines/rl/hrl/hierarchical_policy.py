@@ -284,12 +284,14 @@ class HierarchicalPolicy(nn.Module, Policy):
         rnn_hidden_states,
         prev_actions,
         masks,
+        eval_jump,
         deterministic=False,
         check_info = False,
-        eval_jump = False,
         output = {},
         **kwargs,
     ):
+        # print("kwargs:",eval_jump)
+        eval_temp_info = eval_jump
         batch_size = masks.shape[0]
         masks_cpu = masks.cpu()
         log_info: List[Dict[str, Any]] = [{} for _ in range(batch_size)]
@@ -321,6 +323,7 @@ class HierarchicalPolicy(nn.Module, Policy):
             deterministic,
             eval_jump = eval_jump,
             output = output,
+            eval_info = eval_temp_info,
             **kwargs,
         )
         did_choose_new_skill = self._cur_call_high_level.clone()
@@ -447,8 +450,9 @@ class HierarchicalPolicy(nn.Module, Policy):
         log_info,
         should_choose_new_skill: torch.BoolTensor,
         deterministic: bool,
-        eval_jump = False,
+        eval_jump = None,
         output = {},
+        eval_info = None,
         **kwargs,
     ) -> Tuple[torch.BoolTensor, PolicyActionData]:
         """
@@ -475,7 +479,7 @@ class HierarchicalPolicy(nn.Module, Policy):
             # print(f"self.agent_name:{self.agent_name}")
             # print(f"output:{output}")
             # print(f"eval:{eval_jump}")
-            if eval_jump:
+            if False:
                 skill_info = output[self.agent_name]
                 print("fix:skillinfo:",skill_info,flush=True)
                 action = skill_info['name']
@@ -498,6 +502,7 @@ class HierarchicalPolicy(nn.Module, Policy):
                 hl_terminate_episode = hl_terminate_episode
                 hl_info = PolicyActionData()
             else:
+                # print("eval_info_in_update:",eval_jump)
                 (
                     new_skills,
                     new_skill_args,
@@ -511,6 +516,7 @@ class HierarchicalPolicy(nn.Module, Policy):
                     should_choose_new_skill,
                     deterministic,
                     log_info,
+                    eval_info = eval_info,
                     **kwargs,
                 )
             # print("_______________________info_________________",flush=True)

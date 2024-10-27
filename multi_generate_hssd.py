@@ -27,20 +27,22 @@ def run_episode_generator(args):
     time.sleep(0.9)
 
 if __name__ == '__main__':
-    sum_episode = 5000
-    process_num = 18
+    sum_episode = 500
+    process_num = 30
     batch_num = 4
-    gpu_num = 2
+    gpu_num = 5
     num = int(sum_episode / batch_num)
-    yaml_dir = "data/hssd_dataset_toys/hssd_dataset"
-    output_dir = 'hssd_scene_toys'
+    yaml_dir = "./new_scene_dir"
+    output_dir = 'hssd_scene_10scene'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     zip_files = [f"data_{i}" for i in range(0,int(sum_episode/batch_num))]
     # scene_sample
     # 108294465_176709960
-    scene_sample = ["102344115","103997919_171031233","104348463_171513588","103997970_171031287",
-    "108736689_177263340","102344193","107733912_175999623"]
+    # scene_sample = ["102344115","103997919_171031233","104348463_171513588","103997970_171031287",
+    # "108736689_177263340","102344193","107733912_175999623"]
+    scene_sample = ["104348463_171513588","103997970_171031287","108736689_177263340","102344193","107733912_175999623",
+"102816786","103997643_171030747","105515211_173104185","102344115","103997919_171031233"]
     for item in scene_sample:
         if not os.path.exists(os.path.join(output_dir, item)):
             os.makedirs(os.path.join(output_dir, item))

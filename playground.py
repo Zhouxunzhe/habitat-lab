@@ -84,34 +84,40 @@ import re
 
 #这是用来看item是什么类型的代码
 import json
-import csv,os
+import csv,os,glob
 load_scene = ['102344115','103997919_171031233','104348463_171513588','103997970_171031287',
-'108736689_177263340']
-for sc in load_scene:
-    json_path = f'./data/scene_datasets/hssd-hab/scenes-uncluttered/{sc}.scene_instance.json'
-    csv_path = './data/scene_datasets/hssd-hab/semantics/objects.csv'
-
+'108736689_177263340','108294465_176709960']
+folder_path = './data/scene_datasets/hssd-hab/scenes-uncluttered/'
+json_files = glob.glob(os.path.join(folder_path, '*.json'))
+csv_path = './data/scene_datasets/hssd-hab/semantics/objects.csv'
+csv_data = {}
+with open(csv_path,'r') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        csv_data[row['id']] = row['name']
+for json_file in json_files:
+    json_path = json_file
+    file_name = os.path.basename(json_path)
+    base_name = os.path.splitext(file_name)[0]
+    sc_value = base_name.split('.')[0]
     with open(json_path,'r') as f:
         json_data = json.load(f)
     final_data = []
-    csv_data = {}
-    with open(csv_path,'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            csv_data[row['id']] = row['name']
     result = []
     for obj in json_data["object_instances"]:
-        template_name = obj["template_name"]
+        template_name = obj["template_name"].split('_',1)[0]
         if template_name in csv_data:
             name = csv_data[template_name]
             result.append({"template_name": template_name, "name": name})
 
-    # 输出匹配结果
     for item in result:
         final_data.append(item)
-    output = f"./scene_dir/{sc}.json"
+    output = f"./scene_annotation/{sc_value}.json"
+    os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output,'w') as file:
         json.dump(final_data,file,indent=4)
+
+
 
 #这是用来看episode_id能匹配啥manipulation的代码
 # import json
@@ -131,7 +137,7 @@ for sc in load_scene:
 
 
 #json比较器
-import json
+# import json
 # with open('./video_dir/process_0.json.gz/episode_14/sum_data.json','r') as f:
 #     data1 = json.load(f)
 # with open('./video_dir/process_0.json.gz_1/episode_14/sum_data.json','r') as f:

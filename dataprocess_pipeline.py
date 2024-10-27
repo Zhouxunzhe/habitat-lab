@@ -59,7 +59,7 @@ def run_script(args):
     file_path,skip_len, base_directory,gpu_id,scene,scene_dataset_dir = args
     
     a = ["disk"]
-    seed = random.randint(10001, 1000000)
+    seed = random.randint(1, 1000000)
     cmd = [
         "python", "-u", "-m", "habitat_baselines.run",
         "--config-name=social_rearrange/llm_fetch_stretch_manipulation.yaml",
@@ -70,12 +70,13 @@ def run_script(args):
         f"habitat_baselines.torch_gpu_id={gpu_id}",
         f"habitat_baselines.eval.video_option={a}",
         f"habitat_baselines.eval.video_option_new=False",
-        f"habitat_baselines.image_dir=video_dir/{scene}/{file_path}",
+        f"habitat_baselines.video_dir={base_directory}/video_dir_",
+        f"habitat_baselines.image_dir={base_directory}/{scene}/{file_path}",
         f"habitat.seed={seed}",
         f"habitat.environment.max_episode_steps={max_step}",
         f"habitat.dataset.data_path=data/datasets/{scene_dataset_dir}/{scene}/{file_path}"
     ]
-    log_file = f"./log/example_{file_path}.log"
+    log_file = f"./log/{scene}_example_{file_path}.log"
     with open(log_file, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
     time.sleep(0.7)
@@ -85,23 +86,21 @@ def run_script(args):
     # sample_info = run_with_timeout(datatrans_2_end_single_agent_waypoint, process_dir=f"{scene}/{file_path}", skip_len=skip_len, sample_clip=max_step,timeout=3,retries=2,data_name=file_path)
     flag = 0
     with ThreadPoolExecutor() as executor:
-        future_set = executor.submit(datatrans_2_end_single_agent_waypoint, process_dir=f"{scene}/{file_path}", skip_len=skip_len, sample_clip=max_step)
+        future_set = executor.submit(datatrans_2_end_single_agent_waypoint, process_dir=f"./{base_directory}/{scene}/{file_path}", skip_len=skip_len, sample_clip=max_step)
         try:
-            result = future_set.result(timeout=5)
+            result = future_set.result(timeout=10)
             sample_info = result
         except:
             # print(f"break:{file_path}",flush=True)
-            return None
+            return (False, -1)
             # except:
             #     # print(f"break:{file_path}",flush=True)
             #     flag = 1
     # pdb.set_trace()
     # print(f"{file_path}:{flag}")
-    if flag == 1:
-        raise TimeoutError
     if len(sample_info)==0 or sample_info == -1:
         print(f"no sample_info,Exiting process,from{file_path}")
-        raise TimeoutError
+        return (False, 0)
     sample = str(sample_info)
     print(f"{file_path}'s sample:",sample)
     llm_yaml_path = './habitat-baselines/habitat_baselines/config/social_rearrange/llm_fetch_stretch_manipulation.yaml'
@@ -123,14 +122,15 @@ def run_script(args):
         f"habitat.simulator.habitat_sim_v0.gpu_device_id={gpu_id}",
         f"habitat_baselines.torch_gpu_id={gpu_id}",
         f"habitat_baselines.eval.video_option_new=False",
-        f"habitat_baselines.image_dir=video_dir/{scene}/{file_path}",
+        f"habitat_baselines.video_dir={base_directory}/video_dir_",
+        f"habitat_baselines.image_dir={base_directory}/{scene}/{file_path}",
         f"habitat_baselines.eval.image_option={a}",
         f"habitat.seed={seed}",
         f"habitat.environment.max_episode_steps={max_step}",
         # f"habitat_baselines.eval.episode_stored={sample_info}",
         f"habitat.dataset.data_path=data/datasets/{scene_dataset_dir}/{scene}/{file_path}"
     ]
-    log_file = f"./log/example_new_{file_path}.log"
+    log_file = f"./log/{scene}_example_new_{file_path}.log"
     with open(log_file, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
     # scene_json_filename = file_path[:-3] if file_path.endswith('.gz') else file_path
@@ -140,12 +140,17 @@ def run_script(args):
     # destination_file_path = os.path.join(scene_target_path, scene_json_filename)
     # shutil.move(scene_json_path, destination_file_path)
     time.sleep(0.7)
+    return (True, 1)
 
 if __name__ == "__main__":
     clear_directory('./habitat-baselines/habitat_baselines/config/override/')
-    clear_directory('./log')
+    # clear_directory('./log')
+    current_time = time.time()
+    local_random = random.Random(current_time)
+    random_number = local_random.randint(1, 10000)
     max_step = dp_config.max_step
     scene_dataset_dir = dp_config.scene_dataset_dir
+    base_directory = f"./{dp_config.base_directory}_{random_number}"
     # for scene in dp_config.sample_scene:
     #     sum_episode = dp_config.sum_episode
     #     epnum_per_gz = dp_config.epnum_per_gz
@@ -178,7 +183,7 @@ if __name__ == "__main__":
     repeat_time = dp_config.repeat_time
     skip_len = dp_config.skip_len
     gpu_num = dp_config.gpu_num
-    base_directory = './video_dir'
+    # base_directory = './video_dir'
     for it in range(gz_sum):
         # print("it:",it)
         for scene in dp_config.sample_scene:
@@ -197,18 +202,18 @@ if __name__ == "__main__":
             with multiprocessing.Pool(processes=process_num) as pool:
                 args = [(file_path, skip_len,base_directory,gpu_id,scene,scene_dataset_dir) for file_path,gpu_id in zip_files]
                 results = []
-                for arg in args:
-                    result = pool.apply_async(run_script, (arg,), error_callback=lambda e: print(f"Error: {e}"))
-                    results.append(result)
-                try:
-                    for result in tqdm(pool.imap_unordered(run_script, args), total=len(zip_files), desc="Process Files"):
-                        result.get(timeout=900)
-                except Exception as e:
-                    print(f"An error occurred: {e}")
-                    pool.terminate()
-                finally:
-                    pool.close()
-                    pool.join()
+                async_results = [pool.apply_async(run_script, (arg,), error_callback=lambda e: print(f"Error: {e}")) for arg in args]
+                for async_result in tqdm(async_results, total=len(args), desc="Process Files"):
+                    try:
+                        result = async_result.get(timeout=dp_config.timeout)
+                        results.append(result)
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+                        # results.append(None)  # 或其他处理逻辑
+                        pool.terminate()
+                    finally:
+                        pool.close()
+                        pool.join()
 
             print(f"FINISH------{scene}------{it*process_num}/{num_gz}")
             # with concurrent.futures.ThreadPoolExecutor(max_workers=dp_config.process_num) as executor:

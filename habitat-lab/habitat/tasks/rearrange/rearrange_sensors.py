@@ -2027,49 +2027,53 @@ class RecBBoxSenor(UsesArticulatedAgentInterface, Sensor):
     
     def get_observation(self, observations, *args, **kwargs):
         """ Get the RGB image with reachable and unreachable points marked """
-        
+        ep_objects = []
+        is_multi_agent = False
         if self.agent_id is not None:
             depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
             rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
             depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
             semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
+            is_multi_agent = True
         else:
             depth_obs = observations[self.depth_sensor_name]
             rgb_obs = observations[self.rgb_sensor_name]
             depth_camera_name = self.depth_sensor_name
             semantic_camera_name = f"head_semantic"
+            for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+                ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+
+            #now the scene_graph_generate is simply have one target rec and one goal rec/
         rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
-
-        """add semantic information"""
-        ep_objects = []
-        nav_to_obj_number = -1
-        try:
-            nav_to_target_idx = kwargs['action']['action_args'][
-                f"agent_{self.agent_id}_oracle_nav_action"
-            ]    
-            nav_to_target_idx = int(nav_to_target_idx[0]) - 1
-            nav_to_obj = self._entities[nav_to_target_idx]
-            nav_to_obj = str(nav_to_obj)
-            if 'any_targets' in nav_to_obj:
-                match = re.search(r'\|(\d+)-', str(nav_to_obj))
-                if match:
-                    nav_to_obj_number = int(match.group(1))
+        if is_multi_agent:
+            nav_to_obj_number = -1
+            try:
+                nav_to_target_idx = kwargs['action']['action_args'][
+                    f"agent_{self.agent_id}_oracle_nav_action"
+                ]    
+                nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+                nav_to_obj = self._entities[nav_to_target_idx]
+                nav_to_obj = str(nav_to_obj)
+                if 'any_targets' in nav_to_obj:
+                    match = re.search(r'\|(\d+)-', str(nav_to_obj))
+                    if match:
+                        nav_to_obj_number = int(match.group(1))
+                else:
+                    return np.array([[-1,-1,-1,-1]])
+            except Exception as e:
+                print("e:",e,flush = True)
+                return np.array([[-1,-1,-1,-1]])
+            
+            # print("info::",self._sim.ep_info.target_receptacles)
+            # print("nav_to_obj_number:",nav_to_obj_number,flush = True)
+            if nav_to_obj_number!= -1:
+                for i in range(len(self._sim.ep_info.target_receptacles[nav_to_obj_number]) - 1):
+                    ep_objects.append(self._sim.ep_info.target_receptacles[nav_to_obj_number][i])
             else:
                 return np.array([[-1,-1,-1,-1]])
-        except Exception as e:
-            # print("e:",e,flush = True)
-            return np.array([[-1,-1,-1,-1]])
-        
-        # print("info::",self._sim.ep_info.target_receptacles)
-        # print("nav_to_obj_number:",nav_to_obj_number,flush = True)
-        if nav_to_obj_number!= -1:
-            for i in range(len(self._sim.ep_info.target_receptacles[nav_to_obj_number]) - 1):
-                ep_objects.append(self._sim.ep_info.target_receptacles[nav_to_obj_number][i])
-        else:
-            return np.array([[-1,-1,-1,-1]])
-        for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
-            ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+        # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+        #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
         # for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
         #     ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
         # for key, val in self._sim.ep_info.info['object_labels'].items():
@@ -2266,46 +2270,51 @@ class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
                           high=np.finfo(np.float64).max, shape=(self.n,4), dtype=np.float64)
     
     def get_observation(self, observations, *args, **kwargs):
+        ep_objects = []
+        is_multi_agent = False
         if self.agent_id is not None:
             depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
             rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
             depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
             semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
+            is_multi_agent = True
         else:
             depth_obs = observations[self.depth_sensor_name]
             rgb_obs = observations[self.rgb_sensor_name]
             depth_camera_name = self.depth_sensor_name
             semantic_camera_name = f"head_semantic"
+            for i in range(len(self._sim.ep_info.goal_receptacles[0]) - 1):
+                ep_objects.append(self._sim.ep_info.goal_receptacles[0][i])
 
         rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
 
         """add semantic information"""
-        ep_objects = []
-        if self.store_bbox_num:
-            nav_to_obj_number = self.store_bbox_num
-        else:
-            try:
-                nav_to_target_idx = kwargs['action']['action_args'][
-                    f"agent_{self.agent_id}_oracle_nav_action"
-                ]    
-                nav_to_target_idx = int(nav_to_target_idx[0]) - 1
-                nav_to_obj = self._entities[nav_to_target_idx]
-                nav_to_obj = str(nav_to_obj)
-                
-                if 'TARGET_any_targets' in nav_to_obj:
-                    match = re.search(r'\|(\d+)-', str(nav_to_obj))
-                    if match:
-                        nav_to_obj_number = int(match.group(1))
-                else:
+        if is_multi_agent:
+            if self.store_bbox_num:
+                nav_to_obj_number = self.store_bbox_num
+            else:
+                try:
+                    nav_to_target_idx = kwargs['action']['action_args'][
+                        f"agent_{self.agent_id}_oracle_nav_action"
+                    ]    
+                    nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+                    nav_to_obj = self._entities[nav_to_target_idx]
+                    nav_to_obj = str(nav_to_obj)
+                    
+                    if 'TARGET_any_targets' in nav_to_obj:
+                        match = re.search(r'\|(\d+)-', str(nav_to_obj))
+                        if match:
+                            nav_to_obj_number = int(match.group(1))
+                    else:
+                        return np.array([[-1,-1,-1,-1]])
+                except Exception as e:
+                    # print("e:",e,flush = True)
                     return np.array([[-1,-1,-1,-1]])
-            except Exception as e:
-                # print("e:",e,flush = True)
-                return np.array([[-1,-1,-1,-1]])
-        # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
-        #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
-        for i in range(len(self._sim.ep_info.goal_receptacles[nav_to_obj_number]) - 1):
-            ep_objects.append(self._sim.ep_info.goal_receptacles[nav_to_obj_number][i])
+            # for i in range(len(self._sim.ep_info.target_receptacles[0]) - 1):
+            #     ep_objects.append(self._sim.ep_info.target_receptacles[0][i])
+            for i in range(len(self._sim.ep_info.goal_receptacles[nav_to_obj_number]) - 1):
+                ep_objects.append(self._sim.ep_info.goal_receptacles[nav_to_obj_number][i])
         objects_info = {}
         rom = self._sim.get_rigid_object_manager()
         for i, handle in enumerate(rom.get_object_handles()):
@@ -2392,7 +2401,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         depth = depth_obs.reshape(1, W, W)
         xs = xs.reshape(1, W, W)
         ys = ys.reshape(1, W, W)
-
+        print(f"hfov:{hfov},W:{W},H:{H},K:{K},")
         xys = np.vstack((xs * depth, ys * depth, -depth, np.ones(depth.shape)))
         xys = xys.reshape(4, -1)
         xy_c = np.matmul(np.linalg.inv(K), xys)
@@ -2690,6 +2699,7 @@ class ObjectMasksSensor(UsesArticulatedAgentInterface, Sensor):
     def get_observation(self, observations, *args, **kwargs):
         """ Get the detected objects from the semantic sensor data """
         objects_info = {}
+        # print("sim",self._sim)
         rom = self._sim.get_rigid_object_manager()
         for i, handle in enumerate(rom.get_object_handles()):
             obj = rom.get_object_by_handle(handle)
@@ -2700,9 +2710,8 @@ class ObjectMasksSensor(UsesArticulatedAgentInterface, Sensor):
         #     obj = aom.get_object_by_handle(handle)
         #     objects_info[obj.object_id] = handle
         obj_id_offset = self._sim.habitat_config.object_ids_start
-
-        semantic_obs = observations['head_semantic'].squeeze()
-        rgb_obs = observations['head_rgb']
+        semantic_obs = observations[f'agent_{self.agent_id}_head_semantic'].squeeze()
+        rgb_obs = observations[f'agent_{self.agent_id}_head_rgb']
 
         mask = np.isin(semantic_obs, np.array(self._sim.scene_obj_ids) + obj_id_offset).astype(np.uint8)
         colored_mask = np.zeros_like(rgb_obs)

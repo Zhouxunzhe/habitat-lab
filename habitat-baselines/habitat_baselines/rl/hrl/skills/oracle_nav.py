@@ -240,9 +240,14 @@ class OracleNavCoordPolicy(OracleNavPolicy):
         cur_batch_idx,
         deterministic=False,
     ):
+        import pdb
+        # pdb.set_trace()
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device
         )
+        # full_action = torch.zeros(
+        #     (masks.shape[0], 4), device=masks.device
+        # )
 
         target_positions = torch.FloatTensor(
             [self._cur_skill_args[i].target_position for i in cur_batch_idx]
@@ -250,8 +255,11 @@ class OracleNavCoordPolicy(OracleNavPolicy):
         # lookat_positions = torch.FloatTensor(
         #     [self._cur_skill_args[i].lookat_position for i in cur_batch_idx]
         # )
-        
-        full_action[:, self._oracle_nav_ac_idx: self._oracle_nav_ac_idx + 3] = target_positions
+        # full_action[0][self._oracle_nav_ac_idx]=target_positions[0][0]
+        # full_action[0][self._oracle_nav_ac_idx+1]=target_positions[0][1]
+        # full_action[0][self._oracle_nav_ac_idx+2]=target_positions[0][2]
+        # full_action[0][self._oracle_nav_ac_idx+3]=target_positions[0][3]
+        full_action[:, self._oracle_nav_ac_idx: self._oracle_nav_ac_idx + len(target_positions[0])] = target_positions
         # full_action[:, self._oracle_lookat_ac_idx: self._oracle_lookat_ac_idx + 3] = lookat_positions
         
         return PolicyActionData(
