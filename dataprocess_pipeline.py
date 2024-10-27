@@ -19,6 +19,13 @@ import gzip
 import shutil
 import os,pdb
 import time
+from threading import Timer
+def terminate_pool(pool):
+    if pool is not None:
+        pool.terminate()
+        pool.close()
+        pool.join()
+        print("Terminated pool due to timeout.")
 class SkipCurrentThread(Exception):
     pass
 def run_with_timeout(func, *args, timeout=2, process_dir=None, skip_len=40, sample_clip=500, retries=1, data_name=None):
@@ -199,23 +206,49 @@ if __name__ == "__main__":
             num_gz = int((sum_episode / epnum_per_gz) - gz_start_gz)
             zip_files = [(f"data_{i}.json.gz", int(i % gpu_num)) for i in range(gz_start_gz+gz_start,gz_start_gz+gz_start+process_num)]
             # print(f"Processing ",zip_files)
+            print(f"START--{scene}--{it*process_num}/{num_gz}--dir:{dp_config.base_directory}_{random_number}")
+            start_time = time.time()
             with multiprocessing.Pool(processes=process_num) as pool:
-                args = [(file_path, skip_len,base_directory,gpu_id,scene,scene_dataset_dir) for file_path,gpu_id in zip_files]
+                args = [(file_path, skip_len, base_directory, gpu_id, scene, scene_dataset_dir) for file_path, gpu_id in zip_files]
                 results = []
                 async_results = [pool.apply_async(run_script, (arg,), error_callback=lambda e: print(f"Error: {e}")) for arg in args]
-                for async_result in tqdm(async_results, total=len(args), desc="Process Files"):
-                    try:
-                        result = async_result.get(timeout=dp_config.timeout)
-                        results.append(result)
-                    except Exception as e:
-                        print(f"An error occurred: {e}")
-                        # results.append(None)  # 或其他处理逻辑
-                        pool.terminate()
-                    finally:
-                        pool.close()
-                        pool.join()
 
-            print(f"FINISH------{scene}------{it*process_num}/{num_gz}")
+                # Set up a timer to terminate the pool after the timeout
+                timer = Timer(dp_config.timeout, terminate_pool, [pool])
+                timer.start()
+                try:
+        # Wait for all tasks to complete or timeout
+                    pool.close()
+                    pool.join()
+                finally:
+                    timer.cancel()
+            # try:
+            #     # Collect results
+            #     for async_result in async_results:
+            #         try:
+            #             result = async_result.get(timeout=1)
+            #             results.append(result)
+            #         except Exception as e:
+            #             print(f"Error during result collection: {e}")
+            # finally:
+            # timer.cancel()  # Ensure the timer is stopped
+            # with multiprocessing.Pool(processes=process_num) as pool:
+            #     args = [(file_path, skip_len,base_directory,gpu_id,scene,scene_dataset_dir) for file_path,gpu_id in zip_files]
+            #     results = []
+            #     async_results = [pool.apply_async(run_script, (arg,), error_callback=lambda e: print(f"Error: {e}")) for arg in args]
+            #     for async_result in tqdm(async_results, total=len(args), desc="Process Files"):
+            #         try:
+            #             result = async_result.get(timeout=dp_config.timeout)
+            #             results.append(result)
+            #         except Exception as e:
+            #             print(f"An error occurred: {e}")
+            #             # results.append(None)  # 或其他处理逻辑
+            #             pool.terminate()
+            #         finally:
+            #             pool.close()
+            #             pool.join()
+            end_time = time.time()
+            print(f"FINISH--{scene}--{it*process_num}/{num_gz}----dir:{dp_config.base_directory}_{random_number}--usetime:{end_time-start_time}")
             # with concurrent.futures.ThreadPoolExecutor(max_workers=dp_config.process_num) as executor:
             #     futures = {
             #         executor.submit(run_script, file_path, dp_config.skip_len, dp_config.base_directory, gpu_id, scene): (file_path, gpu_id)
