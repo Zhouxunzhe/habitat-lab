@@ -296,7 +296,6 @@ def main(args):
     config = get_hssd_single_agent_config(args.config)
     env = Env(config=config)
     dataset = env._dataset
-
     metadata = []
 
     for episode in dataset.episodes:
@@ -466,6 +465,7 @@ def parse_args():
     parser.add_argument("--random_min_bbox", type=int, default=400)
     parser.add_argument("--gpu_id", type=int, default=4)
     parser.add_argument("--dataset_path", type=str, default="data/datasets/hssd_scene_new/104348463_171513588/data_0.json.gz")
+    parser.add_argument("--anti_position_path",type=str,default="")
 
 
     

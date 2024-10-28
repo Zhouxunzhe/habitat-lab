@@ -5,7 +5,7 @@ import time
 from tqdm import tqdm
 import dp_config
 from ruamel.yaml import YAML
-from find_success import datatrans_2_end,datatrans_2_end_single_agent_waypoint,datatrans_2_end_single_agent_objectcentric
+from find_success import datatrans_2_end,datatrans_2_end_single_agent_waypoint,datatrans_2_end_single_agent_objectcentric,datatrans_2_end_sat_waypoint_closer
 import os
 from datatrans_batch import process_directory
 import shutil,random
@@ -93,7 +93,7 @@ def run_script(args):
     # sample_info = run_with_timeout(datatrans_2_end_single_agent_waypoint, process_dir=f"{scene}/{file_path}", skip_len=skip_len, sample_clip=max_step,timeout=3,retries=2,data_name=file_path)
     flag = 0
     with ThreadPoolExecutor() as executor:
-        future_set = executor.submit(datatrans_2_end_single_agent_waypoint, process_dir=f"./{base_directory}/{scene}/{file_path}", skip_len=skip_len, sample_clip=max_step)
+        future_set = executor.submit(datatrans_2_end_sat_waypoint_closer, process_dir=f"./{base_directory}/{scene}/{file_path}", skip_len=skip_len, sample_clip=max_step)
         try:
             result = future_set.result(timeout=10)
             sample_info = result

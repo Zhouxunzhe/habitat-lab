@@ -1,17 +1,17 @@
 sum_episode = 500
 epnum_per_gz = 4
 gz_start = 0
-skip_len = 28
-base_directory = 'dataset_hssd_10scene'
+skip_len = 30
+base_directory = 'closer_dataset_hssd_10scene'
 # write only name
 process_num = 10
 gpu_num = 5
 max_step = 800
 jump_gz = 13
-repeat_time = 500
+repeat_time = 1
 scene_dataset_dir = 'hssd_scene_10scene'
 # sample_scene = ["102344193","103997970_171031287","104348463_171513588","108294465_176709960","108736689_177263340"]
 # sample_scene = ["107733912_175999623","102344193","103997970_171031287","108294465_176709960","108736689_177263340"]
 sample_scene = ["104348463_171513588","103997970_171031287","108736689_177263340","102344193","107733912_175999623",
 "102816786","103997643_171030747","105515211_173104185","102344115","103997919_171031233"]
-timeout = 600
+timeout = 700
