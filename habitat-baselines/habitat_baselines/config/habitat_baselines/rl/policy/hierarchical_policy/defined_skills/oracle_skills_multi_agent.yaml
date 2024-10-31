@@ -34,7 +34,7 @@ pick:
   skill_name: "OraclePickPolicy"
   action_name: "arm_pick_action"
   obs_skill_inputs: ["is_holding"]
-  max_skill_steps: 100
+  max_skill_steps: 500
   apply_postconds: False
   force_end_on_timeout: False
 

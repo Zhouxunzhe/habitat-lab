@@ -1,7 +1,7 @@
 # bin/bash
 python -u -m habitat_baselines.run \
-    --config-name=social_rearrange/llm_spot_fetch_mobility.yaml \
-    habitat.dataset.data_path=data/datasets/test_big_scene/test_mp3d.json.gz \
+    --config-name=social_rearrange/llm_test_lht.yaml \
+    habitat.dataset.data_path=data/datasets/test_big_scene/105515211_173104185.json.gz \
     habitat.seed=42 \
     habitat_baselines.image_dir="video_dir_mp3d/test_mp3d_true" \
     habitat_baselines.video_dir="video_dir_mp3d/test_mp3d_true" \

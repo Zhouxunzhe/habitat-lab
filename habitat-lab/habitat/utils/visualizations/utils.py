@@ -17,9 +17,12 @@ from habitat.core.logging import logger
 from habitat.core.utils import try_cv2_import
 from habitat.utils.common import flatten_dict
 from habitat.utils.visualizations import maps
-
+import PIL
 cv2 = try_cv2_import()
-
+def save_image(image, file_path):
+    from PIL import Image
+    img = Image.fromarray(image)
+    img.save(file_path)
 
 def paste_overlapping_image(
     background: np.ndarray,
@@ -289,19 +292,24 @@ def observations_to_image(observation: Dict, info: Dict,
                             if frame_id == a[0] and number == a[1] and int(episode_id) == int(sample_frame[temp]['episode_id']):
                                 image_name = ('frame_' + str(frame_id) + '_' + sensor_name+
                                             robot_names[sensor_name[:7]] + sensor_name[7:])
-                                plt.imshow(obs_k)
-                                plt.axis('off')
-                                plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
-                                            bbox_inches='tight', pad_inches=0)
+                                # plt.imshow(obs_k)
+                                # plt.axis('off')
+                                # plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
+                                #             bbox_inches='tight', pad_inches=0)
+                                image_file_path = os.path.join(image_ep_dir, image_name+'.png')
+                                save_image(obs_k, image_file_path)
                                 break
                     else:
                         if sensor_name[:7] == "agent_0": #当存单agent的图片的时候
                             image_name = ('frame_' + str(frame_id) + '_' +sensor_name+
                                 robot_names[sensor_name[:7]] + sensor_name[7:])
-                            plt.imshow(obs_k)
-                            plt.axis('off')
-                            plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
-                                        bbox_inches='tight', pad_inches=0)
+                            # print("obs:",obs_k.shape)
+                            # plt.imshow(obs_k)
+                            # plt.axis('off')
+                            # plt.savefig(os.path.join(image_ep_dir, image_name+'.png'),
+                            #             bbox_inches='tight', pad_inches=0)
+                            image_file_path = os.path.join(image_ep_dir, image_name+'.png')
+                            save_image(obs_k, image_file_path)
                 image_ep_dir = os.path.join(image_dir, f"episode_{episode_id}")
                 if not os.path.exists(image_ep_dir):
                         os.makedirs(image_ep_dir)

@@ -309,6 +309,9 @@ class HabitatMASEvaluator(Evaluator):
 
             with inference_mode():
                 ep_info = [int(cur_ep_id),dataset_info]
+                print("ep_info:",ep_info)
+                agent_0_image = batch["agent_0_head_rgb"].cpu()
+                # print("agent_0_imageshape:",agent_0_image.shape)
                 action_data = agent.actor_critic.act(
                     batch,
                     test_recurrent_hidden_states,

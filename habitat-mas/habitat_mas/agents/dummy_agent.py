@@ -8,7 +8,6 @@ import requests
 import time
 from PIL import Image
 from io import BytesIO
-import os
 from torchvision import transforms
 import torch
 
@@ -31,6 +30,7 @@ class DummyAgent:
         self.rag_truly_output = False
         self.rag_truly_output_point = None
         self.oracle_set = True
+        self.history = ""
         
 
     # def send_and_receive(self, image_list, episode_id):
@@ -44,7 +44,14 @@ class DummyAgent:
                 if file.lower().endswith(('.png', '.jpg')):
                     image_paths.append(os.path.join(root, file))
         return image_paths
-
+    def get_one_prompt_image_paths(self,root_dir):
+        matching_files = []
+        for filename in os.listdir(root_dir):
+            if fnmatch.fnmatch(filename, 'target_rec.png') or \
+            fnmatch.fnmatch(filename, 'goal_rec.png') or \
+            'random_scene_graph_' in filename and filename.endswith('.png'):
+                matching_files.append(filename)
+        return matching_files
     def images_to_tensors(self,image_paths):
         tensors = []
         names = []
@@ -58,16 +65,22 @@ class DummyAgent:
             tensors.append(tensor.squeeze(0))
             names.append(os.path.basename(path))
         return tensors,names
-    def send_and_receive(self,image_list,episode_id,prompt_text,is_rag = False):
+    def send_and_receive(self,episode_id,prompt_text,head_rgb_obs_list = [],rag_image_list = []):
         images = []
         headers = {
             "Content-Type": "application/json"
         }
-        for image in image_list:
+        for image in head_rgb_obs_list:
+            image = image.numpy()
+            image = image.astype(np.uint8)
+            image_PIL = Image.fromarray(image)
+            buffered = BytesIO()
+            image_PIL.save(buffered,format = 'PNG')
+            images.append(base64.b64encode(buffered.getvalue()).decode('utf-8'))
+        for image in rag_image_list:
             image = image.numpy()
             # print("image_in_send_beforesqueeze:",image.shape)
-            if is_rag:
-                image = (image.transpose(1, 2, 0))*255
+            image = (image.transpose(1, 2, 0))*255
             image = image.astype(np.uint8)
             # print("image_in_send:",image)
             image_PIL = Image.fromarray(image)
@@ -102,12 +115,20 @@ class DummyAgent:
             time.sleep(0.2)
     def find_rec_name(self,episode_id,scene_name_path,data_path,scene_dir):
         data_json_path = data_path+'.json'
+        target_json_name = data_json_path
+        if not os.path.exists(data_json_path):
+            import gzip
+            import shutil
+            with gzip.open(data_path, 'rb') as f_in:
+                with open(target_json_name, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
         with open(data_json_path, 'r') as f:
             data = json.load(f)
         episodes_info = []
         for episode in data.get('episodes', []):
             episode_info = {
                 'episode_id': episode.get('episode_id'),
+                'scene_id' : episode.get('scene_id'),
                 'target_receptacles': episode.get('target_receptacles'),
                 'goal_receptacles': episode.get('goal_receptacles'),
                 'target_object': episode.get('name_to_receptacle',{})
@@ -125,7 +146,10 @@ class DummyAgent:
             key_replace_front = re.sub(r'^\d+_', '', key)
             key_replace_back = re.sub(r'[:_]\d+$', '', key_replace_front)
             obj_item = key_replace_back.replace('_', ' ')
-        with open(scene_name_path, 'r') as f:
+        scene_dir = scene_name_path
+        scene_json_path = os.path.join(scene_dir, matched_episode,'.json')
+        print("scene_json_path:",scene_json_path)
+        with open(scene_json_path, 'r') as f:
             scene_name_data = json.load(f)
         result_find = []
         for sc_name in scene_name_data:
@@ -244,6 +268,7 @@ class DummyAgent:
                         print(f"choose_rag_point:head_rgb_{str(index)}/episode_id:{episode_id}")
                         return item['localization_sensor'][:4]
         return None
+    
     def action_check_and_get(self,observations,eval_info):
         if not self.have_reset_arm:
             self.have_reset_arm = True
@@ -272,10 +297,12 @@ class DummyAgent:
         return action_dict
     def get_vlm_policy_info(self,observations,eval_info):
         debug_seen = True
+        is_divided_prompt = False
         episode_id,data_path = eval_info
         if self.episode_id != episode_id:
             self.episode_id = episode_id
             self.trial_time = 0
+            self.history = ""
         if(self.agent_name == "agent_1"):
             return {
                 "name": "wait",
@@ -285,91 +312,97 @@ class DummyAgent:
         depth_info = observations["depth_inf"].cpu()
         depth_rot = observations["depth_rot"].cpu()
         depth_trans = observations["depth_trans"].cpu()
-        print("depth_infoshape:",depth_info.shape)
-        print("depth_rotshape:",depth_rot)
-        print("depth_transshape:",depth_trans)
-        # print("depth_rot:",depth_rot)
-        # print("depth_trans:",depth_trans)
-        # print("head_rgb:",head_rgb)
-        print("observations[""]",observations["rec_bounding_box"])
         _,_,w_rec,h_rec = observations["rec_bounding_box"].cpu()[0][0]
         _,_,w_tag,h_tag = observations["target_bounding_box"].cpu()[0][0]
-        print(f"w_rec:{w_rec},h_rec:{h_rec}")
-        scene_dir = 'data/datasets/test_scene_graph/scene_dir/108736689_177263340.json'
+        # print(f"w_rec:{w_rec},h_rec:{h_rec}")
+        # scene_dir = 'data/datasets/test_scene_graph/scene_dir/108736689_177263340.json'
+        scene_dir = '/mnt/workspace/data_1024/scene_annotation'
         target_name, goal_name, obj_item = self.find_rec_name(episode_id,scene_dir,data_path,scene_dir)
         print(f"target_name:{target_name},goal_name:{goal_name},obj_item:{obj_item}")
-        seen_divide = 0
-        if "pick" in self.have_finished_action:
-            seen_divide = int(w_tag)*int(h_tag)
-        else:
-            
-            seen_divide = int(w_rec)*int(h_rec)
-        prompt = ""
-        images_list = []
-        scene_graph_path = f'data/scene_graph/108736689_177263340/data_8/episode_{episode_id}'
-        print("seen_divide:",seen_divide)
-        if debug_seen:
-            min_seen = 0
-        if seen_divide > min_seen:
-            prompt = f"""You are an AI visual assistant that can manage a single robot.
-            You receive the robot's task and one image representing the robot's current view.
-            You need to output the robot's next action. Actions the robot can perform are \"nav_to_point\", \"pick\" and \"place\".
-            Your output format should be \"action_name<box>[[x1, y1, x2, y2]]</box>\".
-            Robot's Task: The robot need to navigate to the {target_name} where the {obj_item} is located,
-            pick the {obj_item}up,navigate to the {goal_name} and place the {obj_item}.Robot's current view: <image>"""
-            images_list = [head_rgb.squeeze(0)]
-            vlm_output = self.send_and_receive(images_list,episode_id,prompt)
-            print("vlm_output:",vlm_output)
-            return self.seen_process(vlm_output,depth_info,depth_rot,depth_trans)
-        else:
-            if self.rag_truly_output:
-                self.rag_truly_output = False
-                nav_point_new = self.rag_truly_output_point
-                nav_point_new[4] = 0
+        if is_divided_prompt:
+            seen_divide = 0
+            if "pick" in self.have_finished_action:
+                seen_divide = int(w_tag)*int(h_tag)
+            else:
+                seen_divide = int(w_rec)*int(h_rec)
+            prompt = ""
+            images_list = []
+            scene_graph_path = f'data/scene_graph/108736689_177263340/data_8/episode_{episode_id}'
+            print("seen_divide:",seen_divide)
+            if debug_seen:
+                min_seen = 0
+            if seen_divide > min_seen:
+                prompt = f"""You are an AI visual assistant that can manage a single robot.
+                You receive the robot's task and one image representing the robot's current view.
+                You need to output the robot's next action. Actions the robot can perform are \"nav_to_point\", \"pick\" and \"place\".
+                Your output format should be \"action_name<box>[[x1, y1, x2, y2]]</box>\".
+                Robot's Task: The robot need to navigate to the {target_name} where the {obj_item} is located,
+                pick the {obj_item}up,navigate to the {goal_name} and place the {obj_item}.Robot's current view: <image>"""
+                images_list = [head_rgb.squeeze(0)]
+                vlm_output = self.send_and_receive(images_list,episode_id,prompt)
+                print("vlm_output:",vlm_output)
+                return self.seen_process(vlm_output,depth_info,depth_rot,depth_trans)
+            else:
+                if self.rag_truly_output:
+                    self.rag_truly_output = False
+                    nav_point_new = self.rag_truly_output_point
+                    nav_point_new[4] = 0
+                    return {
+                        "name": "nav_to_position",
+                        "arguments": {
+                            "target_position": nav_point_new,
+                            "robot": self.agent_name,
+                        }
+                    }
+                rag_target = goal_name if "pick" in self.have_finished_action else target_name
+                prompt = f"""\nYou are a robot operating in a scene and your task is to respond to the user 
+                command about going to a specific location by finding the closest frame in the tour video to navigate to. \n
+                These frames are from the robot's tour of the scene:\nFrame1: <image>\nFrame2: <image>\nFrame3: <image>\nFrame4: <image>\nFrame5: <image>\nFrame6: <image>\nFrame7: <image>\nFrame8: <image>\nFrame9: <image>\nFrame10: <image>\nFrame11: <image>\nFrame12: <image>\n
+                Now the robot task is:navigate to the {rag_target}.\nPlease identify and find the frame that the robot should navigate to complete the task. """
+                image_paths = self.get_image_paths(scene_graph_path)
+                print("image_paths:",image_paths)
+                images_list,names_list = self.images_to_tensors(image_paths)
+                scene_json_path = 'data/scene_graph/108736689_177263340/data_8/metadata.json'
+                image_index_test = 1 if "pick" in self.have_finished_action else 0
+                if not debug_seen:
+                # print("images_list:",images_list.shape)
+                    vlm_output = self.send_and_receive(images_list,episode_id,prompt,is_rag = True)
+                    match = re.search(r'"image_index": (\d+)', vlm_output)
+                    if match:
+                        image_index = int(match.group(1)) - 1
+                        print("output_index:",image_index)
+                with open(scene_json_path, 'r') as f:
+                    data_index = json.load(f)
+                nav_position = self.get_localization_sensor(data_index,episode_id,image_index_test)
+                self.trial_time +=1
+                if self.trial_time > 4:
+                    return {
+                        "name": "wait",
+                        "arguments": ['3000','agent_0']
+                    }
+                self.rag_truly_output = True
+                nav_position.append(1)
+                self.rag_truly_output_point = nav_position
                 return {
                     "name": "nav_to_position",
                     "arguments": {
-                        "target_position": nav_point_new,
+                        "target_position": nav_position,
                         "robot": self.agent_name,
                     }
                 }
-            rag_target = goal_name if "pick" in self.have_finished_action else target_name
-            prompt = f"""\nYou are a robot operating in a scene and your task is to respond to the user 
-            command about going to a specific location by finding the closest frame in the tour video to navigate to. \n
-            These frames are from the robot's tour of the scene:\nFrame1: <image>\nFrame2: <image>\nFrame3: <image>\nFrame4: <image>\nFrame5: <image>\nFrame6: <image>\nFrame7: <image>\nFrame8: <image>\nFrame9: <image>\nFrame10: <image>\nFrame11: <image>\nFrame12: <image>\n
-            Now the robot task is:navigate to the {rag_target}.\nPlease identify and find the frame that the robot should navigate to complete the task. """
-            image_paths = self.get_image_paths(scene_graph_path)
-            print("image_paths:",image_paths)
-            images_list,names_list = self.images_to_tensors(image_paths)
-            scene_json_path = 'data/scene_graph/108736689_177263340/data_8/metadata.json'
-            image_index_test = 1 if "pick" in self.have_finished_action else 0
-            if not debug_seen:
-            # print("images_list:",images_list.shape)
-                vlm_output = self.send_and_receive(images_list,episode_id,prompt,is_rag = True)
-                match = re.search(r'"image_index": (\d+)', vlm_output)
-                if match:
-                    image_index = int(match.group(1)) - 1
-                    print("output_index:",image_index)
-            with open(scene_json_path, 'r') as f:
-                data_index = json.load(f)
-            nav_position = self.get_localization_sensor(data_index,episode_id,image_index_test)
-            self.trial_time +=1
-            if self.trial_time > 4:
-                return {
-                    "name": "wait",
-                    "arguments": ['3000','agent_0']
-                }
-            self.rag_truly_output = True
-            nav_position.append(1)
-            self.rag_truly_output_point = nav_position
-            return {
-                "name": "nav_to_position",
-                "arguments": {
-                    "target_position": nav_position,
-                    "robot": self.agent_name,
-                }
-            }
-        return None
+                return None
+        else:
+            scene_graph_path = '/mnt/workspace/data_1024/sat_dataset_10scene_temppickplace/image/1'
+            head_rgb_obs_list = [head_rgb.squeeze(0)]
+            rag_images_path = self.get_one_prompt_image_paths(scene_graph_path)
+            rag_image_list,rag_image_name_list = self.images_to_tensors(rag_images_path)
+            target_id_gt = rag_image_name_list.index(target_name) + 1
+            goal_id_gt = rag_image_name_list.index(goal_name) + 1
+            
+
+
+
+
     def agent_output(self,skill_name_to_idx,observations,eval_info,**kwargs):
         # print("kwargs",kwargs)
         episode_id,data_path = eval_info

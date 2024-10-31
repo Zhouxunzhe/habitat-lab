@@ -18,7 +18,6 @@ from habitat.datasets.rearrange.navmesh_utils import (
 )
 from habitat.utils.visualizations.utils import observations_to_image
 
-
 def save_image(image, file_path):
     from PIL import Image
     img = Image.fromarray(image)
@@ -73,7 +72,21 @@ def calculate_orientation_xz_plane(position, goal_position):
     # qw = 0  # Unit quaternion constraint
     
     return [qx, qy, qz, qw]
-
+def get_orientation(loc):
+    final_nav_targ = loc[:3]
+    theta = loc[3]
+    # is_z_positive = loc[4]
+    # if is_z_positive == 0:
+    #     dz = 3.0
+    # else:
+    #     dz = -3.0
+    # dx = dz / np.tan(theta)
+    # x_obj = final_nav_targ[0] + dx
+    # z_obj = final_nav_targ[2] + dz
+    # obj_targ_pos = [x_obj,final_nav_targ[1],z_obj]
+    # orientation = calculate_orientation_xz_plane(final_nav_targ,obj_targ_pos)
+    return np.array(final_nav_targ),np.array([theta])
+    
 def set_articulated_agent_base_state(sim: RearrangeSim, base_pos, base_rot, agent_id=0):
     """
     Set the base position and rotation of the articulated agent.
@@ -117,6 +130,140 @@ def get_target_objects_info(sim: RearrangeSim) -> Tuple[List[int], List[np.ndarr
 
     return target_idxs, target_handles, start_positions, goal_positions
 
+def generate_scene_graph_from_store_dict(args):
+    print("seed:",args.seed)
+    np.random.seed(args.seed)
+    config = get_hssd_single_agent_config(args.config)
+    # print("config:",config)
+    # config['habitat']['simulator']['habitat_sim_v0']['gpu_device_id'] = gpu_id
+    # config['habitat']['simulator']['dataset']['data_path'] = dataset_path
+    # print("config:",config)
+    env = Env(config=config)
+
+    dataset = env._dataset
+    metadata = []
+    max_images = args.max_images
+    dist_to_target = args.dist_to_target
+    min_dis = args.min_point_dis
+    output_dir = args.output_dir
+    meta_json_path = args.meta_json_path
+    obs_keys = args.obs_keys
+    for episode in dataset.episodes:
+        # reset automatically calls next episode
+        # print("episode_info:",episode)
+        env.reset()
+        sim: RearrangeSim = env.sim
+        # get the largest island index
+        largest_island_idx = get_largest_island_index(
+            sim.pathfinder, sim, allow_outdoor=True
+        )
+        graph_positions = []
+        graph_orientations = []
+        graph_annotations = []
+        with open(meta_json_path, 'r') as file:
+            data = json.load(file)
+        object_rec_loc = data[0]['localization_sensor']
+        target_rec_loc = data[1]['localization_sensor']
+        object_rec_location,object_rec_orientation = get_orientation(object_rec_loc)
+        target_rec_location,target_rec_orientation = get_orientation(target_rec_loc)
+        graph_positions.append(object_rec_location)
+        graph_orientations.append(object_rec_orientation)
+        graph_annotations.append("object_rec")
+        graph_positions.append(target_rec_location)
+        graph_orientations.append(target_rec_orientation)
+        graph_annotations.append("goal_rec")
+        # Get scene objects ids
+        scene_obj_ids = sim.scene_obj_ids
+        
+        # Get target objects' information
+        # object_ids, object_handles, start_positions, goal_positions = get_target_objects_info(sim)
+        # Sample navigable points near the target objects start positions and goal positions
+        # And calculate the orientation of the agent facing towards the position 
+        # print("graph_positions:",graph_positions)
+        # print("graph_orientations:",graph_orientations)
+
+        # Sample navigable points if images are less than the maximum number of images
+        if len(graph_positions) < max_images:
+            i = 0
+            min_bbox = args.random_min_bbox
+            while(max_images>len(graph_positions)):
+                # Sample a random navigable point in the scene
+                point = sim.pathfinder.get_random_navigable_point(island_index=largest_island_idx)
+                orientation = random_quaternion_xz_plane()
+                min_dis_flag = 0
+                min_point_dis = min_dis
+                for item in graph_positions[:2]:
+                    x1 = point[0]
+                    y1 = point[2]
+                    x2 = item[0]
+                    y2 = item[2]
+                    # print("dis:",int(np.sqrt(((x1-x2) ** 2)+((y1-y2) ** 2))))
+                    if int(np.sqrt(((x1-x2) ** 2)+((y1-y2) ** 2))) < min_point_dis:
+                        min_dis_flag = 1
+                        break
+                if min_dis_flag == 0:
+                    set_articulated_agent_base_state(sim, point, orientation, agent_id=0)
+                    observations = env.step({"action": (), "action_args": {}})
+                    env._episode_over = False
+                    _,_,w_tar,h_tar = observations["target_bounding_box"][0]
+                    _,_,w_rec,h_rec = observations["rec_bounding_box"][0]
+                    if w_tar*h_tar<min_bbox and w_rec*h_rec<min_bbox:
+                        i+=1
+                        graph_positions.append(point)
+                        graph_orientations.append(orientation)
+                        graph_annotations.append("random")
+        # print("graph_positions:",graph_positions)
+        # print("graph_orientations:",graph_orientations)
+        # print("graph_annotations:",graph_annotations)  
+        # Create a folder for this episode
+        episode_dir = output_dir
+        if not os.path.exists(episode_dir):
+            os.makedirs(episode_dir)
+        # print("graph_positions:",graph_positions)
+        # print("graph_orientations:",graph_orientations)
+        for idx, (position, orientation,annotation) in enumerate(zip(graph_positions, graph_orientations,graph_annotations)):
+            # observations = env.sim.get_observations_at(position=position, rotation=orientation)
+            # print("setin:",graph_positions,graph_orientations,flush = True)
+            set_articulated_agent_base_state(sim, position, orientation, agent_id=0)
+            observations = env.step({"action": (), "action_args": {}})
+            
+            # Force the episode to be active
+            env._episode_over = False
+            obs_file_list = []
+            for obs_key in obs_keys:
+                if obs_key in observations:
+                    image = observations[obs_key]
+                    if annotation == "object_rec":
+                        image_file_name = f"target_rec.png"
+                    elif annotation == "goal_rec":
+                        image_file_name = f"goal_rec.png"
+                    else:
+                        image_file_name = f"random_scene_graph_{idx}.png"
+                    image_file_path = os.path.join(episode_dir, image_file_name)
+                    save_image(image, image_file_path)
+                    obs_file_list.append(image_file_name)
+            # for bbox in args.bbox:
+            #     if bbox in observations:
+            #         print(f"{bbox}:{observations[bbox]}")
+            metadata.append({
+                "episode_id": episode.episode_id,
+                "obs_files": obs_file_list,
+                "position": position,
+                "rotation": orientation,
+                # "detected_objects": observations["objectgoal"],
+            })
+        
+        env._episode_over = True
+        
+    # Save metadata to JSON
+    metadata_file_path = os.path.join(output_dir, "metadata.json")
+    class NumpyEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return super().default(obj)
+    with open(metadata_file_path, "w") as f:
+        json.dump(metadata, f, indent=4, cls=NumpyEncoder)
 def generate_scene_graph(
     dataset_path,
     config_path="benchmark/single_agent/zxz_fetch.yaml",
@@ -255,8 +402,8 @@ def generate_scene_graph(
             env._episode_over = False
             
             obs_file_list = []
-            for key in observations.keys():
-                print(key)
+            # for key in observations.keys():
+            #     print(key)
             for obs_key in obs_keys:
                 if obs_key in observations:
                     image = observations[obs_key]
@@ -452,7 +599,7 @@ def main(args):
 def parse_args():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="single_rearrange/zxz_llm_fetch.yaml")
+    parser.add_argument("--config", type=str, default="benchmark/single_agent/zxz_fetch.yaml")
     parser.add_argument("--output_dir", type=str, default="data/sparse_slam/rearrange/hssd")
     parser.add_argument("--obs_keys", nargs="+", default=["head_rgb"])
     parser.add_argument("--dist_to_target", type=float, default=6.0)
@@ -462,25 +609,47 @@ def parse_args():
     parser.add_argument("--bbox_range_min", type=int, default=2700)
     parser.add_argument("--bbox_range_max", type=int, default=4500)
     parser.add_argument("--min_point_dis", type=float, default=3.2)
-    parser.add_argument("--random_min_bbox", type=int, default=400)
-    parser.add_argument("--gpu_id", type=int, default=4)
-    parser.add_argument("--dataset_path", type=str, default="data/datasets/hssd_scene_new/104348463_171513588/data_0.json.gz")
+    parser.add_argument("--random_min_bbox", type=int, default=200)
+    parser.add_argument("--gpu_id", type=int, default=0)
+    parser.add_argument("--dataset_path", type=str, default="0/scene_graph.gz")
     parser.add_argument("--anti_position_path",type=str,default="")
-
-
-    
     # parser.add_argument("--output_dir", type=str, default="data/sparse_slam/rearrange/mp3d")
     args = parser.parse_args()
 
     # Create output directory if it does not exist
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
-    
     # Set seed
     np.random.seed(args.seed)
     return args
+def parse_args_new():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="benchmark/single_agent/override/scene_graph_pipeline/37.yaml")
+    parser.add_argument("--output_dir", type=str, default="0/")
+    parser.add_argument("--obs_keys", nargs="+", default=["head_rgb"])
+    parser.add_argument("--dist_to_target", type=float, default=6.0)
+    parser.add_argument("--max_trials", type=int, default=60)
+    parser.add_argument("--max_images", type=int, default=12)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--bbox_range_min", type=int, default=2000)
+    parser.add_argument("--bbox_range_max", type=int, default=4500)
+    parser.add_argument("--min_point_dis", type=float, default=3.2)
+    parser.add_argument("--random_min_bbox", type=int, default=200)
+    parser.add_argument("--gpu_id", type=int, default=0)
+    parser.add_argument("--anti_position_path",type=str,default="")
+    parser.add_argument("--meta_json_path",type=str,default="37/scene_graph_info.json")   
+    # parser.add_argument("--output_dir", type=str, default="data/sparse_slam/rearrange/mp3d")
+    args = parser.parse_args()
+
+    # Create output directory if it does not exist
+    # if not os.path.exists(args.output_dir):
+    #     os.makedirs(args.output_dir)
+    # Set seed
+    return args
 
 if __name__ == "__main__":
-    args = parse_args()
+    args = parse_args_new()
     
-    main(args)
+    # main(args)
+    generate_scene_graph_from_store_dict(args)

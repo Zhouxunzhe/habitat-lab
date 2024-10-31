@@ -1019,6 +1019,173 @@ def datatrans_2_end_sat_waypoint_closer(process_dir:str,skip_len:int,pick_place_
         except:
             continue
     return sample_info
+def datatrans_2_end_sat_waypoint_closer_jumper(process_dir:str,skip_len:int,pick_place_sample_num=3,sample_clip=800,pick_place_skip = 3)  -> list:
+    find_episode = []
+    
+    skip_len_start = skip_len
+    process_dir_path = process_dir
+    for folder_name in os.listdir(process_dir_path):
+        json_path = os.path.join(process_dir_path,folder_name,"sum_data.json")
+        if os.path.exists(json_path):
+            with open(json_path,'r',encoding='utf-8') as f:
+                data = json.load(f)
+                if 'entities' in data:
+                    entity_count = len(data['entities'])
+                    if 5< entity_count < sample_clip-5:
+                        find_episode.append(folder_name)
+    temp_q = 0
+    sample_info = []
+    for name in find_episode:
+        try:
+            with open(os.path.join(process_dir_path,name,"data/data_trans.json"), 'r') as file:
+                data = json.load(file)
+
+            data_final_0 = []
+            action = ["turn","nav_to_point","pick","turn","nav_to_point","place"]
+            action_point_index = []
+            i = 1
+            result_agent_0 = []
+            flag = 0
+            late_action = data[0]["agent_0_action"]
+            while i < len(data):
+                if (data[i]["agent_0_action"] != late_action):
+                    action_point_index.append(i)
+                    late_action = data[i]["agent_0_action"]
+                i+=1
+            # print("action_point_index:",action_point_index)
+            assert len(action_point_index) == 5,"Wrong episode"
+            turn1 = {
+                "step":1,
+                "action":{
+                    "name":"search_for_object_rec",
+                    "position":None
+                },
+                "image":f"frame_1"+"_agent_0_head_rgbFetchRobot_head_rgb.png",
+            }
+            data_final_0.append(turn1)
+            nav_1_point = [action_point_index[0]]
+            i = action_point_index[0]
+            skip_len = skip_len_start +random.randint(-3,3)
+            while i +skip_len < action_point_index[1]:
+                now_step = i
+                if i+skip_len+14 >= action_point_index[1]:
+                    i = action_point_index[1]
+                else:
+                    i +=skip_len
+                skip_len = skip_len_start +random.randint(-3,3)
+                test_step = i
+                for a in range(now_step,test_step):
+                    test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
+                                                 point_3d=data[test_step]["agent_0_now_worldloc"][:3])
+                    x,y = test_point
+                    if not (0 <= x < 256 and 0 <= y < 256):
+                        test_step -=1
+                    else:
+                        break
+                nav_1_point.append(test_step)
+                i = test_step
+            if nav_1_point[-1] != action_point_index[1]:
+                nav_1_point.append(action_point_index[1])
+            for i in range(len(nav_1_point)):
+                if i+1< len(nav_1_point):
+                    x,y = _3d_to_2d(matrix=data[nav_1_point[i]]["agent_0_martix"],
+                                                 point_3d=data[nav_1_point[i+1]]["agent_0_now_worldloc"][:3])
+                    x = limit_to_range(x)
+                    y = limit_to_range(y)
+                    nav_temp = {
+                        "step":data[nav_1_point[i]]["step"],
+                        "action":{
+                            "name":"nav_to_point",
+                            "position":[x,y]
+                        },
+                        "image":f"frame_"+str(data[nav_1_point[i]]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png",
+                    }
+                    data_final_0.append(nav_temp)
+            for i in range(action_point_index[1]-(3*pick_place_skip),action_point_index[1]+1,pick_place_skip):
+                pick_temp = {
+                    "step":data[i]["step"],
+                    "action":{
+                        "name":"pick",
+                        "position":data[i]["agent_0_obj"]
+                    },
+                    "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png",
+                }
+                data_final_0.append(pick_temp)
+            turn2 = {
+                "step":action_point_index[2],
+                "action":{
+                    "name":"search_for_goal_rec",
+                    "position":None
+                },
+                "image":f"frame_"+str(action_point_index[2])+"_agent_0_head_rgbFetchRobot_head_rgb.png",
+                "step_info":{}
+            }
+            data_final_0.append(turn2)
+            nav_2_point = [action_point_index[3]]
+            i = action_point_index[3]
+            skip_len = skip_len_start +random.randint(-3,3)
+            while i +skip_len < action_point_index[4]:
+                now_step = i
+                if i+skip_len+14 >= action_point_index[4]:
+                    i = action_point_index[4]
+                else:
+                    i +=skip_len
+                skip_len = skip_len_start +random.randint(-3,3)
+                test_step = i
+                for a in range(now_step,test_step):
+                    test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
+                                                 point_3d=data[test_step]["agent_0_now_worldloc"][:3])
+                    x,y = test_point
+                    if not (0 <= x < 256 and 0 <= y < 256):
+                        test_step -=1
+                    else:
+                        break
+                nav_2_point.append(test_step)
+                i = test_step
+            if nav_2_point[-1] != action_point_index[4]:
+                nav_2_point.append(action_point_index[4])
+            for i in range(len(nav_2_point)):
+                if i+1< len(nav_2_point):
+                    x,y = _3d_to_2d(matrix=data[nav_2_point[i]]["agent_0_martix"],
+                                                 point_3d=data[nav_2_point[i+1]]["agent_0_now_worldloc"][:3])
+                    x = limit_to_range(x)
+                    y = limit_to_range(y)
+                    nav_temp = {
+                        "step":data[nav_2_point[i]]["step"],
+                        "action":{
+                            "name":"nav_to_point",
+                            "position": [x,y]
+                            },
+                        "image":f"frame_"+str(data[nav_2_point[i]]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png",
+                    }
+                    data_final_0.append(nav_temp)
+            for i in range(action_point_index[4]-(3*pick_place_skip),action_point_index[4]+1,pick_place_skip):
+                place_temp = {
+                    "step":data[i]["step"],
+                    "action":{
+                        "name":"place",
+                        "position":data[i]["agent_0_target"]
+                    },
+                    "image":f"frame_"+str(data[i]["step"])+"_agent_0_head_rgbFetchRobot_head_rgb.png",
+                }
+                data_final_0.append(place_temp)
+            temp_info = {
+                    "episode_id":int(name.replace('episode_', '')),
+                    "sample_frame":[],
+                }
+            for i in range(len(data_final_0)):
+                match = re.search(r"frame_(\d+)_agent_(\d+)", data_final_0[i]["image"])
+                if match:
+                    frame_number = match.group(1)
+                    agent_number = match.group(2)
+                result_0 = [int(frame_number), int(agent_number)]
+                temp_info["sample_frame"].append(result_0)   
+            sample_info.append(temp_info)
+            with open(os.path.join(process_dir_path,name,f"{name}.json"), 'w') as file:
+                json.dump(data_final_0, file, indent=2)
+        except:
+            continue
+    return sample_info
     
 if __name__ == "__main__":
     print(datatrans_2_end_single_agent_waypoint(process_dir="test_vlm_agent",skip_len=28))
