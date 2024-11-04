@@ -307,6 +307,7 @@ class RearrangeGraspManager:
         """
         if snap_obj_id == self._snapped_obj_id:
             # Already grasping this object.
+            print("Already grasping object")
             return
 
         if len(self._snap_constraints) != 0:
@@ -316,6 +317,7 @@ class RearrangeGraspManager:
             )
 
         if force:
+            # print("objmgr:",self._sim.get_rigid_object_manager())
             self._snapped_obj_id = snap_obj_id
             # Set the transformation to be in the robot's hand already.
             self.update_object_to_grasp()

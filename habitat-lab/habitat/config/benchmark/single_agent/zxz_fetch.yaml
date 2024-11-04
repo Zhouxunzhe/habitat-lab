@@ -102,7 +102,7 @@ habitat:
       agent_0:
         joint_start_noise: 0.0
   dataset:
-    data_path: 0/scene_graph.gz
+    data_path: data/datasets/hssd_scene_13scene/104348463_171513588/data_0.json.gz
     # new
     randomize_agent_start: 1
     robot_config: data/robots/json/manipulation.json

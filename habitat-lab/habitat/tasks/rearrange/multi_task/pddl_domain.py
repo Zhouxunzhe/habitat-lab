@@ -150,6 +150,7 @@ class PddlDomain:
         """
 
         self.predicates: Dict[str, Predicate] = {}
+        # print("domain_def:",domain_def)
         for pred_d in domain_def["predicates"]:
             arg_entities = [
                 PddlEntity(arg["name"], self.expr_types[arg["expr_type"]])
@@ -193,7 +194,6 @@ class PddlDomain:
                 is_detected = all_entities.get(is_detected, is_detected)
             elif pred_d['name'] == 'any_at':
                 any_at = all_entities.get(any_at, any_at)
-                
             set_state = PddlSimState(art_states, obj_states, use_robot_states, is_detected, any_at)
 
             pred = Predicate(pred_d["name"], set_state, arg_entities)

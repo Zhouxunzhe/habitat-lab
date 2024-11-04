@@ -32,11 +32,6 @@ def process_directory(base_dir,skip_len):
                         step_data = data['entities'][i]
                         # agent_0_trans_matrix = step_data['data']['agent_0_robot_trans_martix']
                         agent_0_nowloc = step_data['data']['agent_0_localization_sensor']
-                        # agent_1_nowloc = step_data['data']['agent_1_localization_sensor']
-                        # agent_1_trans_matrix = step_data['data']['agent_1_robot_trans_martix']
-                        # agent_0_eeglobal = step_data['data']['agent_0_ee_global_pos_sensor']
-                        # agent_1_eeglobal = step_data['data']['agent_1_ee_global_pos_sensor']
-                        # agent_1_pre_worldloc = next_step_data['data']['agent_1_localization_sensor']
                         agent_0_obj = step_data['data']['agent_0_obj_bounding_box']
                         # agent_1_objpos = step_data['data']['agent_1_obj_pos']
                         agent_0_camera = step_data['data']['agent_0_camera_extrinsic']
@@ -45,30 +40,21 @@ def process_directory(base_dir,skip_len):
                         else:
                             agent_0_target = step_data['data']['agent_0_target_bounding_box']
                         agent_0_rec = step_data['data']['agent_0_rec_bounding_box']
-
-                        # agent_0_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_0_eeglobal)
-                        # agent_1_pre_eepos = trans_worldloc_to_robotloc(agent_0_trans_matrix, agent_1_eeglobal)
-                        # agent_0_pre_robotloc = trans_worldloc_to_robotloc(np.array(agent_0_trans_matrix), agent_0_pre_worldloc[:3])
-                        # agent_1_pre_robotloc = trans_worldloc_to_robotloc(np.array(agent_1_trans_matrix), agent_1_pre_worldloc[:3])
-                        # agent_0_obj_ro = trans_worldloc_to_robotloc(np.array(agent_0_trans_matrix), agent_0_objpos[:3])
-                        # agent_1_obj_ro = trans_worldloc_to_robotloc(np.array(agent_1_trans_matrix), agent_1_objpos[:3])
-                        # agent_0_prepix = _project_points_to_image(points_3d=agent_0_obj_ro, point_3d_match=agent_0_pre_robotloc[:3], camera_info=camera_info, cam_trans=camera_extrinsic_old)
-                        # agent_1_prepix = _project_points_to_image(points_3d=agent_1_obj_ro, point_3d_match=agent_1_pre_robotloc[:3], camera_info=camera_info, cam_trans=camera_extrinsic_old)
                         if agent_0_action == 0:
                             x,y,w,h = agent_0_rec[0]
-                            if w*h > 3000 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
+                            if w*h > 12000 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
                                 agent_0_action+=1
-                        if agent_0_action == 3:
+                        elif agent_0_action == 3:
                             x,y,w,h = agent_0_target[0]
                             # print("target",agent_0_target[0])
-                            if w*h > 3000 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
+                            if w*h > 12000 and agent_0_nowloc[:3]!= data['entities'][i+1]['data']['agent_0_localization_sensor'][:3]:
                                 agent_0_action+=1
                                 
-                        if (agent_0_action == 1 or agent_0_action == 4) and step_data['data']['agent_0_has_finished_oracle_nav'] == [1.0]:
+                        elif (agent_0_action == 1 or agent_0_action == 4) and step_data['data']['agent_0_has_finished_oracle_nav'] == [1.0]:
                             if agent_0_action == 4:
                                 place_index = i
                             agent_0_action += 1
-                        if agent_0_action == 2 and data['entities'][i]['data']['agent_0_localization_sensor'] != data['entities'][i-1]['data']['agent_0_localization_sensor']:
+                        elif agent_0_action == 2 and data['entities'][i+1]['data']['agent_0_localization_sensor'] != data['entities'][i]['data']['agent_0_localization_sensor']:
                             agent_0_action += 1
                         # annotation of the agent_0's action
                         # if (agent_1_action == 0 or agent_1_action == 2) and step_data['data']['agent_1_has_finished_oracle_nav'] == [1.0]:

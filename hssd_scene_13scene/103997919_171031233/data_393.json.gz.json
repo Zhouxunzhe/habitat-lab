@@ -1,0 +1,409 @@
+{
+    "config": null,
+    "episodes": [
+        {
+            "episode_id": "0",
+            "scene_id": "data/scene_datasets/hssd-hab/scenes-uncluttered/103997919_171031233.scene_instance.json",
+            "scene_dataset_config": "data/scene_datasets/hssd-hab/hssd-hab-uncluttered.scene_dataset_config.json",
+            "additional_obj_config_paths": [
+                "data/objects/ycb/configs/",
+                "data/replica_cad/configs/objects/"
+            ],
+            "start_position": [
+                0,
+                0,
+                0
+            ],
+            "start_rotation": [
+                0,
+                0,
+                0,
+                1
+            ],
+            "info": {
+                "object_labels": {
+                    "002_master_chef_can_:0000": "any_targets|0"
+                }
+            },
+            "ao_states": {},
+            "rigid_objs": [
+                [
+                    "002_master_chef_can.object_config.json",
+                    [
+                        [
+                            0.98328,
+                            3e-05,
+                            0.18212,
+                            -4.70013
+                        ],
+                        [
+                            -4e-05,
+                            1.0,
+                            6e-05,
+                            0.53158
+                        ],
+                        [
+                            -0.18212,
+                            -7e-05,
+                            0.98328,
+                            1.27317
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    ]
+                ]
+            ],
+            "targets": {
+                "002_master_chef_can_:0000": [
+                    [
+                        -0.15304,
+                        0.0,
+                        0.98822,
+                        -6.10568
+                    ],
+                    [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.92236
+                    ],
+                    [
+                        -0.98822,
+                        0.0,
+                        -0.15304,
+                        -2.02069
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                ]
+            },
+            "markers": [],
+            "target_receptacles": [
+                [
+                    "fed2a84682713eabe2b8d0e1e950d891c7442d5f_:0001",
+                    null
+                ]
+            ],
+            "goal_receptacles": [
+                [
+                    "1f683d9d9451e5347cc742a539e94468a18e9a7c_:0000",
+                    null
+                ]
+            ],
+            "name_to_receptacle": {
+                "002_master_chef_can_:0000": "fed2a84682713eabe2b8d0e1e950d891c7442d5f_:0001|receptacle_mesh_fed2a84682713eabe2b8d0e1e950d891c7442d5f.0000"
+            }
+        },
+        {
+            "episode_id": "1",
+            "scene_id": "data/scene_datasets/hssd-hab/scenes-uncluttered/103997919_171031233.scene_instance.json",
+            "scene_dataset_config": "data/scene_datasets/hssd-hab/hssd-hab-uncluttered.scene_dataset_config.json",
+            "additional_obj_config_paths": [
+                "data/objects/ycb/configs/",
+                "data/replica_cad/configs/objects/"
+            ],
+            "start_position": [
+                0,
+                0,
+                0
+            ],
+            "start_rotation": [
+                0,
+                0,
+                0,
+                1
+            ],
+            "info": {
+                "object_labels": {
+                    "010_potted_meat_can_:0000": "any_targets|0"
+                }
+            },
+            "ao_states": {},
+            "rigid_objs": [
+                [
+                    "010_potted_meat_can.object_config.json",
+                    [
+                        [
+                            -0.82645,
+                            -0.01197,
+                            -0.56288,
+                            -7.0132
+                        ],
+                        [
+                            0.07338,
+                            0.98896,
+                            -0.12877,
+                            0.59716
+                        ],
+                        [
+                            0.5582,
+                            -0.14773,
+                            -0.81645,
+                            -5.78567
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    ]
+                ]
+            ],
+            "targets": {
+                "010_potted_meat_can_:0000": [
+                    [
+                        -0.37821,
+                        0.0,
+                        -0.92572,
+                        -0.46392
+                    ],
+                    [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.56308
+                    ],
+                    [
+                        0.92572,
+                        0.0,
+                        -0.37821,
+                        -0.60366
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                ]
+            },
+            "markers": [],
+            "target_receptacles": [
+                [
+                    "8d4442ba5d31ebcbd6e33efad5c3531b6583ef32_:0000",
+                    null
+                ]
+            ],
+            "goal_receptacles": [
+                [
+                    "17e3ab9295832bd22e220a7f861580bb5aaeb007_:0000",
+                    null
+                ]
+            ],
+            "name_to_receptacle": {
+                "010_potted_meat_can_:0000": "8d4442ba5d31ebcbd6e33efad5c3531b6583ef32_:0000|receptacle_mesh_8d4442ba5d31ebcbd6e33efad5c3531b6583ef32.0002"
+            }
+        },
+        {
+            "episode_id": "2",
+            "scene_id": "data/scene_datasets/hssd-hab/scenes-uncluttered/103997919_171031233.scene_instance.json",
+            "scene_dataset_config": "data/scene_datasets/hssd-hab/hssd-hab-uncluttered.scene_dataset_config.json",
+            "additional_obj_config_paths": [
+                "data/objects/ycb/configs/",
+                "data/replica_cad/configs/objects/"
+            ],
+            "start_position": [
+                0,
+                0,
+                0
+            ],
+            "start_rotation": [
+                0,
+                0,
+                0,
+                1
+            ],
+            "info": {
+                "object_labels": {
+                    "005_tomato_soup_can_:0000": "any_targets|0"
+                }
+            },
+            "ao_states": {},
+            "rigid_objs": [
+                [
+                    "005_tomato_soup_can.object_config.json",
+                    [
+                        [
+                            -0.4053,
+                            0.00032,
+                            -0.91419,
+                            -7.29906
+                        ],
+                        [
+                            0.00298,
+                            1.0,
+                            -0.00097,
+                            0.83204
+                        ],
+                        [
+                            0.91418,
+                            -0.00312,
+                            -0.40529,
+                            -4.12708
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    ]
+                ]
+            ],
+            "targets": {
+                "005_tomato_soup_can_:0000": [
+                    [
+                        0.37532,
+                        0.0,
+                        0.9269,
+                        -6.3734
+                    ],
+                    [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.58957
+                    ],
+                    [
+                        -0.9269,
+                        0.0,
+                        0.37532,
+                        -5.63943
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                ]
+            },
+            "markers": [],
+            "target_receptacles": [
+                [
+                    "41d16010bfc200eb4d71aea6edaf6ad4bc548105_:0000",
+                    null
+                ]
+            ],
+            "goal_receptacles": [
+                [
+                    "8d4442ba5d31ebcbd6e33efad5c3531b6583ef32_:0000",
+                    null
+                ]
+            ],
+            "name_to_receptacle": {
+                "005_tomato_soup_can_:0000": "41d16010bfc200eb4d71aea6edaf6ad4bc548105_:0000|receptacle_mesh_41d16010bfc200eb4d71aea6edaf6ad4bc548105.0000"
+            }
+        },
+        {
+            "episode_id": "3",
+            "scene_id": "data/scene_datasets/hssd-hab/scenes-uncluttered/103997919_171031233.scene_instance.json",
+            "scene_dataset_config": "data/scene_datasets/hssd-hab/hssd-hab-uncluttered.scene_dataset_config.json",
+            "additional_obj_config_paths": [
+                "data/objects/ycb/configs/",
+                "data/replica_cad/configs/objects/"
+            ],
+            "start_position": [
+                0,
+                0,
+                0
+            ],
+            "start_rotation": [
+                0,
+                0,
+                0,
+                1
+            ],
+            "info": {
+                "object_labels": {
+                    "008_pudding_box_:0000": "any_targets|0"
+                }
+            },
+            "ao_states": {},
+            "rigid_objs": [
+                [
+                    "008_pudding_box.object_config.json",
+                    [
+                        [
+                            0.41372,
+                            -0.02085,
+                            0.91017,
+                            -0.4625
+                        ],
+                        [
+                            -0.00652,
+                            0.99964,
+                            0.02586,
+                            0.5404
+                        ],
+                        [
+                            -0.91038,
+                            -0.01663,
+                            0.41343,
+                            -0.44761
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ]
+                    ]
+                ]
+            ],
+            "targets": {
+                "008_pudding_box_:0000": [
+                    [
+                        -0.95575,
+                        0.0,
+                        -0.29417,
+                        -5.30593
+                    ],
+                    [
+                        0.0,
+                        1.0,
+                        0.0,
+                        0.579
+                    ],
+                    [
+                        0.29417,
+                        0.0,
+                        -0.95575,
+                        -5.86169
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                ]
+            },
+            "markers": [],
+            "target_receptacles": [
+                [
+                    "17e3ab9295832bd22e220a7f861580bb5aaeb007_:0000",
+                    null
+                ]
+            ],
+            "goal_receptacles": [
+                [
+                    "8d4442ba5d31ebcbd6e33efad5c3531b6583ef32_:0000",
+                    null
+                ]
+            ],
+            "name_to_receptacle": {
+                "008_pudding_box_:0000": "17e3ab9295832bd22e220a7f861580bb5aaeb007_:0000|receptacle_mesh_17e3ab9295832bd22e220a7f861580bb5aaeb007.0001"
+            }
+        }
+    ]
+}

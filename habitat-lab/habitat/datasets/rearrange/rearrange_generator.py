@@ -468,7 +468,7 @@ class RearrangeEpisodeGenerator:
             except Exception:
                 new_episode = None
                 logger.error("Generation failed with exception...")
-            if new_episode is None:
+            if new_episode is None or new_episode.target_receptacles[0][0]==new_episode.goal_receptacles[0][0]:
                 failed_episodes += 1
                 continue
             generated_episodes.append(new_episode)

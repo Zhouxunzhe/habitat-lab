@@ -475,6 +475,7 @@ class PddlSimState:
         """
         # Set all desired object states.
         for entity, target in self._obj_states.items():
+            # print(f"entity:{entity},target:{target}")
             _set_obj_state(entity, target, sim_info)
 
         # Set all desired articulated object states.

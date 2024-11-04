@@ -7,14 +7,30 @@ defaults:
     - add_virtual_keys_base
   - /habitat_baselines/rl/policy/obs_transforms@habitat_baselines.rl.policy.agent_1.obs_transforms.add_virtual_keys:
     - add_virtual_keys_base
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_dummy
-  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_dummy
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_0: hl_fixed
+  - /habitat_baselines/rl/policy@habitat_baselines.rl.policy.agent_1: hl_fixed
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_0.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat_baselines/rl/policy/hierarchical_policy/defined_skills@habitat_baselines.rl.policy.agent_1.hierarchical_policy.defined_skills: oracle_skills_multi_agent
   - /habitat/task/lab_sensors:
-    # For the oracle navigation
     - has_finished_oracle_nav
     - all_predicates
+    - relative_resting_pos_sensor
+    - target_start_sensor
+    - target_goal_gps_compass_sensor
+    - goal_sensor
+    - joint_sensor
+    - is_holding_sensor
+    - end_effector_sensor
+    - localization_sensor
+    - camera_extrinsic_info
+    - obj_bbox_sensor
+    - target_bbox_sensor
+    - rec_bbox_sensor
+    - object_to_goal_distance_sensor
+    - pddl_text_goal
+    - has_finished_oracle_nav
+    - arm_workspace_rgb_sensor
+    # - arm_workspace_points_sensor
   - _self_
 habitat.simulator.habitat_sim_v0.gpu_device_id: 0
 habitat:
@@ -48,8 +64,9 @@ habitat_baselines:
     should_load_ckpt: False
     video_option: ["disk"]
     image_option: []
-    json_option : []
-    video_option_new: True
+    image_filter_list: ["arm_workspace_rgb"]
+    json_option : ["disk"]
+    video_option_new: False
     episode_stored: []
     vlm_eval: False
     vlm_compare: False

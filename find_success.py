@@ -9,7 +9,7 @@ episode_id_sum = []
 from camera_3dto2d import _3d_to_2d
 
 def check_if_in_range(t):
-    if t>=0 and t<256:
+    if t>=0 and t<512:
         return True
 def check_bounding_box(data):
     if len(data) != 1:
@@ -22,8 +22,8 @@ def check_bounding_box(data):
 def limit_to_range(num):
     if num<0:
         return 0
-    elif num>255:
-        return 255
+    elif num>511:
+        return 511
     else:
         return num
 def datatrans_2_end_single_agent_objectcentric(process_dir:str,skip_len:int,pick_place_sample_num=3) -> list:
@@ -242,7 +242,7 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not (0 <= x < 256 and 0 <= y < 256):
+                    if not (0 <= x < 512 and 0 <= y < 512):
                         test_step -=1
                     else:
                         break
@@ -314,7 +314,7 @@ def datatrans_2_end_single_agent_waypoint(process_dir:str,skip_len:int,pick_plac
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not (0 <= x < 256 and 0 <= y < 256):
+                    if not (0 <= x < 512 and 0 <= y < 512):
                         test_step -=1
                     else:
                         break
@@ -911,7 +911,7 @@ def datatrans_2_end_sat_waypoint_closer(process_dir:str,skip_len:int,pick_place_
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not (0 <= x < 256 and 0 <= y < 256):
+                    if not (0 <= x < 512 and 0 <= y < 512):
                         test_step -=1
                     else:
                         break
@@ -951,7 +951,6 @@ def datatrans_2_end_sat_waypoint_closer(process_dir:str,skip_len:int,pick_place_
                     "position":None
                 },
                 "image":f"frame_"+str(action_point_index[2])+"_agent_0_head_rgbFetchRobot_head_rgb.png",
-                "step_info":{}
             }
             data_final_0.append(turn2)
             nav_2_point = [action_point_index[3]]
@@ -969,7 +968,7 @@ def datatrans_2_end_sat_waypoint_closer(process_dir:str,skip_len:int,pick_place_
                     test_point = _3d_to_2d(matrix=data[now_step]["agent_0_martix"],
                                                  point_3d=data[test_step]["agent_0_now_worldloc"][:3])
                     x,y = test_point
-                    if not (0 <= x < 256 and 0 <= y < 256):
+                    if not (0 <= x < 512 and 0 <= y < 512):
                         test_step -=1
                     else:
                         break
@@ -1183,7 +1182,8 @@ def datatrans_2_end_sat_waypoint_closer_jumper(process_dir:str,skip_len:int,pick
             sample_info.append(temp_info)
             with open(os.path.join(process_dir_path,name,f"{name}.json"), 'w') as file:
                 json.dump(data_final_0, file, indent=2)
-        except:
+        except Exception as e:
+            print(f"wrong:{name};reason:{e}")
             continue
     return sample_info
     

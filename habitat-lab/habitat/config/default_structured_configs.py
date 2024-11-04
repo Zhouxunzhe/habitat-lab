@@ -1952,19 +1952,18 @@ class HeadRGBSensorConfig(HabitatSimRGBSensorConfig):
     uuid: str = "head_rgb"
     width: int = 512
     height: int = 512
-
 @dataclass
 class HeadDepthSensorConfig(HabitatSimDepthSensorConfig):
     uuid: str = "head_depth"
-    width: int = 256
-    height: int = 256
+    width: int = 512
+    height: int = 512
 
 
 @dataclass
 class HeadSemanticSeonsorConfig(HabitatSimSemanticSensorConfig):
     uuid: str = "head_semantic"
-    width: int = 256
-    height: int = 256
+    width: int = 512
+    height: int = 512
 
 
 @dataclass

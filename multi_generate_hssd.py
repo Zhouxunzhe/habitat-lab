@@ -27,13 +27,13 @@ def run_episode_generator(args):
     time.sleep(0.9)
 
 if __name__ == '__main__':
-    sum_episode = 500
+    sum_episode = 2000
     process_num = 30
     batch_num = 4
     gpu_num = 5
     num = int(sum_episode / batch_num)
     yaml_dir = "./new_scene_dir"
-    output_dir = 'hssd_scene_10scene'
+    output_dir = 'hssd_scene_13scene'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     zip_files = [f"data_{i}" for i in range(0,int(sum_episode/batch_num))]
@@ -42,14 +42,14 @@ if __name__ == '__main__':
     # scene_sample = ["102344115","103997919_171031233","104348463_171513588","103997970_171031287",
     # "108736689_177263340","102344193","107733912_175999623"]
     scene_sample = ["104348463_171513588","103997970_171031287","108736689_177263340","102344193","107733912_175999623",
-"102816786","103997643_171030747","105515211_173104185","102344115","103997919_171031233"]
+"102816786","103997643_171030747","105515211_173104185","102344115","103997919_171031233","102344457","102344529","104348202_171513150"]
     for item in scene_sample:
         if not os.path.exists(os.path.join(output_dir, item)):
             os.makedirs(os.path.join(output_dir, item))
         with multiprocessing.Pool(processes=process_num) as pool:
             args = [(f"data_{i}",int(i%gpu_num),item,yaml_dir,output_dir) for i in range(0,int(sum_episode/batch_num))]
 
-            for _ in tqdm(pool.imap_unordered(run_episode_generator,args), total=num, desc="Process Files"):
+            for _ in tqdm(pool.imap_unordered(run_episode_generator,args), total=num, desc=f"Processing {item} configs"):
                 pass
     # with tqdm(total=num,desc="Sample_Episode") as pbar:
     #     for j in range(0,num):

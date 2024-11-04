@@ -5,7 +5,7 @@ projection_matrix = np.array([[1, 0, 0, 0],
        [0, 1, 0, 0],
       [0, 0, -1.00002, -0.0200002],
        [0, 0, -1, 0]])
-viewport = [256,256]
+viewport = [512,512]   #because the new sampling range is [512,512]
 def _3d_to_2d(matrix, point_3d):
         # get the scene render camera and sensor object
         W, H = viewport[0], viewport[1]
@@ -23,7 +23,7 @@ def _3d_to_2d(matrix, point_3d):
         point_2d = mn.Vector2(projected_point_3d[0], -projected_point_3d[1])
         point_2d = point_2d / 2.0
         point_2d += mn.Vector2(0.5)
-        point_2d *= mn.Vector2(256,256)
+        point_2d *= mn.Vector2(W,H)
         out_bound = 10
         point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
         return point_2d.astype(int).tolist()

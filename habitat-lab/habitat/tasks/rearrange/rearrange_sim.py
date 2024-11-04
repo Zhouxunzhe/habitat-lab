@@ -956,7 +956,6 @@ class RearrangeSim(HabitatSim):
           it will have.
         """
         rom = self.get_rigid_object_manager()
-
         if state["articulated_agent_T"] is not None:
             for articulated_agent_T, robot in zip(
                 state["articulated_agent_T"],

@@ -2363,7 +2363,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         self.width = config.width
         self.rgb_sensor_name = config.get("rgb_sensor_name", "head_rgb")
         self.depth_sensor_name = config.get("depth_sensor_name", "head_depth")
-        self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.3)
+        self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.1)
         self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
         self._entities = self._task.pddl_problem.get_ordered_entities_list()
 
@@ -2401,7 +2401,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         depth = depth_obs.reshape(1, W, W)
         xs = xs.reshape(1, W, W)
         ys = ys.reshape(1, W, W)
-        print(f"hfov:{hfov},W:{W},H:{H},K:{K},")
+        # print(f"hfov:{hfov},W:{W},H:{H},K:{K},")
         xys = np.vstack((xs * depth, ys * depth, -depth, np.ones(depth.shape)))
         xys = xys.reshape(4, -1)
         xy_c = np.matmul(np.linalg.inv(K), xys)
@@ -2439,7 +2439,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         point_2d = point_2d / render_camera.projection_size()[0]
         point_2d += mn.Vector2(0.5)
         point_2d *= render_camera.viewport
-
+        # print(f"info:view:{render_camera.viewport}/size:{render_camera.projection_size()[0]}/")
         out_bound = 10
         point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
         return point_2d.astype(int)
@@ -2532,7 +2532,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
             print(f"Error loading navigation action: {e}")
         
         # print("info::",self._sim.ep_info.target_receptacles)
-        print("nav_to_obj_number:",nav_to_obj_number,flush = True)
+        # print("nav_to_obj_number:",nav_to_obj_number,flush = True)
         if nav_to_obj_number!= -1:
             for i in range(len(self._sim.ep_info.target_receptacles[nav_to_obj_number]) - 1):
                 ep_objects.append(self._sim.ep_info.target_receptacles[nav_to_obj_number][i])
@@ -2547,10 +2547,11 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
                 ep_objects.append(self._sim.ep_info.goal_receptacles[item][i])
             # for key, val in self._sim.ep_info.info['object_labels'].items():
             #     ep_objects.append(key)
-        print("ep_objects:",ep_objects,flush=True)
+        # print("ep_objects:",ep_objects,flush=True)
         objects_info = {}
         rom = self._sim.get_rigid_object_manager()
         for i, handle in enumerate(rom.get_object_handles()):
+            # print("handle:",handle)
             if handle in ep_objects:
                 obj = rom.get_object_by_handle(handle)
                 objects_info[obj.object_id] = handle
@@ -2559,17 +2560,18 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         semantic_obs = observations[semantic_camera_name].squeeze()
 
         mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
+
         contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         bounding_box = []
         colored_mask = np.zeros_like(rgb_obs)
         colored_mask[mask == 1] = [0, 0, 255]
-        rgb_obs = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
+        # rgb_obs = cv2.addWeighted(rgb_obs, 0.5, colored_mask, 0.5, 0)
         for contour in contours:
             if cv2.contourArea(contour) > 0:  # 过滤掉面积为0的轮廓
                 x, y, w, h = cv2.boundingRect(contour)
                 bounding_box.append((x, y, w, h))
                 # 可选：在原始图像上绘制边界框
-                cv2.rectangle(rgb_obs, (x, y), (x + w, y + h), (255, 0, 0), 1)
+                # cv2.rectangle(rgb_obs, (x, y), (x + w, y + h), (255, 0, 0), 1)  #是否标boundingbox
         # for obj_id in objects_info.keys():
         #     positions = np.where(semantic_obs == obj_id + obj_id_offset)
         #     if positions[0].size > 0:
@@ -2618,7 +2620,17 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
                     else:
                         print(f"obj_pos can not be seen: {x}, {y}")
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
-
+        mask_img = cv2.imread('mask.png', cv2.IMREAD_UNCHANGED)
+        bgr = mask_img[:, :, :3]
+        alpha = mask_img[:, :, 3]
+        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        mask_img_rga = cv2.merge((rgb, alpha))
+        assert rgb_obs.shape[:2] == mask_img_rga.shape[:2]
+        alpha_channel = mask_img_rga[:, :, 3] / 255.0
+        rgb_obs
+        for c in range(0, 3):
+            rgb_obs[:, :, c] = (alpha_channel * mask_img_rga[:, :, c] +
+                                (1 - alpha_channel) * rgb_obs[:, :, c])
         return rgb_obs
 
 @registry.register_sensor
@@ -2640,8 +2652,6 @@ class ArmWorkspacePointsSensor(ArmWorkspaceRGBSensor):
             depth_camera_name = self.depth_sensor_name
 
         depth_obs = np.ascontiguousarray(depth_obs)
-
-        # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)
         # downsample the 3d-points
         down_sampled_points = self.voxel_grid_filter(points_world, self.down_sample_voxel_size)
@@ -2661,8 +2671,7 @@ class ArmWorkspacePointsSensor(ArmWorkspaceRGBSensor):
                 point = np.concatenate((point_2d, [idx]), axis=0)
                 flat_points.append(point)
                 space_points.append(point_3d)
-
-        return np.array([space_points, flat_points])
+        return np.array(flat_points)
 
 
 @registry.register_sensor

@@ -54,6 +54,10 @@ class EvalConfig(HabitatBaselinesBaseConfig):
         # available options are "disk" and "tensorboard"
         default_factory=list
     )
+    image_filter_list : List[str] = field(
+        # available options are "disk" and "tensorboard"
+        default_factory=list
+    )
     json_option: List[str] = field(
         # available options are "disk" and "tensorboard"
         default_factory=list

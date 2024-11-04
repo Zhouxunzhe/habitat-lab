@@ -140,12 +140,6 @@ def run_script(args):
     log_file = f"./log/{scene}_example_new_{file_path}.log"
     with open(log_file, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
-    # scene_json_filename = file_path[:-3] if file_path.endswith('.gz') else file_path
-    # scene_json_path = f'./data/datasets/hssd_scene/{scene}/{scene_json_filename}'
-    # scene_target_path = f'./video_dir/{scene}/{file_path}'
-    # os.makedirs(scene_target_path, exist_ok=True)
-    # destination_file_path = os.path.join(scene_target_path, scene_json_filename)
-    # shutil.move(scene_json_path, destination_file_path)
     time.sleep(0.7)
     return (True, 1)
 
