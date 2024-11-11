@@ -145,7 +145,7 @@ def get_target_objects_info(sim: RearrangeSim) -> Tuple[List[int], List[np.ndarr
     return target_idxs, target_handles, start_positions, goal_positions
 
 def generate_scene_graph_from_store_dict(args):
-    print("seed:",args.seed)
+    # print("seed:",args.seed)
     np.random.seed(args.seed)
     config = get_hssd_single_agent_config(args.config)
     # print("config:",config)
@@ -160,6 +160,7 @@ def generate_scene_graph_from_store_dict(args):
     dist_to_target = args.dist_to_target
     min_dis = args.min_point_dis
     output_dir = args.output_dir
+    # print("outputdir:",output_dir)
     meta_json_path = args.meta_json_path
     obs_keys = args.obs_keys
     for episode in dataset.episodes:
@@ -276,10 +277,11 @@ def generate_scene_graph_from_store_dict(args):
             # for bbox in args.bbox:
             #     if bbox in observations:
             #         print(f"{bbox}:{observations[bbox]}")
+            now_loc = observations["localization_sensor"]
             metadata.append({
                 "episode_id": episode.episode_id,
                 "obs_files": obs_file_list,
-                "position": position,
+                "position": now_loc,
                 "rotation": orientation,
                 # "detected_objects": observations["objectgoal"],
             })
@@ -295,22 +297,18 @@ def generate_scene_graph_from_store_dict(args):
             return super().default(obj)
     with open(metadata_file_path, "w") as f:
         json.dump(metadata, f, indent=4, cls=NumpyEncoder)
-def generate_episode_image_from_store_dict_old(args):
+def generate_scene_graph_for_single_task(args):
     config = get_hssd_single_agent_config(args.config)
     env = Env(config=config)
     dataset = env._dataset
     metadata = []
     obs_keys = args.obs_keys
     sample_info = json.loads(args.sample_info)
-    # print("sample_info:",sample_info)
     output_dir = args.output_dir
     for episode in dataset.episodes:
-        # print("episode:",episode)
-        # raise ValueError("test")
         episode_id = int(episode.episode_id)
         env.reset()
         sim: RearrangeSim = env.sim
-        # get the largest island index
         largest_island_idx = get_largest_island_index(
             sim.pathfinder, sim, allow_outdoor=True
         )
@@ -569,10 +567,12 @@ def generate_scene_graph(
             # for bbox in args.bbox:
             #     if bbox in observations:
             #         print(f"{bbox}:{observations[bbox]}")
+            
+            now_loc = observations["localization_sensor"]
             metadata.append({
                 "episode_id": episode.episode_id,
                 "obs_files": obs_file_list,
-                "position": position,
+                "position": now_loc,
                 "rotation": orientation,
                 # "detected_objects": observations["objectgoal"],
             })
@@ -594,7 +594,7 @@ def parse_args_new():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="benchmark/single_agent/zxz_fetch_sample.yaml")
     parser.add_argument("--output_dir", type=str, default="TESTSET_dataset_hssd_13scene_3733/102816786/data_30.json.gz")
-    parser.add_argument("--obs_keys", nargs="+", default=["arm_workspace_rgb"])
+    parser.add_argument("--obs_keys", nargs="+", default=["head_rgb"])
     parser.add_argument("--dist_to_target", type=float, default=6.0)
     parser.add_argument("--max_trials", type=int, default=60)
     parser.add_argument("--max_images", type=int, default=12)
@@ -607,7 +607,7 @@ def parse_args_new():
     parser.add_argument("--anti_position_path",type=str,default="")
     parser.add_argument("--debug",type=bool,default=False)
     parser.add_argument("--meta_json_path",type=str,default="37/scene_graph_info.json")
-    parser.add_argument("--generate_type",type=str,default="sample_frame")
+    parser.add_argument("--generate_type",type=str,default="single_action_training")
     parser.add_argument("--sample_info",type=str,default=json.dumps([{'episode_id': 3, 'sample_frame': [[1, 0], [88, 0], [95, 0], [96, 0], [97, 0], [259, 0], [328, 0], [355, 0], [356, 0], [357, 0]]}, {'episode_id': 2, 'sample_frame': [[1, 0], [100, 0], [126, 0], [127, 0], [128, 0], [240, 0], [330, 0], [358, 0], [359, 0], [360, 0]]}, {'episode_id': 1, 'sample_frame': [[1, 0], [177, 0], [187, 0], [188, 0], [189, 0], [354, 0], [569, 0], [585, 0], [586, 0], [587, 0]]}]))
     # parser.add_argument("--output_dir", type=str, default="data/sparse_slam/rearrange/mp3d")
     args = parser.parse_args()
@@ -623,6 +623,8 @@ if __name__ == "__main__":
     
     if args.generate_type == "scene_graph":
         generate_scene_graph_from_store_dict(args)
+    elif args.generate_type == "single_action_training":
+        generate_scene_graph_for_single_task(args)
     elif args.debug:
         generate_episode_image_from_store_dict_test(args)
     else:

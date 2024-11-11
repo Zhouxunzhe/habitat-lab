@@ -27,24 +27,31 @@ import shutil
 
 # for episode_ in sample_info_str:
 #     print(int(episode_["episode_id"]))
-import cv2
-import numpy as np
+# import cv2
+# import numpy as np
 
-mask_img = cv2.imread('mask.png', cv2.IMREAD_UNCHANGED)
-target_img = cv2.imread('TESTSET_dataset_hssd_13scene_3733/103997919_171031233/data_2.json.gz/episode_0/frame_121_agent_0_head_rgbFetchRobot_head_rgb.png', cv2.IMREAD_UNCHANGED)
+# mask_img = cv2.imread('mask.png', cv2.IMREAD_UNCHANGED)
+# target_img = cv2.imread('TESTSET_dataset_hssd_13scene_3733/103997919_171031233/data_2.json.gz/episode_0/frame_121_agent_0_head_rgbFetchRobot_head_rgb.png', cv2.IMREAD_UNCHANGED)
 
-assert target_img.shape[:2] == mask_img.shape[:2], "两张图片的大小必须一致"
+# assert target_img.shape[:2] == mask_img.shape[:2], "两张图片的大小必须一致"
 
-# 分离mask图片的alpha通道
-alpha_channel = mask_img[:, :, 3] / 255.0
+# # 分离mask图片的alpha通道
+# alpha_channel = mask_img[:, :, 3] / 255.0
 
-# 创建一个空白图片用于存储结果
-result_img = np.zeros_like(target_img)
+# # 创建一个空白图片用于存储结果
+# result_img = np.zeros_like(target_img)
 
-# 使用alpha通道进行混合
-for c in range(0, 3):
-    result_img[:, :, c] = (alpha_channel * mask_img[:, :, c] +
-                           (1 - alpha_channel) * target_img[:, :, c])
+# # 使用alpha通道进行混合
+# for c in range(0, 3):
+#     result_img[:, :, c] = (alpha_channel * mask_img[:, :, c] +
+#                            (1 - alpha_channel) * target_img[:, :, c])
 
-# 保存结果图片
-cv2.imwrite('result.png', result_img)
+# # 保存结果图片
+dataset_path = "./sat_DLC_13scene_dataset_1108_greenpoint"
+image_dataset_path = os.path.join(dataset_path, "image")
+
+file_dir_path_start = [os.path.join(image_dataset_path,name) for name in os.listdir(image_dataset_path)]
+file_dir_path_start = sorted(file_dir_path_start)
+print(len(file_dir_path_start))
+# print("file_dir_path_start",file_dir_path_start)
+# file_dir_path = file_dir_path_start[start_dir:end_dir]

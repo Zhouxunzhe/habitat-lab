@@ -1,6 +1,6 @@
 sum_episode = 2000
 epnum_per_gz = 4
-gz_start = 0
+gz_start = 60
 skip_len = 32
 base_directory = 'POINTS_dataset_hssd_13scene'
 # write only name
