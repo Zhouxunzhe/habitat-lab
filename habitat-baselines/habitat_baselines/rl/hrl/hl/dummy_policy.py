@@ -80,7 +80,7 @@ class DummyPolicy(HighLevelPolicy):
             # vlm_output =
             # print("eval_info_dummypolicy",eval_info)
             # llm_output = self.llm_agent.agent_output(self._skill_name_to_idx,observations = observations,eval_info = eval_info)
-            llm_output = self.llm_agent.action_check_and_get(observations,eval_info)
+            llm_output = self.llm_agent.agent_output(observations,eval_info)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["50"]

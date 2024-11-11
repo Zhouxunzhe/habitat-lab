@@ -403,12 +403,9 @@ class DummyAgent:
 
 
 
-    def agent_output(self,skill_name_to_idx,observations,eval_info,**kwargs):
+    def agent_output(self,observations,eval_info,**kwargs):
         # print("kwargs",kwargs)
-        episode_id,data_path = eval_info
-        print(f"_______________________{self.agent_name}")
-        for key in observations.keys():
-            print(key)
+        # episode_id,data_path = eval_info
         info = [
             # {
             #     "name": "nav_to_position",
@@ -435,16 +432,24 @@ class DummyAgent:
             #     "arguments": ['1','agent_0']
             # },
             {
-                "name": "nav_to_position",
+                "name": "nav_to_key_point",
                 "arguments": {
-                    "target_position": [-4.954258918762207,0.17830851674079895,3.402430534362793],
+                    "target_position": [256,499],
                     "robot": self.agent_name,
                 }
+            },
+            {
+                "name": "reset_arm",
+                "arguments": ['agent_0']
             },
             #after finish nav,you should force the robot wait for 1sc,so that it could do the next action.
             {
                 "name": "wait",
-                "arguments": ['1','agent_0']
+                "arguments": [1,'agent_0']
+            },
+            {
+                "name": "wait",
+                "arguments": [3000,'agent_0']
             },
             {
                 "name": "pick",
@@ -455,9 +460,9 @@ class DummyAgent:
                 "arguments": ['agent_0']
             },
             {
-                "name": "nav_to_position",
+                "name": "nav_to_key_point",
                 "arguments": {
-                    "target_position": [-2.1182525157928467,0.1160174161195755,-0.19527381658554077,-0.7443385124206543,1],
+                    "target_position": [256,400],
                     "robot": self.agent_name,
                 }
             },
@@ -474,9 +479,9 @@ class DummyAgent:
                 "arguments": ['1','agent_0']
             },
             {
-                "name": "nav_to_position",
+                "name": "nav_to_key_point",
                 "arguments": {
-                    "target_position":  [-6.866964340209961,0.17830851674079895,1.3594081401824951,0],
+                    "target_position":  [256,400],
                     "robot": self.agent_name,
                 }
             },
@@ -485,9 +490,9 @@ class DummyAgent:
                 "arguments": ['1','agent_0']
             },
             {
-                "name": "nav_to_position",
+                "name": "nav_to_key_point",
                 "arguments": {
-                    "target_position":  [-7.28494930267334,0.17830851674079895,0.008822225034236908],
+                    "target_position":  [256,400],
                     "robot": self.agent_name,
                 }
             },
@@ -496,9 +501,9 @@ class DummyAgent:
                 "arguments": ['1','agent_0']
             },
             {
-                "name": "nav_to_position",
+                "name": "nav_to_key_point",
                 "arguments": {
-                    "target_position": [-7.70682430267334,0.17830851674079895,-4.249903678894043,0],
+                    "target_position": [256,400],
                     "robot": self.agent_name,
                 }
             },
@@ -507,9 +512,9 @@ class DummyAgent:
                 "arguments": ['1','agent_0']
             },
             {
-                "name": "nav_to_position",
+                "name": "nav_to_key_point",
                 "arguments": {
-                    "target_position":  [-7.229156970977783,0.17830851674079895,-4.4799323081970215],
+                    "target_position":  [256,400],
                     "robot": self.agent_name,
                 }
             },
@@ -533,9 +538,9 @@ class DummyAgent:
             self.return_num += 1
         else:
             return {
-                "name": "nav_to_position",
+                "name": "nav_to_key_point",
                 "arguments": {
-                    "target_position": [0,0,0,0],
+                    "target_position": [256,400],
                     "robot": self.agent_name,
                 }
             }

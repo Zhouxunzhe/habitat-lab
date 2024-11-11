@@ -2705,21 +2705,21 @@ cs.store(
     node=ObjBBoxSenorConfig,
 )
 cs.store(
-    package="habitat.task.lab_sensors.depth_get",
+    package="habitat.task.lab_sensors.get_depth",
     group="habitat/task/lab_sensors",
-    name="depth_get",
+    name="get_depth",
     node=DepthSensorConfig,
 )
 cs.store(
-    package="habitat.task.lab_sensors.depth_rot_get",
+    package="habitat.task.lab_sensors.get_depth_rot",
     group="habitat/task/lab_sensors",
-    name="depth_rot_get",
+    name="get_depth_rot",
     node=DepthRotSensorConfig,
 )
 cs.store(
-    package="habitat.task.lab_sensors.depth_trans_get",
+    package="habitat.task.lab_sensors.get_depth_trans",
     group="habitat/task/lab_sensors",
-    name="depth_trans_get",
+    name="get_depth_trans",
     node=DepthTransSensorConfig,
 )
 cs.store(

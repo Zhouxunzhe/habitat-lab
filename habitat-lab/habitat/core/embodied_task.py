@@ -227,6 +227,7 @@ class EmbodiedTask:
     _sim: Optional[Simulator]
     _dataset: Optional[Dataset]
     _is_episode_active: bool
+    _prev_task_obs: Optional[Observations]
     measurements: Measurements
     sensor_suite: SensorSuite
 
@@ -301,7 +302,8 @@ class EmbodiedTask:
                 should_time=True,
             )
         )
-
+        self._prev_task_obs = observations
+        
         for action_instance in self.actions.values():
             action_instance.reset(episode=episode, task=self)
 
@@ -331,7 +333,6 @@ class EmbodiedTask:
         if "action_args" not in action or action["action_args"] is None:
             action["action_args"] = {}
         observations: Optional[Any] = None
-        ee_target: Optional[Any] = None
         if isinstance(action_name, tuple):  # there are multiple actions
             for a_name in action_name:
                 observations = self._step_single_action(
@@ -339,10 +340,6 @@ class EmbodiedTask:
                     action,
                     episode,
                 )
-                if (a_name == "arm_pick_action" or
-                    a_name == "arm_place_action"
-                ):
-                    ee_target = observations
         else:
             observations = self._step_single_action(
                 action_name, action, episode
@@ -353,12 +350,6 @@ class EmbodiedTask:
         if observations is None:
             observations = self._sim.step(None)
 
-        # TODO(zxz): test target obj in workspace sensor
-        pick_obj_entity = self.pddl_problem.all_entities['any_targets|0']
-        obj_pos = self.pddl_problem.sim_info.get_entity_pos(
-            pick_obj_entity
-        )
-
         observations.update(
             self.sensor_suite.get_observations(
                 observations=observations,
@@ -366,10 +357,10 @@ class EmbodiedTask:
                 action=action,
                 task=self,
                 should_time=True,
-                ee_target=ee_target,
-                obj_pos=obj_pos,
             )
         )
+        self._prev_task_obs = observations
+        
         self._is_episode_active = self._check_episode_is_active(
             observations=observations, action=action, episode=episode
         )

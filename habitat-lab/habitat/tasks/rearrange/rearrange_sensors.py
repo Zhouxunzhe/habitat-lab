@@ -1530,7 +1530,9 @@ class HasFinishedOracleNavSensor(UsesArticulatedAgentInterface, Sensor):
         #     return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
 
         # check if use_k in actions_list
-        assert use_k in self._task.actions, f"your oracle_nav_action name is not defined..."
+        if use_k not in self._task.actions:
+            use_k = "oracle_nav_coord_action"
+        assert use_k in self._task.actions, f"your oracle_nav_action name is not defined...usek:{use_k},actions:{self._task.actions}"
         nav_action = self._task.actions[use_k]
         return np.array(nav_action.skill_done, dtype=np.float32)[..., None]
 
@@ -2118,7 +2120,7 @@ class RecBBoxSenor(UsesArticulatedAgentInterface, Sensor):
             return np.array([[-1,-1,-1,-1]])
 @registry.register_sensor
 class DepthSensor(UsesArticulatedAgentInterface, Sensor):
-    cls_uuid: str = "depth_inf"
+    cls_uuid: str = "depth_obs"
     def __init__(self, sim, config, *args, **kwargs):
         self._sim = sim
         # self.agent_idx = config.agent_idx

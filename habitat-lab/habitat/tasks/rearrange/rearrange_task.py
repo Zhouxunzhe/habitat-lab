@@ -286,7 +286,9 @@ class RearrangeTask(NavigationTask):
         self._cur_episode_step = 0
         if fetch_observations:
             self._sim.maybe_update_articulated_agent()
-            return self._get_observations(episode)
+            obs = self._get_observations(episode)
+            self._prev_task_obs = obs
+            return obs
         else:
             return None
 
@@ -302,6 +304,8 @@ class RearrangeTask(NavigationTask):
             # Keyframes are added so that the simulator state can be reconstituted when batch rendering.
             # The post-processing step above is done after batch rendering.
             self._sim.add_keyframe_to_observations(obs)
+
+        self._sim._prev_sim_obs = obs
 
         # Task sensors (all non-visual sensors)
         obs.update(
@@ -341,7 +345,7 @@ class RearrangeTask(NavigationTask):
                 and self._constraint_violation_drops_object
             ):
                 grasp_mgr.desnap(True)
-
+        self._prev_task_obs = obs
         return obs
 
     def _check_episode_is_active(

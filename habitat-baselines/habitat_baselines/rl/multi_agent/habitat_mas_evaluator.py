@@ -141,6 +141,8 @@ class HabitatMASEvaluator(Evaluator):
 
         if len(config.habitat_baselines.eval.video_option) > 0:
             # Add the first frame of the episode to the video.
+            for item in batch.items():
+                print(item)
             rgb_frames: List[List[np.ndarray]] = [
                 [
                     observations_to_image(

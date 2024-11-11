@@ -89,6 +89,7 @@ class HabitatEvaluator(Evaluator):
 
         if len(config.habitat_baselines.eval.video_option) > 0:
             # Add the first frame of the episode to the video.
+            
             rgb_frames: List[List[np.ndarray]] = [
                 [
                     observations_to_image(
@@ -126,6 +127,7 @@ class HabitatEvaluator(Evaluator):
         pbar = tqdm.tqdm(total=number_of_eval_episodes * evals_per_ep)
         agent.eval()
         cur_ep_id = -1
+        dataset_info = config.habitat.dataset.data_path
         while (
             len(stats_episodes) < (number_of_eval_episodes * evals_per_ep)
             and envs.num_envs > 0
@@ -150,12 +152,24 @@ class HabitatEvaluator(Evaluator):
                     "index_len_recurrent_hidden_states": hidden_state_lens,
                     "index_len_prev_actions": action_space_lens,
                 }
+            ep_info = [int(cur_ep_id),dataset_info]
+            agent_0_depth_info = batch["depth_obs"].cpu()
+                    # print("depthinfoshape:",agent_0_depth_info.shape)
+                    # agent_0_trans = batch["agent_0_robot_trans_martix"].cpu()
+                    # agent_1_trans = batch["agent_1_robot_trans_martix"].cpu()
+                    # image = [agent_0_image,agent_1_image]
+            agent_0_depth_rot = batch["depth_rot"].cpu()
+            agent_0_depth_trans = batch["depth_trans"].cpu()
+            print("agent_0_depth_info:",agent_0_depth_info.shape)
+            print("agent_0_depth_rot:",agent_0_depth_rot)
+            print("agent_0_depth_trans:",agent_0_depth_trans)
             with inference_mode():
                 action_data = agent.actor_critic.act(
                     batch,
                     test_recurrent_hidden_states,
                     prev_actions,
                     not_done_masks,
+                    ep_info,
                     deterministic=False,
                     **space_lengths,
                 )

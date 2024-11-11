@@ -476,6 +476,7 @@ class HierarchicalPolicy(nn.Module, Policy):
         hl_terminate_episode = torch.zeros(batch_size, dtype=torch.bool)
         # print(f"-------------------{should_choose_new_skill}---------------------------",flush=True)
         if should_choose_new_skill.sum() > 0:
+            print("flag")
             # print(f"self.agent_name:{self.agent_name}")
             # print(f"output:{output}")
             # print(f"eval:{eval_jump}")
@@ -519,12 +520,12 @@ class HierarchicalPolicy(nn.Module, Policy):
                     eval_info = eval_info,
                     **kwargs,
                 )
-            # print("_______________________info_________________",flush=True)
-            # print("new_skills:",new_skills,flush=True)
-            # print("new_skill_args:",new_skill_args,flush=True)
-            # print("hl_info:",hl_info,flush=True)
-            # print(f"self.agent_name:{self.agent_name}")
-            # print("_______________________info_________________",flush=True)
+            print("_______________________info_________________",flush=True)
+            print("new_skills:",new_skills,flush=True)
+            print("new_skill_args:",new_skill_args,flush=True)
+            print("hl_info:",hl_info,flush=True)
+            print(f"self.agent_name:{self.agent_name}")
+            print("_______________________info_________________",flush=True)
             new_skills = new_skills.numpy()
 
             sel_grouped_skills = self._broadcast_skill_ids(

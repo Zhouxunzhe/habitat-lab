@@ -15,9 +15,14 @@ from habitat_baselines.rl.hrl.skills.oracle_nav import (
     OracleNavCoordPolicy,
     OracleNavPolicy,
 )
-from habitat_baselines.rl.hrl.skills.oracle_pick import (
+from habitat_baselines.rl.hrl.skills.oracle_arm_policies import (
     OraclePickPolicy,
     OraclePlacePolicy
+)
+from habitat_baselines.rl.hrl.skills.oracle_pixel_policies import (
+    OraclePixelNavPolicy,
+    OraclePixelPickPolicy,
+    OraclePixelPlacePolicy,
 )
 from habitat_baselines.rl.hrl.skills.pick import PickSkillPolicy
 from habitat_baselines.rl.hrl.skills.place import PlaceSkillPolicy
@@ -36,6 +41,9 @@ __all__ = [
     "OracleNavCoordPolicy",
     "OraclePickPolicy",
     "OraclePlacePolicy",
+    "OraclePixelNavPolicy",
+    "OraclePixelPickPolicy",
+    "OraclePixelPlacePolicy",
     "PickSkillPolicy",
     "PlaceSkillPolicy",
     "ResetArmSkill",

@@ -1097,6 +1097,9 @@ class RearrangeSim(HabitatSim):
             debug_obs = self.get_sensor_observations()
             obs["third_rgb"] = debug_obs["third_rgb"][:, :, :3]
 
+        # Save the previous observations for the next step
+        self._prev_sim_obs = obs
+
         return obs
 
     def maybe_update_articulated_agent(self):

@@ -15,14 +15,14 @@ from habitat_baselines.rl.hrl.skills.nn_skill import NnSkillPolicy
 from habitat_baselines.rl.hrl.utils import find_action_range
 from habitat_baselines.rl.ppo.policy import PolicyActionData
 
+RELEASE_ID = 0
+PICK_ID = 1
+PLACE_ID = 2
 
 class OraclePickPolicy(NnSkillPolicy):
     """
     Skill to generate a picking motion. Moves the arm next to an object,
     """
-    RELEASE_ID = 0
-    PICK_ID = 1
-
     @dataclass
     class OraclePickActionArgs:
         """
@@ -145,15 +145,7 @@ class OraclePickPolicy(NnSkillPolicy):
             )
         match_i = self._all_entities.index(target)
 
-        return OraclePickPolicy.OraclePickActionArgs(match_i, self.PICK_ID)
-
-    # @property
-    # def required_obs_keys(self):
-    #     # ret = [HasFinishedArmActionSensor.cls_uuid]
-    #     ret = []
-    #     if self._should_keep_hold_state:
-    #         ret.append(IsHoldingSensor.cls_uuid)
-    #     return ret
+        return OraclePickPolicy.OraclePickActionArgs(match_i, PICK_ID)
 
     def _internal_act(
         self,
@@ -170,10 +162,10 @@ class OraclePickPolicy(NnSkillPolicy):
         action_idxs = torch.FloatTensor(
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
-
-        full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor([action_idxs, self.PICK_ID])
+        
+        full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor([action_idxs, PICK_ID])
         full_action[0][self._pick_end_idx-1] = 1.0
-
+        
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )
@@ -190,8 +182,7 @@ class OraclePlacePolicy(OraclePickPolicy):
     """
     Skill to generate a placing motion. Moves the arm next to an object,
     """
-
-    PLACE_ID = 2
+    
     @dataclass
     class OraclePlaceActionArgs:
         """
@@ -288,7 +279,7 @@ class OraclePlacePolicy(OraclePickPolicy):
 
         # Since the recep_idx might be 0, we encode the id by plus 1
         return OraclePlacePolicy.OraclePlaceActionArgs(
-            match_i, self.RELEASE_ID
+            match_i, RELEASE_ID
         )
 
     def _internal_act(
@@ -307,7 +298,7 @@ class OraclePlacePolicy(OraclePickPolicy):
             [self._cur_skill_args[i].action_idx for i in cur_batch_idx]
         )
 
-        full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor([action_idxs, self.PLACE_ID])
+        full_action[0][self._place_srt_idx:self._place_end_idx-1] = torch.tensor([action_idxs, PLACE_ID])
         if self._is_skill_done(observations, rnn_hidden_states, prev_actions, masks, cur_batch_idx):
             full_action[0][self._place_end_idx-1] = -1.0
 
