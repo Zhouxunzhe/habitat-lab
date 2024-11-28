@@ -1,9 +1,11 @@
-# Habitat-MAS
+# EMOS
 
 This repo maintains an overview of the Habitat-MAS benchmark and the EMOS multi-agent system, as introduced in paper [EMOS: Embodiment-aware Heterogeneous Multi-robot Operating System with LLM Agents](https://arxiv.org/pdf/2410.22662). Project page is to be released. 
 
 ![habitat mas tasks](docs/images/habitat_mas_task_4.gif)
 <!-- <iframe width="1104" height="621" src="https://www.youtube.com/embed/icOXdZD4P70" title="EMOS: Embodiment-aware Heterogeneous Multi-robot Operating System with LLM Agents" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe> -->
+
+**We are sorry that this is an early release of the project. We are still working on better clean-up and documentation. Please feel free to raise an issue if you have any questions or suggestions.**
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -17,6 +19,7 @@ This repo maintains an overview of the Habitat-MAS benchmark and the EMOS multi-
     - [Questions?](#questions)
 - [Credit](#credit)
     
+
 ## Introduction
 
 **Habitat-MAS benchmark** is a highly configurable simulation platform designed for embodied AI challenges, based on the simulation platform [Habitat-lab 3.0](https://github.com/facebookresearch/habitat-lab) by Meta. It supports a wide range of indoor environment datasets, making it ideal for testing and developing multi-robot systems. The benchmark includes:
@@ -39,10 +42,11 @@ Tasks:
 - Task 3: Household rearrangement requiring manipulation capabilities.
 - Task 4: Multi-floor, multi-agent, and multi-object rearrangement, testing comprehensive understanding and collaboration.
 
-**EMOS (Embodiment-aware Multi-Agent Operating System)** is an innovative framework designed to enhance task planning and execution in heterogeneous multi-robot systems. Key features include:
-Embodiment-Aware Task Planning: Utilizes large language models (LLMs) to understand and plan tasks based on the physical capabilities of different robots.
-Robot Resume Concept: Instead of predefined roles, each robot generates a "resume" detailing its capabilities, which aids in task planning and execution.
-Hierarchical Task Management: The system performs task planning, assignment, and action execution through centralized group discussions followed by decentralized action execution.
+**EMOS (Embodiment-aware Multi-Agent Operating System)** is an innovative framework designed to enhance task planning and execution in heterogeneous multi-robot systems. 
+Key features include:
+- Embodiment-Aware Task Planning: Utilizes large language models (LLMs) to understand and plan tasks based on the physical capabilities of different robots.
+- Robot Resume Concept: Instead of predefined roles, each robot generates a "resume" detailing its capabilities, which aids in task planning and execution.
+- Hierarchical Task Management: The system performs task planning, assignment, and action execution through centralized group discussions followed by decentralized action execution.
 
 ![EMOS_overview](docs/images/EMOS_overview.png)
 
