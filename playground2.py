@@ -47,11 +47,23 @@ import shutil
 #                            (1 - alpha_channel) * target_img[:, :, c])
 
 # # 保存结果图片
-dataset_path = "./sat_DLC_13scene_dataset_1108_greenpoint"
-image_dataset_path = os.path.join(dataset_path, "image")
+# dataset_path = "./sat_DLC_13scene_dataset_1108_greenpoint"
+# image_dataset_path = os.path.join(dataset_path, "image")
 
-file_dir_path_start = [os.path.join(image_dataset_path,name) for name in os.listdir(image_dataset_path)]
-file_dir_path_start = sorted(file_dir_path_start)
-print(len(file_dir_path_start))
+# file_dir_path_start = [os.path.join(image_dataset_path,name) for name in os.listdir(image_dataset_path)]
+# file_dir_path_start = sorted(file_dir_path_start)
+# print(len(file_dir_path_start))
 # print("file_dir_path_start",file_dir_path_start)
 # file_dir_path = file_dir_path_start[start_dir:end_dir]
+def get_numbers_from_filenames(directory):
+    numbers = []
+    for filename in os.listdir(directory):
+        if filename.endswith('.scene_instance.json'):
+            # 提取文件名中 .scene_instance 前的数字部分
+            number = filename.split('.scene_instance')[0]
+            numbers.append(number)
+    return numbers
+
+directory_path = 'data/scene_datasets/hssd-hab/scenes'
+numbers_list = get_numbers_from_filenames(directory_path)
+print(numbers_list)

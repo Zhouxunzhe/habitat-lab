@@ -3,8 +3,8 @@ python -u -m habitat_baselines.run \
     --config-name=social_rearrange/llm_test_lht.yaml \
     habitat.dataset.data_path=data/datasets/test_big_scene/data_0.json.gz.json.gz \
     habitat.seed=8888 \
-    habitat_baselines.image_dir="video_dir_test_coord/multiagent" \
-    habitat_baselines.video_dir="video_dir_test_coord/multiagent" \
+    habitat_baselines.image_dir="video_dir_test_stretch/testarm" \
+    habitat_baselines.video_dir="video_dir_test_stretch/testarm" \
 #运行机制：habitat_mas_evaluator中调用agent.actor_critic.act执行，此处方法是HierarchicalPolicy的方法
 #HierarchicalPolicy的方法act中_update_skills()，分别对上下层的skill都进行更新
 #_update_skills()方法中self._high_level_policy.get_next_skill()调用着hl_xxx

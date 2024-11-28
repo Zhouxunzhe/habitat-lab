@@ -65,7 +65,7 @@ habitat_baselines:
     should_load_ckpt: False
     video_option: ["disk"]
     image_option: []
-    image_filter_list: []
+    image_filter_list: ["head_rgb"]
     json_option : ["disk"]
     video_option_new: False
     episode_stored: []

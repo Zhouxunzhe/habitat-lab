@@ -2622,17 +2622,18 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
                     else:
                         print(f"obj_pos can not be seen: {x}, {y}")
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
-        mask_img = cv2.imread('mask.png', cv2.IMREAD_UNCHANGED)
-        bgr = mask_img[:, :, :3]
-        alpha = mask_img[:, :, 3]
-        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        mask_img_rga = cv2.merge((rgb, alpha))
-        assert rgb_obs.shape[:2] == mask_img_rga.shape[:2]
-        alpha_channel = mask_img_rga[:, :, 3] / 255.0
-        rgb_obs
-        for c in range(0, 3):
-            rgb_obs[:, :, c] = (alpha_channel * mask_img_rga[:, :, c] +
-                                (1 - alpha_channel) * rgb_obs[:, :, c])
+                    # the arm now is out of robot's head_rgb so that don't need mask
+        # mask_img = cv2.imread('mask.png', cv2.IMREAD_UNCHANGED)
+        # bgr = mask_img[:, :, :3]
+        # alpha = mask_img[:, :, 3]
+        # rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        # mask_img_rga = cv2.merge((rgb, alpha))
+        # assert rgb_obs.shape[:2] == mask_img_rga.shape[:2]
+        # alpha_channel = mask_img_rga[:, :, 3] / 255.0
+        # rgb_obs
+        # for c in range(0, 3):
+        #     rgb_obs[:, :, c] = (alpha_channel * mask_img_rga[:, :, c] +
+        #                         (1 - alpha_channel) * rgb_obs[:, :, c])
         return rgb_obs
 
 @registry.register_sensor

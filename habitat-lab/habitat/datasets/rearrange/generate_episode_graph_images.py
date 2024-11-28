@@ -207,7 +207,7 @@ def generate_scene_graph_from_store_dict(args):
         observations = env.step({"action": (), "action_args": {}})
         env._episode_over = False
         _,_,w_tar,h_tar = observations["target_bounding_box"][0]
-        print("gaol_rev:",w_tar*h_rec)
+        print("goal_rev:",w_tar*h_rec)
 
         if len(graph_positions) < max_images:
             i = 0
@@ -417,26 +417,22 @@ def generate_episode_image_from_store_dict(args):
             return super().default(obj)
     with open(metadata_file_path, "w") as f:
         json.dump(metadata, f, indent=2, cls=NumpyEncoder)
-def generate_scene_graph(
-    dataset_path,
+def generate_scene_graph(   #use for debug and test scene graph
+    dataset_path= None,
     config_path="benchmark/single_agent/zxz_fetch.yaml",
     gpu_id = None,
-    bbox_min= 2500,
-    bbox_max = 5000,
+    bbox_min=  18000,
+    bbox_max = 25000,
     dist_to_target=6.0,
-    max_trials = 60,
-    max_images= 10,
+    max_trials = 100,
+    max_images= 8,
     random_min_bbox = 400,
     min_dis = 3,
-    output_dir = 'data/sparse_slam/rearrange/hssd'
+    obs_keys=["head_rgb"],
+    output_dir = 'data/test_sc_generate_strategy/rearrange/hssd'
     ):
     override = []
-    if gpu_id:
-        override.append(f"++habitat.simulator.habitat_sim_v0.gpu_device_id={gpu_id}")
-        override.append(f"++habitat.simulator.habitat_sim_v0.gpu_gpu=True")
-    override.append(f"++habitat.simulator.dataset.data_path={dataset_path}")
-    config = get_hssd_single_agent_config(config_path,override)
-    print("config:",config)
+    config = get_hssd_single_agent_config(config_path)
     # config['habitat']['simulator']['habitat_sim_v0']['gpu_device_id'] = gpu_id
     # config['habitat']['simulator']['dataset']['data_path'] = dataset_path
     env = Env(config=config)
@@ -444,7 +440,7 @@ def generate_scene_graph(
     metadata = []
     for episode in dataset.episodes:
         # reset automatically calls next episode
-        print("episode_info:",episode)
+        # print("episode_info:",episode)
         env.reset()
         sim: RearrangeSim = env.sim
         # get the largest island index
@@ -620,12 +616,11 @@ def parse_args_new():
 
 if __name__ == "__main__":
     args = parse_args_new()
-    
-    if args.generate_type == "scene_graph":
+    if args.debug:
+        generate_scene_graph()
+    elif args.generate_type == "scene_graph":
         generate_scene_graph_from_store_dict(args)
     elif args.generate_type == "single_action_training":
         generate_scene_graph_for_single_task(args)
-    elif args.debug:
-        generate_episode_image_from_store_dict_test(args)
     else:
         generate_episode_image_from_store_dict(args)
