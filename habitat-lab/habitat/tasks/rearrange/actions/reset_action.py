@@ -60,7 +60,7 @@ class OracleResetArmAction(ArmEEAction, ArticulatedAgentAction):
 
         if should_reset == 3:
             # or self.cur_grasp_mgr.snap_idx is None
-            # TODO(zxz): even if is settled initially, the two pos are still not matched
+            # TODO: even if is settled initially, the two pos are still not matched
             # 1) cur ee_pos is not right
             # 2) calc_fk is wrong
             # 两个问题：cur_articulated_agent里面的pos和初始的pos不匹配

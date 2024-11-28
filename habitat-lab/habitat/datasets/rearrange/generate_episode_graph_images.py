@@ -23,7 +23,7 @@ def save_image(image, file_path):
     img = Image.fromarray(image)
     img.save(file_path)
 
-def get_hssd_single_agent_config(cfg_path="single_rearrange/zxz_llm_fetch.yaml"):
+def get_hssd_single_agent_config(cfg_path="single_rearrange/llm_fetch.yaml"):
     config = get_config(cfg_path)
     # with read_write(config):
         # config.habitat.task.lab_sensors = {}
@@ -248,7 +248,7 @@ def main(args):
 def parse_args():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="single_rearrange/zxz_llm_fetch.yaml")
+    parser.add_argument("--config", type=str, default="single_rearrange/llm_fetch.yaml")
     parser.add_argument("--output_dir", type=str, default="data/sparse_slam/rearrange/hssd")
     parser.add_argument("--obs_keys", nargs="+", default=["head_rgb"])
     parser.add_argument("--dist_to_target", type=float, default=1.0)

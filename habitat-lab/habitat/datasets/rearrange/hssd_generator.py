@@ -633,7 +633,7 @@ class HssdRearrangeEpisodeGenerator:
             new_target_receptacles: List[Receptacle] = []
             failed_samplers: Dict[str, bool] = defaultdict(bool)
             # while len(new_target_receptacles) < num_targets:
-            # TODO(zxz): now only two receps and objs here
+            # TODO: now only two receps and objs here
             new_receptacle, obj_sampler_name = sample_recep(sample_mode)
             new_target_receptacles.append(new_receptacle[0])  # type: ignore
             new_receptacle, obj_sampler_name = sample_recep('normal')
@@ -902,7 +902,7 @@ class HssdRearrangeEpisodeGenerator:
 
         # collect final object states and serialize the episode
         # TODO: creating shortened names should be automated and embedded in the objects to be done in a uniform way
-        # TODO(zxz): set rigid objects on the desired places
+        # TODO: set rigid objects on the desired places
         sampled_rigid_object_states = []
         for sampled_obj in self.ep_sampled_objects:
             creation_attrib = sampled_obj.creation_attributes

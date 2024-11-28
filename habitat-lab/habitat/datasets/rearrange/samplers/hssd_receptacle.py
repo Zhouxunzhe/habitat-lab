@@ -662,7 +662,7 @@ def parse_receptacles_from_user_config(
             )
             if mp3d:
                 receptacle_position = ao_uniform_scaling * info["translation"]
-            # TODO(zxz): add cabinets scale here
+            # TODO: add cabinets scale here
             if scale is None:
                 receptacle_scale = ao_uniform_scaling * sub_config.get("scale")
             else:

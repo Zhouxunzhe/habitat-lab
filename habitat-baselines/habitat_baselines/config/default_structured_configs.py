@@ -245,7 +245,7 @@ class HrlDefinedSkillConfig(HabitatBaselinesBaseConfig):
 
     # If true, do not call grip_actions automatically when calling high level skills.
     # Do not check either if an arm action necessarily exists.
-    # TODO(zxz): ignore grip
+    # TODO: ignore grip
     ignore_grip: bool = True
     obs_skill_inputs: List[str] = field(default_factory=list)
     obs_skill_input_dim: int = 3

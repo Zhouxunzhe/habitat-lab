@@ -229,7 +229,7 @@ def observations_to_image(observation: Dict, info: Dict,
         generated image of a single frame.
     """
     render_obs_images: List[np.ndarray] = []
-    # TODO(zxz): for frames storage
+    # TODO: for frames storage
     robot_names: Dict[
         Any, Any
     ] = {}
