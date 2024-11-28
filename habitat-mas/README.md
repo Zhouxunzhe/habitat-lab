@@ -10,9 +10,17 @@ Habitat-MAS is a Python package for Multi-Agent Systems in Habitat virtual envir
     - [Install habitat-mas](#install-habitat-mas)
   - [Usage](#usage)
     - [Download Data](#download-data)
+      - [Download Base Dataset](#download-base-dataset)
+      - [Download MP3D Dataset](#download-mp3d-dataset)
+      - [Download Habitat-MAS Dataset](#download-habitat-mas-dataset)
     - [Run the demo](#run-the-demo)
-  - [Dataset Generation](#dataset-generation)
+    - [Run Habitat-MAS](#run-habitat-mas)
+      - [Perception](#perception)
+      - [Mobility](#mobility)
+      - [Manipulation](#manipulation)
+      - [Rearrange](#rearrange)
     - [Dataset Structure](#dataset-structure)
+    - [Dataset Generation](#dataset-generation)
 
 ## Installation
 
@@ -41,19 +49,29 @@ pip install -e habitat-mas
 ## Usage
 
 ### Download Data
+
+#### Download Base Dataset
 The dataset used in the demo is the same as [Habitat-3.0 Multi-Agent Training](../habitat-baselines/README.md#habitat-30-multi-agent-training). You can download the dataset by running the following command:
 
 ```sh
 python -m habitat_sim.utils.datasets_download --uids hssd-hab hab3-episodes habitat_humanoids hab_spot_arm hab3-episodes ycb hssd-hab hab3_bench_assets rearrange_task_assets
 ```
+#### Download MP3D Dataset
+Since the mobility and rearrange tasks utilize the scene data of [Matterport3D](https://niessner.github.io/Matterport/), it is necessary to download the scene data of mp3d-habitat first according to the instructions in [here](https://github.com/facebookresearch/habitat-sim/blob/main/DATASETS.md#matterport3d-mp3d-dataset).
 
+In short, you should first fill and sign a form to get `download_mp.py`, then run the following command in Python 2.7:
+```sh
+python download_mp.py --task habitat
+```
+Remeber to rename the folder name from 'mp3d-habitat' to 'mp3d', the path of MP3D dataset will be `EMOS/data/scene_datasets/mp3d/...`.
+
+#### Download Habitat-MAS Dataset
 Besides, you should:
-- download the robot configuration data from [here](https://drive.google.com/drive/folders/132Fhf0YGCEgMFUw93-b48eRiv4E9pj8h), and place it into the `data/robots` folder.
-- download the perception, manipulation and mobility episodes data from [here](https://drive.google.com/drive/folders/1fnhzhRAW7Pzw48A4YsoijgdDPiKCArnK), and place them into the `data/datasets` folder.
+Download the robot configuration and episodes data from [Here](https://drive.google.com/drive/folders/1YVoCg2-tGkKWrdej4km6Abxsop0wS9XJ?usp=drive_link), extract and merge it into EMOS like `EMOS/data/...`.
 
 The folder should look like this:
 ```
-habitat-lab
+EMOS
 ├── data
 │   ├── robots
 │       ├── dji_drone
@@ -97,20 +115,83 @@ The demo is adapted from [Habitat-3.0 Social Rearrangement](../habitat-baselines
 ```sh
 # Under the habitat-lab root directory
 python -u -m habitat_baselines.run \
-  --config-name=multi_rearrange/llm_spot_drone.yaml \
+  --config-name=social_rearrange/llm_spot_drone.yaml \
   habitat_baselines.evaluate=True \
   habitat_baselines.num_environments=1
 ```
 
-Besides, to run our episodes, you should:
+### Run Habitat-MAS
 
-- download the high-level configuration data from [here](https://drive.google.com/drive/folders/1DR-WErfJLqmZuOCp1UUQ9T-scp8JdgPN), and place them into the `habitat-baselines/habitat_baselines/config` folder.
-- download the simulator-level configuration data from [here](https://drive.google.com/drive/folders/1ovNky8ZzQVnVf_FyFaergRl3Qp94PWMz), and place them into the `habitat-lab/habitat/config/benchmark` folder.
-- download the dataset configuration data from [here](https://drive.google.com/drive/folders/1bOM9aXEiifp-QL4w0GVj5qrGiU5ex0SI), and place them into the `habitat-lab/habitat/config/habitat/dataset`
+To run our episodes in Habitat-MAS, you should first:
 
+- download the high-level configuration files from [here](https://drive.google.com/drive/folders/1DR-WErfJLqmZuOCp1UUQ9T-scp8JdgPN), and place them into the `habitat-baselines/habitat_baselines/config` folder.
+- download the simulator-level configuration files from [here](https://drive.google.com/drive/folders/1ovNky8ZzQVnVf_FyFaergRl3Qp94PWMz), and place them into the `habitat-lab/habitat/config/benchmark` folder.
+- download the dataset configuration files from [here](https://drive.google.com/drive/folders/1bOM9aXEiifp-QL4w0GVj5qrGiU5ex0SI), and place them into the `habitat-lab/habitat/config/habitat/dataset`
 
-## Dataset Generation
-The following section describes how to generate the dataset for the Habitat-MAS benchmark.
+Then, you need to set your API key in [`habitat-mas/habitat_mas/utils/models.py`](https://github.com/SgtVincent/EMOS/blob/8f4348d73fcf605ebfbeee13ff897359723b5f1c/habitat-mas/habitat_mas/utils/models.py) to run EMOS.
+
+For each task, you could run the following command:
+
+#### Perception
+```sh
+python -u -m habitat_baselines.run \
+  --config-name=multi_rearrange/llm_spot_drone_per.yaml \
+  # --config-name=multi_rearrange/llm_height_per.yaml \
+  habitat_baselines.evaluate=True \
+  habitat_baselines.num_environments=1
+```
+
+#### Mobility
+```sh
+python -u -m habitat_baselines.run \
+  --config-name=multi_rearrange/llm_spot_fetch_mobility.yaml \
+  habitat_baselines.evaluate=True \
+  habitat_baselines.num_environments=1
+```
+
+#### Manipulation
+```sh
+python -u -m habitat_baselines.run \
+  --config-name=multi_rearrange/llm_fetch_stretch_man.yaml \
+  habitat_baselines.evaluate=True \
+  habitat_baselines.num_environments=1
+```
+
+#### Rearrange
+```sh
+python -u -m habitat_baselines.run \
+  --config-name=multi_rearrange/llm_spot_drone_rearrange.yaml \
+  habitat_baselines.evaluate=True \
+  habitat_baselines.num_environments=1
+```
+
+### Dataset Structure
+
+**Multi robot perception**
+`data/datasets/hssd/0/hssd_height_per.json.gz`
+- Mainly deploy robots spot and drone for object perception.
+- Objects are easy for drone to find, but hard for spot robot.
+
+**Multi robot manipulation**
+`data/datasets/hssd/0/hssd_height_man.json.gz` or `data/datasets/hssd/0/hssd_dist_man.json.gz`
+
+- Mainly deploy robots fetch and stretch for object rearrangement.
+- Objects are easy for stretch robot to get, but hard for fetch robot.
+
+**Multi robot mobility**
+`data/datasets/mp3d/mobility_episodes_1.json.gz`
+- Mainly deploy robots spot and fetch for cross-floor navigation.
+- Cross-floor tasks are easy for spot to do, but impossible for fetch robot.
+
+**Multi robot rearrange**
+`data/datasets/mp3d/mp3d_episodes_1.json.gz`
+- Mainly deploy spot, fetch and drone for cross-floor rearrangement.
+- Cross-floor rearrangement is suitable for spot, same-floor rearrangement is suitable for fetch, cross-floor perception is suitable for drone.
+
+### Dataset Generation
+
+Besides the dataset we have provided, custom data can be also generated through the scripts we provided.
+
 Here is a demo data generation command for dataset in `hssd` scene.
 
 ```sh
@@ -124,24 +205,3 @@ python habitat-lab/habitat/datasets/rearrange/run_hssd_episode_generator.py --ru
 `--out`: desired path of your newly generated dataset.
 
 `--type`: the purpose of your dataset, currently there are three types: `height`, `distance`, `normal`.
-
-Besides, for dataset generation, you should:
-
-- download the dataset generation configuration data from [here](https://drive.google.com/drive/folders/1YVoCg2-tGkKWrdej4km6Abxsop0wS9XJ), and place them into the `data` folder.
-
-### Dataset Structure
-
-**Multi robot perception**
-
-- Mainly deploy robots spot and drone for object perception.
-- Objects are easy for drone to find, but hard for spot robot.
-
-**Multi robot manipulation**
-
-- Mainly deploy robots fetch and stretch for object rearrangement.
-- Objects are easy for stretch robot to get, but hard for fetch robot.
-
-**Multi robot mobility**
-
-- Mainly deploy robots spot and fetch for cross-floor navigation.
-- Cross-floor tasks are easy for spot to do, but hard for fetch robot.
