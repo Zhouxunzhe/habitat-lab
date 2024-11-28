@@ -1,29 +1,24 @@
-# Habitat-MAS
+# Habitat-MAS Package
 
 Habitat-MAS is a Python package for Multi-Agent Systems in Habitat virtual environments.
 
 ## Table of Contents
-- [Habitat-MAS](#habitat-mas)
+- [Habitat-MAS Package](#habitat-mas-package)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
     - [Prerequisites](#prerequisites)
     - [Install habitat-mas](#install-habitat-mas)
   - [Usage](#usage)
     - [Download Data](#download-data)
-    - [Data Structure](#data-structure)
     - [Run the demo](#run-the-demo)
+  - [Dataset Generation](#dataset-generation)
+    - [Dataset Structure](#dataset-structure)
 
 ## Installation
 
-You should clone the our full fork of the habitat-lab project:
-
-```sh
-git clone https://github.com/SgtVincent/habitat-lab.git -b embodied_mas
-```
-
 ### Prerequisites
 
-Please make sure you have installed the [habitat-sim](https://github.com/facebookresearch/habitat-sim/tree/v0.3.1), [habitat-lab](../README.md) and [habitat-baselines](../habitat-baselines/) and  following the normal habitat-lab installation guide.
+Please make sure you have installed the [habitat-sim](https://github.com/facebookresearch/habitat-sim/tree/v0.3.1), [habitat-lab](../README.md) and [habitat-baselines](../habitat-baselines/) following the installation guide in the previous step. 
 
 **Note**: If you try to install the habitat suites on a Linux server without GUI, you may need to install headless version of the habitat-sim:
 
@@ -42,8 +37,6 @@ To install the package, you can use the following command under habitat-lab root
 ```sh
 pip install -e habitat-mas
 ```
-
-[Not available] Besides, you need to install the crab for multi-agent system.
 
 ## Usage
 
@@ -97,8 +90,27 @@ habitat-lab
 ...
 ```
 
-### Dataset Generation
+### Run the demo
 
+The demo is adapted from [Habitat-3.0 Social Rearrangement](../habitat-baselines/README.md#social-rearrangement). You can run the demo by running the following command:
+
+```sh
+# Under the habitat-lab root directory
+python -u -m habitat_baselines.run \
+  --config-name=multi_rearrange/llm_spot_drone.yaml \
+  habitat_baselines.evaluate=True \
+  habitat_baselines.num_environments=1
+```
+
+Besides, to run our episodes, you should:
+
+- download the high-level configuration data from [here](https://drive.google.com/drive/folders/1DR-WErfJLqmZuOCp1UUQ9T-scp8JdgPN), and place them into the `habitat-baselines/habitat_baselines/config` folder.
+- download the simulator-level configuration data from [here](https://drive.google.com/drive/folders/1ovNky8ZzQVnVf_FyFaergRl3Qp94PWMz), and place them into the `habitat-lab/habitat/config/benchmark` folder.
+- download the dataset configuration data from [here](https://drive.google.com/drive/folders/1bOM9aXEiifp-QL4w0GVj5qrGiU5ex0SI), and place them into the `habitat-lab/habitat/config/habitat/dataset`
+
+
+## Dataset Generation
+The following section describes how to generate the dataset for the Habitat-MAS benchmark.
 Here is a demo data generation command for dataset in `hssd` scene.
 
 ```sh
@@ -133,21 +145,3 @@ Besides, for dataset generation, you should:
 
 - Mainly deploy robots spot and fetch for cross-floor navigation.
 - Cross-floor tasks are easy for spot to do, but hard for fetch robot.
-
-### Run the demo
-
-The demo is adapted from [Habitat-3.0 Social Rearrangement](../habitat-baselines/README.md#social-rearrangement). You can run the demo by running the following command:
-
-```sh
-# Under the habitat-lab root directory
-python -u -m habitat_baselines.run \
-  --config-name=multi_rearrange/llm_spot_drone.yaml \
-  habitat_baselines.evaluate=True \
-  habitat_baselines.num_environments=1
-```
-
-Besides, to run our episodes, you should:
-
-- download the high-level configuration data from [here](https://drive.google.com/drive/folders/1DR-WErfJLqmZuOCp1UUQ9T-scp8JdgPN), and place them into the `habitat-baselines/habitat_baselines/config` folder.
-- download the simulator-level configuration data from [here](https://drive.google.com/drive/folders/1ovNky8ZzQVnVf_FyFaergRl3Qp94PWMz), and place them into the `habitat-lab/habitat/config/benchmark` folder.
-- download the dataset configuration data from [here](https://drive.google.com/drive/folders/1bOM9aXEiifp-QL4w0GVj5qrGiU5ex0SI), and place them into the `habitat-lab/habitat/config/habitat/dataset`
