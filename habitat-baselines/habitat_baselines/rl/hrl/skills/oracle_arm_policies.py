@@ -255,7 +255,7 @@ class OraclePlacePolicy(OraclePickPolicy):
         rel_resting_pos = torch.linalg.vector_norm(
             observations[ObjectToGoalDistanceSensor.cls_uuid], dim=-1
         )
-        # TODO(zxz): need to change the done condition
+        # TODO: need to change the done condition
         return torch.tensor([rel_resting_pos < 0.02])
 
     def _parse_skill_arg(self, skill_name: str, skill_arg):
