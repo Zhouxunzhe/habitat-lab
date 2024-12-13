@@ -254,6 +254,9 @@ def observations_to_image(observation: Dict, info: Dict,
     unload_name = ["robot_trans_martix","oracle_nav_target_path","camera_extrinsic","obj_bounding_box","target_bounding_box","rec_bounding_box","depth_inf",
     "depth_rot","depth_trans","arm_workspace_points"]
     for sensor_name in observation:
+        # if not arraylike, skip
+        if not hasattr(observation[sensor_name], "shape"):
+            continue
         # print("sensor_name:",sensor_name)
         # if "arm_workspace_points" in sensor_name:
             # print("arm_workspace_points:",observation[sensor_name])

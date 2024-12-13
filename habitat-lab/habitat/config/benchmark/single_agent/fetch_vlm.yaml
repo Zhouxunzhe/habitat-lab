@@ -41,11 +41,13 @@ defaults:
     - get_depth
     - get_depth_rot
     - get_depth_trans
-    # - arm_workspace_rgb_sensor
+    - arm_workspace_rgb_sensor
+    - camera_info
     # # - object_masks_sensor
     # - nav_workspace_rgb_sensor
     # - arm_workspace_points_sensor
     # - nav_workspace_points_sensor
+    
 #  - /habitat/task/lab_sensors@habitat.task.lab_sensors.agents_within_threshold: agents_within_threshold
   - _self_
 

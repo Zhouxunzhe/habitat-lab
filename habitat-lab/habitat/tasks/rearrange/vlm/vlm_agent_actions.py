@@ -11,7 +11,7 @@ from habitat.core.registry import registry
 from gym import spaces
 import numpy as np
 import cv2
-def _2d_to_3d_single(sim, depth_name, depth_value,x, y):
+def _2d_to_3d_single(sim, depth_name, depth_value, x, y):
     # get the scene render camera and sensor object
     depth_camera = sim._sensors[depth_name]._sensor_object.render_camera
 

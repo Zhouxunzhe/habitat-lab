@@ -145,6 +145,7 @@ class OraclePixelNavPolicy(OracleNavPolicy):
         :property target_position: (2, ) The target position in pixel coordinates
         """
         target_position: List[float]
+        camera_name: str = "head_rgb"
         
 
     def __init__(
@@ -170,10 +171,17 @@ class OraclePixelNavPolicy(OracleNavPolicy):
         )
 
         self._oracle_nav_ac_idx, _ = find_action_range(
-            action_space, "pixel_nav_action"
+            action_space, "oracle_nav_coord_action"
+        )
+
+    @property
+    def required_obs_keys(self):
+        return super().required_obs_keys + list(
+            self._filtered_obs_space.spaces.keys()
         )
 
     def _parse_skill_arg(self, skill_name: str, skill_arg):
+        # TODO: we should also put the camera name in the skill argument
         # if skill arg is a dictionary
         if isinstance(skill_arg, dict):
             target_position = skill_arg["target_position"]
@@ -183,7 +191,10 @@ class OraclePixelNavPolicy(OracleNavPolicy):
                 f"Unexpected number of skill arguments in {skill_arg}"
             )
 
-        return OraclePixelNavPolicy.OraclePixelNavActionArgs(target_position)
+        return OraclePixelNavPolicy.OraclePixelNavActionArgs(
+            target_position,
+            camera_name="head_rgb"
+        )
 
     def _internal_act(
         self,
@@ -197,12 +208,75 @@ class OraclePixelNavPolicy(OracleNavPolicy):
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device
         )
-        target_positions = torch.FloatTensor(
-            [self._cur_skill_args[i].target_position for i in cur_batch_idx]
-        )
+        # TODO: parameterize the depth camera name
+        target_positions_3d = [
+            self._2d_to_3d_single(
+                self._cur_skill_args[i].target_position, 
+                observations['camera_info'][self._cur_skill_args[i].camera_name],
+                observations['head_depth'],
+                i
+            )
+            for i in cur_batch_idx
+        ]
+        target_positions_3d = torch.FloatTensor(target_positions_3d).view(masks.shape[0], 3)
 
-        full_action[:, self._oracle_nav_ac_idx: self._oracle_nav_ac_idx + 2] = target_positions
+        full_action[:, self._oracle_nav_ac_idx:self._oracle_nav_ac_idx + 3] = target_positions_3d
 
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )
+    
+    def _2d_to_3d_single(self, target_position, camera_info, depth_obs, batch_idx):
+        """
+        Backproject the 2D pixel position to 3D world space.
+        
+        Args:
+            target_position: (2, ) The target position in pixel coordinates
+            camera_info: The camera information (batched)
+            depth_obs: The depth observation (batched)
+            batch_idx: The index of the batch
+        """
+        projection_matrix = camera_info['projection_matrix'][batch_idx].cpu().numpy()
+        camera_matrix = camera_info['camera_matrix'][batch_idx].cpu().numpy()
+        hfov = camera_info['fov'][batch_idx].item()
+        depth_obs = depth_obs[batch_idx, ...].squeeze()
+
+        hfov_rad = float(hfov)
+        W, H = projection_matrix.shape[1], projection_matrix.shape[0]
+        K = np.array([
+            [1 / np.tan(hfov_rad / 2.0), 0.0, 0.0, 0.0],
+            [0.0, 1 / np.tan(hfov_rad / 2.0), 0.0, 0.0],
+            [0.0, 0.0, 1, 0],
+            [0.0, 0.0, 0, 1]
+        ])
+
+        x, y = target_position
+        x = int(x)
+        y = int(y)
+        depth_value = depth_obs[y, x].item()
+
+        # Normalize x and y to the range [-1, 1]
+        x_normalized = (2.0 * x / W) - 1.0
+        y_normalized = 1.0 - (2.0 * y / H)
+
+        # Create the xys array for a single point
+        xys = np.array([x_normalized * depth_value, y_normalized * depth_value, -depth_value, 1.0])
+
+        # Transform to camera coordinates
+        xy_c = np.matmul(np.linalg.inv(K), xys)
+
+        depth_rotation = np.array(camera_matrix[:3, :3])
+        depth_translation = np.array(camera_matrix[:3, 3])
+
+        # Get camera-to-world transformation
+        T_world_camera = np.eye(4)
+        T_world_camera[0:3, 0:3] = depth_rotation
+        T_world_camera[0:3, 3] = depth_translation
+
+        T_camera_world = np.linalg.inv(T_world_camera)
+        point_world = np.matmul(T_camera_world, xy_c)
+
+        # Get non-homogeneous point in world space
+        point_world = point_world[:3] / point_world[3]
+
+        return point_world

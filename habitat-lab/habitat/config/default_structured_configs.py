@@ -915,8 +915,10 @@ class ObjectGoalConfig(LabSensorConfig):
     dimensionality: int = 2
 
 @dataclass
-class CameraExtrinsicSensorConfig(LabSensorConfig):
-    type: str = "CameraExtrinsicSensor"
+class CameraInfoSensorConfig(LabSensorConfig):
+    type: str = "CameraInfoSensor"
+    camera_name: str = "head_rgb"
+    
 @dataclass
 class ObjBBoxSenorConfig(LabSensorConfig):
     agent_idx: int = 0
@@ -963,6 +965,7 @@ class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     width: int = 640
     rgb_sensor_name: str = "head_rgb"
     depth_sensor_name: str = "head_depth"
+    debug_tf: bool = True
 
 @dataclass
 class NavWorkspaceRGBSensorConfig(LabSensorConfig):
@@ -2965,10 +2968,10 @@ cs.store(
     node=ObjectGoalConfig
 )
 cs.store(
-    package="habitat.task.lab_sensors.camera_extrinsic_info",
+    package="habitat.task.lab_sensors.camera_info",
     group="habitat/task/lab_sensors",
-    name="camera_extrinsic_info",
-    node=CameraExtrinsicSensorConfig
+    name="camera_info",
+    node=CameraInfoSensorConfig
 )
 cs.store(
     package="habitat.task.lab_sensors.arm_workspace_rgb_sensor",

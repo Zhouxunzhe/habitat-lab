@@ -19,7 +19,7 @@ place_key_point:
 
 nav_to_key_point:
   skill_name: "OraclePixelNavPolicy"
-  obs_skill_inputs: []
+  obs_skill_inputs: [head_depth, camera_info]
   max_skill_steps: 1000
   apply_postconds: False
   force_end_on_timeout: False
