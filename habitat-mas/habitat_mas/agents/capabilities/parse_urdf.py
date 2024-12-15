@@ -246,7 +246,7 @@ def query_llm_with_urdf(urdf: URDF, model_name="gpt-4o", task_text=default_tasks
             root_node = node
     urdf_text = generate_tree_text_with_edge_types(urdf_nx_graph, root_node)
     # TODO: modify the prompt so the LLM attends to the cameras in urdf
-    # TODO(zxz): prompt with fk function call
+    # TODO: prompt with fk function call
 #     system_prompt = """
 # You are a robot urdf structure reasoner. You will be given a robot's urdf tree-structured text, and you need to provide a summary of the robot's physics capabilities.
 # Please pay attention to the task and summarize the mobility, perception, and manipulation capabilities of the robot that are relevant to the task.

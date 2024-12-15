@@ -169,7 +169,7 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
             cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
             if not self.is_reset:
                 self.ee_target = self._ik_helper.calc_fk(self.cur_articulated_agent.arm_joint_pos)
-                # Note(zxz): ee_target is under transformation of ik_help,
+                # Note: ee_target is under transformation of ik_help,
                 # it should be transformed to the world base to be equal to cur_ee_pos
                 # cur_ee_pos = self.cur_articulated_agent.base_transformation.transform_point(self.ee_target)
                 self.is_reset = True

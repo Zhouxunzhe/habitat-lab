@@ -228,7 +228,7 @@ class HssdObjectSampler:
         close_dist = 0.7
         far_dist = 0.85
         max_dist = 1.1
-        # TODO(zxz): Sample the most suitable receptacle in each scene
+        # TODO: Sample the most suitable receptacle in each scene
         if sample_mode == "distance":
             for new_receptacle in self.receptacle_candidates:
                 rec_up_global = (

@@ -63,7 +63,7 @@ def execute_exp(config: "DictConfig", run_type: str) -> None:
 
 """
 !python -u -m habitat_baselines.run\
- --config-name=social_rearrange/zxz_llm_spot_drone.yaml\
+ --config-name=social_rearrange/llm_spot_drone.yaml\
 habitat_baselines.evaluate=True\
 habitat_baselines.num_environments=1
 """
