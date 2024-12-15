@@ -143,7 +143,7 @@ if __name__ == "__main__":
     # clear_directory('./log')
     current_time = time.time()
     local_random = random.Random(current_time)
-    random_number = local_random.randint(1, 100000)
+    random_number = local_random.randint(1, 1000000)
     max_step = dp_config.max_step
     scene_dataset_dir = dp_config.scene_dataset_dir
     base_directory = f"./{dp_config.base_directory}_{random_number}"
