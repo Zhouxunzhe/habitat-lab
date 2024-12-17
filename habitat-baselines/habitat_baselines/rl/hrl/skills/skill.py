@@ -59,10 +59,10 @@ class SkillPolicy(Policy):
         self._grip_ac_idx = 0
         found_grip = False
         for k, space in action_space.items():
-            if k != "arm_action":
+            if "arm_action" in k:
                 self._grip_ac_idx += get_num_actions(space)
             else:
-                # The last actioin in the arm action is the grip action.
+                # The last action in the arm action is the grip action.
                 self._grip_ac_idx += get_num_actions(space) - 1
                 found_grip = True
                 break
@@ -117,6 +117,7 @@ class SkillPolicy(Policy):
         Modifies the actions according to the postconditions set in self._pddl_problem.actions[skill_name]
         """
         raw_skill_args = self._raw_skill_args[env_i]
+
         action = self._pddl_problem.actions[skill_name]
         
         skill_args = []

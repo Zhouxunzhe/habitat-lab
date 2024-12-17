@@ -30,6 +30,9 @@ defaults:
     - object_to_goal_distance_sensor
     - pddl_text_goal
     - has_finished_oracle_nav
+    - get_depth
+    - get_depth_rot
+    - get_depth_trans
     # - arm_workspace_rgb_sensor
     # - arm_workspace_points_sensor
   - _self_

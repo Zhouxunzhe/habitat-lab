@@ -72,11 +72,9 @@ class DummyPolicy(HighLevelPolicy):
         for batch_idx, should_plan in enumerate(plan_masks):
             if should_plan != 1.0:
                 continue
-            
             # Query the LLM agent with the current observations
             # to get the next action and arguments
             # print("plan_mask:",plan_masks,flush=True)
-            print("skillidex:",self._skill_name_to_idx,flush = True)
             # vlm_output =
             # print("eval_info_dummypolicy",eval_info)
             # llm_output = self.llm_agent.agent_output(self._skill_name_to_idx,observations = observations,eval_info = eval_info)

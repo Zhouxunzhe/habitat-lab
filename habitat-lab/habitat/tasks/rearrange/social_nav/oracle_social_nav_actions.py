@@ -21,7 +21,10 @@ from habitat.tasks.rearrange.actions.habitat_mas_actions import OracleNavDiffBas
 from habitat.tasks.rearrange.social_nav.utils import (
     robot_human_vec_dot_product,
 )
-from habitat.tasks.rearrange.utils import place_agent_at_dist_from_pos
+from habitat.tasks.rearrange.utils import (
+    place_agent_at_dist_from_pos,
+    get_angle_to_pos
+)
 from habitat.tasks.utils import get_angle
 import pdb
 
@@ -44,7 +47,7 @@ class OracleNavCoordAction(OracleNavDiffBaseAction):  # type: ignore
             {
                 self._action_arg_prefix
                 + "oracle_nav_coord_action": spaces.Box(
-                    shape=(3,),
+                    shape=(4,),
                     low=np.finfo(np.float32).min,
                     high=np.finfo(np.float32).max,
                     dtype=np.float32,
@@ -77,15 +80,13 @@ class OracleNavCoordAction(OracleNavDiffBaseAction):  # type: ignore
         return (np.array(start_pos), np.array(obj_pos))
 
     def step(self, *args, **kwargs):
-        
+        self.skill_done = False
         ep_id = self._sim.ep_info.episode_id
-        # print("kwargs:",kwargs,flush = True)
         if self.ep_id != ep_id:
             self.ep_id = ep_id
             self.pathfinder = super()._create_pathfinder(self.config)
         nav_to_target_coord = kwargs.get(
             self._action_arg_prefix + "oracle_nav_coord_action",
-            self._action_arg_prefix + "oracle_nav_human_action",
         )
         # print("_______________________________________________________")
         # print("nav_to_target_coord:",nav_to_target_coord,flush = True)
@@ -94,20 +95,19 @@ class OracleNavCoordAction(OracleNavDiffBaseAction):  # type: ignore
         # final_nav_targ, obj_targ_pos = self._get_target_for_coord(
         #     nav_to_target_coord
         # )
-        final_nav_targ = nav_to_target_coord
-        obj_targ_pos = nav_to_target_coord
+        final_nav_targ = nav_to_target_coord[:3]
+        target_orientation = nav_to_target_coord[3]
+        if_orien = True
+        if not -2 * np.pi <= target_orientation <= 2 * np.pi:
+            obj_targ_pos = final_nav_targ
+            if_orien = False
         base_T = self.cur_articulated_agent.base_transformation
         curr_path_points = self._path_to_point(final_nav_targ)
         robot_pos = np.array(self.cur_articulated_agent.base_pos)
-        # print("robot_pos:",robot_pos,flush = True)
-        # print("robot_info:",self.cur_articulated_agent,flush = True)
-
+        self._config.dist_thresh = 0.03
         if curr_path_points is None:
             raise Exception
         else:
-            # Compute distance and angle to target
-            # if len(curr_path_points) == 1:
-            #     curr_path_points += curr_path_points
             cur_nav_targ = curr_path_points[1]
             forward = np.array([1.0, 0, 0])
             robot_forward = np.array(base_T.transform_vector(forward))
@@ -118,61 +118,87 @@ class OracleNavCoordAction(OracleNavDiffBaseAction):  # type: ignore
             # Compute heading angle (2D calculation)
             robot_forward = robot_forward[[0, 2]]
             rel_targ = rel_targ[[0, 2]]
-            rel_pos = (obj_targ_pos - robot_pos)[[0, 2]]
-
+            if if_orien:
+                robot_yaw = get_angle_to_pos(base_T.transform_vector(forward))
+                angle_to_desired_orientation = ((target_orientation - robot_yaw) + np.pi) % (2 * np.pi) - np.pi
+            else:
+                rel_pos = (obj_targ_pos - robot_pos)[[0, 2]]
+                angle_to_obj = get_angle(robot_forward, rel_pos)
             angle_to_target = get_angle(robot_forward, rel_targ)
-            angle_to_obj = get_angle(robot_forward, rel_pos)
-
             dist_to_final_nav_targ = np.linalg.norm(
                 (final_nav_targ - robot_pos)[[0, 2]]
             )
-            at_goal = (
-                dist_to_final_nav_targ < self._config.dist_thresh
-                and angle_to_obj < self._config.turn_thresh
-            ) or dist_to_final_nav_targ < self._config.dist_thresh / 10.0
-            # print(f"this dis:{dist_to_final_nav_targ},at_goal?{at_goal}",flush = True)
-            # print(f"_________{self.nav_mode}___________________{self.motion_type}___________________________")
+            # at_goal = (
+            #     dist_to_final_nav_targ < self._config.dist_thresh
+            #     and angle_to_obj < self._config.turn_thresh
+            # ) or dist_to_final_nav_targ < self._config.dist_thresh / 10.0
 
+            at_goal = (
+                (dist_to_final_nav_targ < self._config.dist_thresh)
+                and ((abs(angle_to_desired_orientation) < 0.03) 
+                if if_orien else True)
+            )
             if self.motion_type == "base_velocity":
                 if not at_goal:
-                    if self.nav_mode == "avoid":
-                        backward = np.array([-1.0, 0, 0])
-                        robot_backward = np.array(
-                            base_T.transform_vector(backward)
+                #     if self.nav_mode == "avoid":
+                #         backward = np.array([-1.0, 0, 0])
+                #         robot_backward = np.array(
+                #             base_T.transform_vector(backward)
+                #         )
+                #         robot_backward = robot_backward[[0, 2]]
+                #         angle_to_target = get_angle(robot_backward, rel_targ)
+                #         if (
+                #             self.simple_backward
+                #             or angle_to_target < self._config.turn_thresh
+                #         ):
+                #             # Move backwards the target
+                #             vel = [self._config.forward_velocity, 0]
+                #         else:
+                #             # Robot's rear looks at the target waypoint.
+                #             vel = OracleNavAction._compute_turn(
+                #                 rel_targ,
+                #                 self._config.turn_velocity,
+                #                 robot_backward,
+                #             )
+                #     else:
+                #         if dist_to_final_nav_targ < self._config.dist_thresh:
+                #             # Look at the object
+                #             vel = OracleNavAction._compute_turn(
+                #                 rel_pos,
+                #                 self._config.turn_velocity,
+                #                 robot_forward,
+                #             )
+                #         elif angle_to_target < self._config.turn_thresh:
+                #             # Move towards the target
+                #             vel = [self._config.forward_velocity, 0]
+                #         else:
+                #             # Look at the target waypoint.
+                #             vel = OracleNavAction._compute_turn(
+                #                 rel_targ,
+                #                 self._config.turn_velocity,
+                #                 robot_forward,
+                #             )
+                    if dist_to_final_nav_targ < self._config.dist_thresh:
+                        # Look at the object
+                        vel = OracleNavAction._compute_turn(
+                            rel_pos, 
+                            self._config.turn_velocity, 
+                            robot_forward
+                        ) if not if_orien else OracleNavAction._compute_turn_from_angle(
+                            angle_to_desired_orientation, 
+                            0.03 if (abs(angle_to_desired_orientation)<= 0.1) else self._config.turn_velocity, 
                         )
-                        robot_backward = robot_backward[[0, 2]]
-                        angle_to_target = get_angle(robot_backward, rel_targ)
-                        if (
-                            self.simple_backward
-                            or angle_to_target < self._config.turn_thresh
-                        ):
-                            # Move backwards the target
-                            vel = [self._config.forward_velocity, 0]
-                        else:
-                            # Robot's rear looks at the target waypoint.
-                            vel = OracleNavAction._compute_turn(
-                                rel_targ,
-                                self._config.turn_velocity,
-                                robot_backward,
-                            )
+                    elif angle_to_target < self._config.turn_thresh:
+                        # Move towards the target
+                        vel = [self._config.forward_velocity 
+                        if dist_to_final_nav_targ > 3.0*self._config.dist_thresh else 
+                        self._config.forward_velocity/20.0, 0]
                     else:
-                        if dist_to_final_nav_targ < self._config.dist_thresh:
-                            # Look at the object
-                            vel = OracleNavAction._compute_turn(
-                                rel_pos,
-                                self._config.turn_velocity,
-                                robot_forward,
-                            )
-                        elif angle_to_target < self._config.turn_thresh:
-                            # Move towards the target
-                            vel = [self._config.forward_velocity, 0]
-                        else:
-                            # Look at the target waypoint.
-                            vel = OracleNavAction._compute_turn(
-                                rel_targ,
-                                self._config.turn_velocity,
-                                robot_forward,
-                            )
+                        # Look at the target waypoint.
+                        vel = OracleNavAction._compute_turn(
+                            rel_targ, self._config.turn_velocity, robot_forward
+                        )
+                    self.prev_nav_done = False
                 else:
                     vel = [0, 0]
                     self.skill_done = True

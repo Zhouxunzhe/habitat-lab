@@ -69,10 +69,13 @@ class OraclePixelPickPolicy(OraclePickPolicy):
         positions = torch.FloatTensor(
             [self._cur_skill_args[i].position for i in cur_batch_idx]
         )
+        # print("positions:",positions)
         full_action[:, self._pick_srt_idx:self._pick_srt_idx + 2] = positions
+        # print("full_action1:",full_action)
+        full_action[:, self._pick_end_idx-2] = torch.FloatTensor([PICK_ID] * masks.shape[0])
+        # print("full_action2:",full_action)
         full_action[:, self._pick_end_idx-1] = torch.FloatTensor([PICK_ID] * masks.shape[0])
         full_action[:, self._grip_ac_idx] = torch.FloatTensor([PICK_ID] * masks.shape[0])
-        
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )
@@ -124,7 +127,9 @@ class OraclePixelPlacePolicy(OraclePlacePolicy):
         )
         
         full_action[:, self._place_srt_idx:self._place_srt_idx + 2] = positions
-        full_action[:, self._place_end_idx-1] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
+        full_action[:, self._place_end_idx-1] = -1.0
+        full_action[:, self._place_end_idx-2] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
+
         full_action[:, self._grip_ac_idx] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
         # if self._is_skill_done(observations, rnn_hidden_states, prev_actions, masks, cur_batch_idx):
         #     full_action[0][self._place_end_idx-1] = -1.0
@@ -218,10 +223,12 @@ class OraclePixelNavPolicy(OracleNavPolicy):
             )
             for i in cur_batch_idx
         ]
+        print("2dpoint:",self._cur_skill_args[0].target_position)
+        pixel_x, pixel_y = self._cur_skill_args[0].target_position
+        # target_positions_3d = self._2d_to_3d_single_point(observations['depth_obs'].cpu(), observations['depth_rot'].cpu(),observations['depth_trans'].cpu(),pixel_x, pixel_y)
         target_positions_3d = torch.FloatTensor(target_positions_3d).view(masks.shape[0], 3)
-
         full_action[:, self._oracle_nav_ac_idx:self._oracle_nav_ac_idx + 3] = target_positions_3d
-
+        print("3d_point:",target_positions_3d)
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )
@@ -243,13 +250,15 @@ class OraclePixelNavPolicy(OracleNavPolicy):
 
         hfov_rad = float(hfov)
         W, H = projection_matrix.shape[1], projection_matrix.shape[0]
+        W = 512
+        H = 512
         K = np.array([
             [1 / np.tan(hfov_rad / 2.0), 0.0, 0.0, 0.0],
             [0.0, 1 / np.tan(hfov_rad / 2.0), 0.0, 0.0],
             [0.0, 0.0, 1, 0],
             [0.0, 0.0, 0, 1]
         ])
-
+        # print("W,H,hfov",W,H,hfov)
         x, y = target_position
         x = int(x)
         y = int(y)
@@ -278,5 +287,50 @@ class OraclePixelNavPolicy(OracleNavPolicy):
 
         # Get non-homogeneous point in world space
         point_world = point_world[:3] / point_world[3]
-
+        # print("point_world:",point_world)
         return point_world
+    def _2d_to_3d_single_point(self, depth_obs, depth_rot,depth_trans,pixel_x, pixel_y):
+        # depth_camera = self._sim._sensors[depth_name]._sensor_object.render_camera
+
+        # hfov = float(self._sim._sensors[depth_name]._sensor_object.hfov) * np.pi / 180.
+        # W, H = depth_camera.viewport[0], depth_camera.viewport[1]
+        W = 512
+        H = 512
+        hfov = 1.5707963267948966
+        # Intrinsic matrix K
+        K = np.array([
+            [1 / np.tan(hfov / 2.), 0., 0., 0.],
+            [0., 1 / np.tan(hfov / 2.), 0., 0.],
+            [0., 0., 1, 0],
+            [0., 0., 0, 1]
+        ])
+        
+        # Normalize pixel coordinates
+        xs = (2.0 * pixel_x / (W - 1)) - 1.0  # normalized x [-1, 1]
+        ys = 1.0 - (2.0 * pixel_y / (H - 1))  # normalized y [1, -1]
+
+        # Depth value at the pixel
+        depth = depth_obs[0, pixel_x,pixel_y,0]
+        
+        # Create the homogeneous coordinates for the pixel in camera space
+        xys = np.array([xs * depth, ys * depth, -depth, 1.0]).reshape(4, 1)
+        
+        # Apply the inverse of the intrinsic matrix to get camera space coordinates
+        xy_c = np.matmul(np.linalg.inv(K), xys)
+
+        # Get the rotation and translation of the camera
+        depth_rotation = np.array(depth_rot)
+        depth_translation = np.array(depth_trans)
+
+        # Get camera-to-world transformation
+        T_world_camera = np.eye(4)
+        T_world_camera[0:3, 0:3] = depth_rotation
+        T_world_camera[0:3, 3] = depth_translation
+
+        # Apply transformation to get world coordinates
+        T_camera_world = np.linalg.inv(T_world_camera)
+        points_world = np.matmul(T_camera_world, xy_c)
+
+        # Get non-homogeneous points in world space
+        points_world = points_world[:3, :] / points_world[3, :]
+        return points_world.flatten()

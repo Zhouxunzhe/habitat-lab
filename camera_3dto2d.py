@@ -1,6 +1,6 @@
 import numpy as np
 import magnum as mn
-project_size = 2.0
+# project_size = 2.0
 projection_matrix = np.array([[1, 0, 0, 0],
        [0, 1, 0, 0],
       [0, 0, -1.00002, -0.0200002],

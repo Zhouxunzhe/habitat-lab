@@ -54,6 +54,7 @@ class ArticulatedAgentAction(SimulatorTaskAction):
         The grasp manager for the articulated_agent instance for this action.
         """
         return self._articulated_agent_mgr.grasp_mgr
+        # return self._sim.get_agent_data(None).grasp_mgr
 
     @property
     def _action_arg_prefix(self) -> str:

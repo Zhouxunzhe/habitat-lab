@@ -66,6 +66,13 @@ class OracleNavAction(BaseVelAction, BaseVelNonCylinderAction, HumanoidJointActi
         else:
             vel = [0, turn_vel]
         return vel
+    def _compute_turn_from_angle(angle, turn_vel):
+        is_left = angle < 0
+        if is_left:
+            vel = [0, -turn_vel]
+        else:
+            vel = [0, turn_vel]
+        return vel
 
     def update_base(self, *args, **kwargs):
         """
@@ -311,6 +318,7 @@ class OracleNavCoordinateAction(BaseVelAction, BaseVelNonCylinderAction, Humanoi
         task = kwargs["task"]
         self.motion_type = config.motion_control
         self._targets = {}
+        self.skill_done = False
         if self.motion_type == "base_velocity":
             BaseVelAction.__init__(self, *args, **kwargs)
             
@@ -391,14 +399,14 @@ class OracleNavCoordinateAction(BaseVelAction, BaseVelNonCylinderAction, Humanoi
             {
                 self._action_arg_prefix
                 + "oracle_nav_coord_action": spaces.Box(
-                    shape=(3,),
+                    shape=(4,),
                     low=np.finfo(np.float32).min,
                     high=np.finfo(np.float32).max,
                     dtype=np.float32,
                 ),
                 self._action_arg_prefix
                 + "oracle_nav_lookat_action": spaces.Box(
-                    shape=(3,),
+                    shape=(4,),
                     low=np.finfo(np.float32).min,
                     high=np.finfo(np.float32).max,
                     dtype=np.float32,
@@ -462,12 +470,13 @@ class OracleNavCoordinateAction(BaseVelAction, BaseVelNonCylinderAction, Humanoi
         # mode = 0,1,2
         # 0 means both target and lookat are given, 1 means only lookat is given, 2 means only target is given
         self.skill_done = False
+        # print("kwargs:",kwargs)
         nav_to_target_coord = kwargs.get(
             self._action_arg_prefix + "oracle_nav_lookat_action", None)
         nav_position_coord = kwargs.get(
             self._action_arg_prefix + "oracle_nav_coord_action", None)
         mode = kwargs.get(self._action_arg_prefix + "mode", None)
-        
+        # print("nav_position_coord:",nav_position_coord)
         # calculate mode based on the inputs
         if mode is None:
             if nav_to_target_coord is not None and nav_position_coord is not None:

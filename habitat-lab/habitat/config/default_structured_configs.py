@@ -2057,6 +2057,9 @@ class ThirdDepthSensorConfig(HabitatSimDepthSensorConfig):
     uuid: str = "third_depth"  # TODO: third_rgb on the main branch
     #  check if it won't cause any errors
 
+@dataclass
+class CameraExtrinsicSensorConfig(LabSensorConfig):
+    type: str = "CameraExtrinsicSensor"
 
 @dataclass
 class ThirdSemanticSensorConfig(HabitatSimSemanticSensorConfig):
@@ -2425,12 +2428,12 @@ cs.store(
     name="arm_pick_action",
     node=OraclePickActionConfig,
 )
-cs.store(
-    package="habitat.task.actions.arm_action",
-    group="habitat/task/actions",
-    name="arm_place_action",
-    node=OraclePlaceActionConfig,
-)
+# cs.store(
+#     package="habitat.task.actions.arm_action",
+#     group="habitat/task/actions",
+#     name="arm_place_action",
+#     node=OraclePlaceActionConfig,
+# )
 cs.store(
     package="habitat.task.actions.arm_action",
     group="habitat/task/actions",
@@ -2966,6 +2969,12 @@ cs.store(
     group="habitat/task/lab_sensors",
     name="object_goal",
     node=ObjectGoalConfig
+)
+cs.store(
+    package="habitat.task.lab_sensors.camera_extrinsic_info",
+    group="habitat/task/lab_sensors",
+    name="camera_extrinsic_info",
+    node=CameraExtrinsicSensorConfig
 )
 cs.store(
     package="habitat.task.lab_sensors.camera_info",

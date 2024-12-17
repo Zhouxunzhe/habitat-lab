@@ -39,10 +39,10 @@ pick:
   force_end_on_timeout: False
 
 pick_at_position:
-  skill_name: "OraclePickPolicy"
+  skill_name: "OraclePixelPickPolicy"
   action_name: "arm_pick_action"
   obs_skill_inputs: ["is_holding"]
-  max_skill_steps: 100
+  max_skill_steps: 200
   apply_postconds: False
   force_end_on_timeout: False
 
@@ -55,7 +55,7 @@ place:
   force_end_on_timeout: False
 
 place_at_position:
-  skill_name: "OraclePlacePolicy"
+  skill_name: "OraclePixelPlacePolicy"
   action_name: "arm_place_action"
   obs_skill_inputs: []
   max_skill_steps: 100

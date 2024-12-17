@@ -11,7 +11,6 @@ from io import BytesIO
 from torchvision import transforms
 import torch
 
-
 # from habitat_mas.agents.llm_agent_base import LLMAgentBase
 class DummyAgent:
     def __init__(self, **kwargs):
@@ -166,8 +165,8 @@ class DummyAgent:
 
         # hfov = float(self._sim._sensors[depth_name]._sensor_object.hfov) * np.pi / 180.
         # W, H = depth_camera.viewport[0], depth_camera.viewport[1]
-        W = 256
-        H = 256
+        W = 512
+        H = 512
         hfov = 1.5707963267948966
         # Intrinsic matrix K
         K = np.array([
@@ -182,7 +181,7 @@ class DummyAgent:
         ys = 1.0 - (2.0 * pixel_y / (H - 1))  # normalized y [1, -1]
 
         # Depth value at the pixel
-        depth = depth_obs[0, pixel_x,pixel_y,0]
+        depth = depth_obs[0,pixel_y,pixel_x,0]
 
         # Create the homogeneous coordinates for the pixel in camera space
         xys = np.array([xs * depth, ys * depth, -depth, 1.0]).reshape(4, 1)
@@ -402,153 +401,152 @@ class DummyAgent:
 
 
 
-
+    def debug_2d_to_3d(self,depth_obs, depth_rot,depth_trans,pixel_xy):
+        pixel_x, pixel_y = pixel_xy
+        point_3d = self._2d_to_3d_single_point(depth_obs.cpu(), depth_rot.cpu(),depth_trans.cpu(),pixel_x, pixel_y)
+        IGNORE_NODE = [-100]
+        point_3d_debug = np.concatenate((point_3d, IGNORE_NODE))
+        print("point_3d:",point_3d_debug)
+        return point_3d_debug
+    def debug_green_point_rgb_get(self):
+        return True    
     def agent_output(self,observations,eval_info,**kwargs):
         # print("kwargs",kwargs)
         # episode_id,data_path = eval_info
-        info = [
-            # {
-            #     "name": "nav_to_position",
-            #     "arguments": {
-            #         "target_position": [-6.0114569664001465,0.1160174161195755,0.8003081679344177,1.4639922380447388,1],
-            #         "robot": self.agent_name,
-            #     }
-            # },
-            #!!!!!!!!!if the next_loc_z < now_loc_z, then it is 0
-            {
-                "name": "reset_arm",
-                "arguments": ['agent_0']
-            }, #非常tmd重要！！！！！
+        if self.agent_name == "agent_0":
+            info = [
+                # {
+                #     "name": "nav_to_position",
+                #     "arguments": {
+                #         "target_position": [-6.0114569664001465,0.1160174161195755,0.8003081679344177,1.4639922380447388,1],
+                #         "robot": self.agent_name,
+                #     }
+                # },
+                #!!!!!!!!!if the next_loc_z < now_loc_z, then it is 0
+                {
+                    "name": "reset_arm",
+                    "arguments": ['agent_0']
+                }, #非常重要！！！！！
+                {
+                    "name": "nav_to_position",
+                    "arguments": {
+                        "target_position": [-9.23664379119873,0.0721273422241211,0.7160382866859436,-0.6195393204689026],
+                        "robot": self.agent_name,
+                    }
+                },
+                {
+                    "name": "reset_arm",
+                    "arguments": ['agent_0']
+                }, #非常重要！！！！
+                {
+                    "name": "nav_to_position",
+                    "arguments": {
+                        "target_position": self.debug_2d_to_3d(observations['depth_obs'], 
+                        observations['depth_rot'],observations['depth_trans'],[154,320]),
+                        "robot": self.agent_name,
+                    }
+                },
+                # {
+                #     "name": "nav_to_position",
+                #     "arguments": {
+                #         "target_position": [-7.212055206298828,0.0721273422241211,1.1851310729980469,-0.18204014003276825],
+                #         "robot": self.agent_name,
+                #     }
+                # },
+                # {
+                #     "name": "reset_arm",
+                #     "arguments": ['agent_0']
+                # },
+                {
+                    "name": "reset_arm",
+                    "arguments": ['agent_0']
+                }, #非常重要！！！！
+                {
+                    "name": "pick_key_point",
+                    "arguments": {
+                        "position": [384,256],
+                        "robot": self.agent_name,
+                    }
+                },
+                {
+                    "name": "reset_arm",
+                    "arguments": ['agent_0']
+                },
+                # {
+                #     "name": "reset_arm",
+                #     "arguments": ['agent_0']
+                # }, #非常重要！！！！
+                # {
+                #     "name": "place_key_point",
+                #     "arguments": {
+                #         "position": [384,256],
+                #         "robot": self.agent_name,
+                #     }
+                # },
+                # {
+                #     "name": "reset_arm",
+                #     "arguments": ['agent_0']
+                # },
+                {
+                    "name": "nav_to_position",
+                    "arguments": {
+                        "target_position": [-3.91111159324646,0.0721273422241211,-3.2192468643188477,2.297140121459961],
+                        "robot": self.agent_name,
+                    }
+                },
+                {
+                    "name": "reset_arm",
+                    "arguments": ['agent_0']
+                },
+                {
+                    "name": "nav_to_position",
+                    "arguments": {
+                        "target_position": self.debug_2d_to_3d(observations['depth_obs'], 
+                        observations['depth_rot'],observations['depth_trans'],[60,450]),
+                        "robot": self.agent_name,
+                    }
+                },
+                {
+                    "name": "place_key_point",
+                    "arguments": {
+                        "position": [256,361],
+                        "robot": self.agent_name,
+                    }
+                },
+                {
+                    "name": "reset_arm",
+                    "arguments": ['agent_0']
+                },
+                #after finish nav,you should force the robot wait for 1sc,so that it could do the next action.
+                {
+                    "name": "wait",
+                    "arguments": ['3000','agent_0']
+                },
+                {
+                    "name": "wait",
+                    "arguments": ['3000','agent_0']
+                },
 
-            # {
-            #     "name": "nav_to_position",
-            #     "arguments": {
-            #         "target_position": [-5.921825885772705,0.17830851674079895,2.79310941696167,-0.8817002773284912,0],
-            #         "robot": self.agent_name,
-            #     }
-            # },
-            # {
-            #     "name": "wait",
-            #     "arguments": ['1','agent_0']
-            # },
-            {
-                "name": "nav_to_key_point",
-                "arguments": {
-                    "target_position": [256,499],
-                    "robot": self.agent_name,
-                }
-            },
-            {
-                "name": "reset_arm",
-                "arguments": ['agent_0']
-            },
-            #after finish nav,you should force the robot wait for 1sc,so that it could do the next action.
-            {
-                "name": "wait",
-                "arguments": [1,'agent_0']
-            },
-            {
-                "name": "wait",
-                "arguments": [3000,'agent_0']
-            },
-            {
-                "name": "pick",
-                "arguments": ['any_targets|0', 'agent_0']
-            },
-            {
-                "name": "reset_arm",
-                "arguments": ['agent_0']
-            },
-            {
-                "name": "nav_to_key_point",
-                "arguments": {
-                    "target_position": [256,400],
-                    "robot": self.agent_name,
-                }
-            },
-            # {
-            #     "name": "wait",
-            #     "arguments": ['1','agent_0']
-            # },
-            # {
-            #     "name": "wait",
-            #     "arguments": ['3000','agent_0']
-            # },
-            {
-                "name": "wait",
-                "arguments": ['1','agent_0']
-            },
-            {
-                "name": "nav_to_key_point",
-                "arguments": {
-                    "target_position":  [256,400],
-                    "robot": self.agent_name,
-                }
-            },
-            {
-                "name": "wait",
-                "arguments": ['1','agent_0']
-            },
-            {
-                "name": "nav_to_key_point",
-                "arguments": {
-                    "target_position":  [256,400],
-                    "robot": self.agent_name,
-                }
-            },
-            {
-                "name": "wait",
-                "arguments": ['1','agent_0']
-            },
-            {
-                "name": "nav_to_key_point",
-                "arguments": {
-                    "target_position": [256,400],
-                    "robot": self.agent_name,
-                }
-            },
-            {
-                "name": "wait",
-                "arguments": ['1','agent_0']
-            },
-            {
-                "name": "nav_to_key_point",
-                "arguments": {
-                    "target_position":  [256,400],
-                    "robot": self.agent_name,
-                }
-            },
-            {
-                "name": "wait",
-                "arguments": ['3000','agent_0']
-            },
+                {
+                    "name": "place",
+                    "arguments": ['any_targets|0','TARGET_any_targets|0', 'agent_0']
+                },
+                {
+                    "name": "wait",
+                    "arguments": ['3000','agent_0']
+                },
 
-            {
-                "name": "place",
-                "arguments": ['any_targets|0','TARGET_any_targets|0', 'agent_0']
-            },
-            {
-                "name": "wait",
-                "arguments": ['3000','agent_0']
-            },
-
-        ]
+            ]
         # print("self.agent_name:",self.agent_name)
         if self.agent_name == "agent_0":
             self.return_num += 1
+            print("self.return_num:",self.return_num)
+            return info[self.return_num]
         else:
             return {
-                "name": "nav_to_key_point",
-                "arguments": {
-                    "target_position": [256,400],
-                    "robot": self.agent_name,
-                }
-            }
-        print("self.return_num:",self.return_num)
-        # target_position = [[-3.7735161781311035,0.1160174161195755,-1.5337603092193604],[-2.0869526863098145,
-        #   0.1160174161195755,-0.19013549387454987],[-1.985478401184082,0.1160174161195755,3.3729171752929688],
-        #   [-3.7735161781311035,0.1160174161195755,-1.5337603092193604],[-1.985478401184082,0.1160174161195755,3.3729171752929688]]
-        return info[self.return_num]
+                    "name": "wait",
+                    "arguments": ['3000','agent_1']
+                }        
 
 if __name__ == "__main__":
     vlm_test = DummyAgent()

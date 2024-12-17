@@ -2,19 +2,19 @@
 # See `oracle_skills.yaml` for details.
 
 pick_key_point:
-  skill_name: "OraclePickPolicy"
+  skill_name: "OraclePixelPickPolicy"
   action_name: "arm_pick_action"
   obs_skill_inputs: ["is_holding"]
-  max_skill_steps: 100
+  max_skill_steps: 500
   apply_postconds: False
   force_end_on_timeout: False
 
 place_key_point:
-  skill_name: "OraclePlacePolicy"
+  skill_name: "OraclePixelPlacePolicy"
   action_name: "arm_place_action"
   obs_skill_inputs: []
-  max_skill_steps: 100
-  apply_postconds: True
+  max_skill_steps: 500
+  apply_postconds: False
   force_end_on_timeout: False
 
 nav_to_key_point:
@@ -47,4 +47,5 @@ reset_arm:
   skill_name: "ResetArmSkill"
   action_name: "arm_reset_action"
   obs_skill_inputs: []
-  max_skill_steps: 100
+  max_skill_steps: 200
+  force_end_on_timeout: False

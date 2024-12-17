@@ -46,7 +46,7 @@ class RearrangeGraspManager:
         self._config = config
         self._managed_articulated_agent = articulated_agent
         self.ee_index = ee_index
-
+        self.force_is_snapped = False
         self._kinematic_mode = self._sim.habitat_config.kinematic_mode
 
     def reconfigure(self) -> None:

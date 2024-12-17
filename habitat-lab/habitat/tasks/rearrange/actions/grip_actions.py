@@ -43,6 +43,7 @@ class MagicGraspAction(GripSimulatorTaskAction):
 
     def _grasp(self):
         scene_obj_pos = self._sim.get_scene_pos()
+        # print("scene_obj_pos:",scene_obj_pos)
         ee_pos = self.cur_articulated_agent.ee_transform().translation
         # Get objects we are close to.
         if len(scene_obj_pos) != 0:
@@ -64,6 +65,7 @@ class MagicGraspAction(GripSimulatorTaskAction):
                     rel_pos=mn.Vector3(0.1, 0.0, 0.0),
                     keep_T=keep_T,
                 )
+                self.cur_grasp_mgr.force_is_snapped = True
                 return
 
         # Get markers we are close to.
@@ -88,10 +90,14 @@ class MagicGraspAction(GripSimulatorTaskAction):
     def step(self, grip_action, should_step=True, *args, **kwargs):
         if grip_action is None:
             return
-
+        
         if grip_action > 0 and not self.cur_grasp_mgr.is_grasped:
             self._grasp()
         elif grip_action < 0 and self.cur_grasp_mgr.is_grasped:
+            self._ungrasp()
+        if not self.cur_grasp_mgr.is_grasped:
+            self._grasp()
+        if self.cur_grasp_mgr.is_grasped:
             self._ungrasp()
 
 

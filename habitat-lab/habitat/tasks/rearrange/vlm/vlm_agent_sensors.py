@@ -56,13 +56,18 @@ class CameraInfoSensor(UsesArticulatedAgentInterface, Sensor):
 
     def get_observation(self, observations, *args, **kwargs):
         camera_info = {}
+        if self.agent_id is not None:
+            camera_name = f"agent_{self.agent_id}_{self.camera_name}"
+        else:
+            camera_name = self.camera_name
+        # print("sensor_info:",)
         hfov = (
-            float(self._sim._sensors[self.camera_name]._sensor_object.hfov)
+            float(self._sim._sensors[camera_name]._sensor_object.hfov)
             * np.pi
             / 180.0
         )
-        camera = self._sim._sensors[self.camera_name]._sensor_object.render_camera
-        camera_info[self.camera_name] = {
+        camera = self._sim._sensors[camera_name]._sensor_object.render_camera
+        camera_info[camera_name] = {
             "projection_matrix": np.array(camera.projection_matrix),
             "camera_matrix": np.array(camera.camera_matrix),
             "fov": hfov,

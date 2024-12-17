@@ -157,6 +157,7 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
         self._sim.step_physics(1.0 / 60)
 
     def step(self, pick_action, **kwargs):
+        # print("pick_action:",pick_action)
         object_pick_pddl_idx = pick_action[0]
         should_pick = pick_action[1]
 
@@ -197,7 +198,6 @@ class OraclePickAction(ArmEEAction, ArticulatedAgentAction):
                 )
         else:
             self.is_reset = False
-
         return self.ee_target
 
 

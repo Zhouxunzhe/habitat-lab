@@ -165,7 +165,7 @@ class OraclePickPolicy(NnSkillPolicy):
         
         full_action[0][self._pick_srt_idx:self._pick_end_idx-1] = torch.tensor([action_idxs, PICK_ID])
         full_action[0][self._pick_end_idx-1] = 1.0
-        
+        # print("full_action:",full_action)
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )

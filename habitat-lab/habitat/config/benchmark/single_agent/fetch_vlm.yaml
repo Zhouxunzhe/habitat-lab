@@ -7,7 +7,6 @@ defaults:
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
 
   - /habitat/dataset/embodied_mas: dataset_manipulation
-
   - /habitat/task/actions@habitat.task.actions.base_velocity: base_velocity
   - /habitat/task/actions@habitat.task.actions.rearrange_stop: rearrange_stop
   - /habitat/task/actions@habitat.task.actions.pddl_apply_action: pddl_apply_action
@@ -23,6 +22,7 @@ defaults:
     - num_steps
     - did_agents_collide
     - num_agents_collide
+    - object_to_goal_distance
     - composite_stage_goals
     - pddl_subgoal_reward
     - rearrange_cooperate_reward
@@ -32,6 +32,7 @@ defaults:
     - goal_sensor
     - joint_sensor
     - is_holding_sensor
+    - object_to_goal_distance_sensor
     - end_effector_sensor
     - target_start_gps_compass_sensor
     - target_goal_gps_compass_sensor
@@ -41,7 +42,7 @@ defaults:
     - get_depth
     - get_depth_rot
     - get_depth_trans
-    - arm_workspace_rgb_sensor
+    # - arm_workspace_rgb_sensor
     - camera_info
     # # - object_masks_sensor
     # - nav_workspace_rgb_sensor
@@ -77,10 +78,10 @@ habitat:
     task_spec_base_path: benchmark/single_agent/
     task_spec: pddl/pddl_single_agent_man
     pddl_domain_def: fp
-    robot_at_thresh: 3.0
+    robot_at_thresh: 1.0
 
   environment:
-    max_episode_steps: 150
+    max_episode_steps: 800
   simulator:
     type: RearrangeSim-v0
     seed: 100

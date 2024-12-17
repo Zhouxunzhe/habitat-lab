@@ -6,7 +6,7 @@ import os.path as osp
 from dataclasses import dataclass
 from typing import List
 import torch
-
+import numpy as np
 from habitat.core.spaces import ActionSpace
 from habitat.tasks.rearrange.rearrange_sensors import (
     HasFinishedOracleNavSensor,
@@ -227,7 +227,7 @@ class OracleNavCoordPolicy(OracleNavPolicy):
 
     def _parse_skill_arg(self, skill_name: str, skill_arg):
         
-        target_position = skill_arg.get("target_position", [0, 0, 0])
+        target_position = skill_arg.get("target_position", [0, 0, 0, 0])
         # print("targetposition:",target_position,flush = True)
         return OracleNavCoordPolicy.OracleNavCoordActionArgs(target_position)
 
@@ -240,8 +240,6 @@ class OracleNavCoordPolicy(OracleNavPolicy):
         cur_batch_idx,
         deterministic=False,
     ):
-        import pdb
-        # pdb.set_trace()
         full_action = torch.zeros(
             (masks.shape[0], self._full_ac_size), device=masks.device
         )
@@ -250,7 +248,7 @@ class OracleNavCoordPolicy(OracleNavPolicy):
         # )
 
         target_positions = torch.FloatTensor(
-            [self._cur_skill_args[i].target_position for i in cur_batch_idx]
+            np.array([self._cur_skill_args[i].target_position for i in cur_batch_idx])
         )
         # lookat_positions = torch.FloatTensor(
         #     [self._cur_skill_args[i].lookat_position for i in cur_batch_idx]
@@ -261,7 +259,6 @@ class OracleNavCoordPolicy(OracleNavPolicy):
         # full_action[0][self._oracle_nav_ac_idx+3]=target_positions[0][3]
         full_action[:, self._oracle_nav_ac_idx: self._oracle_nav_ac_idx + len(target_positions[0])] = target_positions
         # full_action[:, self._oracle_lookat_ac_idx: self._oracle_lookat_ac_idx + 3] = lookat_positions
-        
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )

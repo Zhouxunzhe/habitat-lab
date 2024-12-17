@@ -149,7 +149,6 @@ class ArmAction(ArticulatedAgentAction):
 
     def step(self, *args, **kwargs):
         arm_action = kwargs[self._action_arg_prefix + "arm_action"]
-
         # Check if we can apply the arm action given a_selection_of_base_or_arm action.
         # This is useful if we do not allow base and arm to move at the same time
         if (

@@ -8,7 +8,7 @@ defaults:
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: FetchRobot_default
 
   # - /habitat/dataset/rearrangement: hssd
-  - /habitat/dataset/embodied_mas: zxz_manipulation
+  - /habitat/dataset/embodied_mas: dataset_manipulation
 
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_pick_action: arm_pick_action
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_place_action: arm_place_action
@@ -56,6 +56,7 @@ defaults:
     # - obj_list_infomation
     # - arm_workspace_rgb_sensor
     - camera_info
+    - camera_extrinsic_info
     # - navtemptran_s
     # - get_nav_goal_point
     # - target_point

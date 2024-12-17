@@ -67,6 +67,7 @@ class PddlApplyAction(ArticulatedAgentAction):
                         raise ValueError(
                             f"Got invalid action value < 0 in {action_part} with action {action}"
                         )
+                        print("skip")
 
                 param_values = [self.entities[i] for i in real_action_idxs]
 

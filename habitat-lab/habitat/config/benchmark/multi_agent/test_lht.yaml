@@ -8,7 +8,7 @@ defaults:
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_1: FetchRobot_default
 
   # - /habitat/dataset/rearrangement: hssd
-  - /habitat/dataset/embodied_mas: zxz_manipulation
+  - /habitat/dataset/embodied_mas: dataset_manipulation
 
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_pick_action: arm_pick_action
   - /habitat/task/actions@habitat.task.actions.agent_0_arm_place_action: arm_place_action
@@ -87,7 +87,7 @@ habitat:
     robot_at_thresh: 1.0
 
   environment:
-    max_episode_steps: 400
+    max_episode_steps: 300
     # iterator_options:
     #   shuffle: True
   simulator:

@@ -6,7 +6,7 @@ defaults:
 
   - /habitat/simulator/agents/habitat_mas_agents@habitat.simulator.agents.agent_0: FetchRobot_default
 
-  - /habitat/dataset/embodied_mas: zxz_manipulation
+  - /habitat/dataset/embodied_mas: dataset_manipulation
 
   - /habitat/task/actions@habitat.task.actions.arm_pick_action: arm_pick_action
   - /habitat/task/actions@habitat.task.actions.arm_place_action: arm_place_action
@@ -37,7 +37,6 @@ defaults:
     #- other_agent_gps
     # - detected_objects_sensor
     - arm_workspace_rgb_sensor
-
     # - object_masks_sensors
     # - obj_bbox_sensor
     # - target_bbox_sensor
@@ -73,7 +72,7 @@ habitat:
         end_on_collide: True
         collide_penalty: 0.5
     task_spec_base_path: benchmark/single_agent/
-    task_spec: pddl/zxz_single_agent_man
+    task_spec: pddl/pddl_single_agent_man
     pddl_domain_def: fp
     robot_at_thresh: 3.0
 

@@ -726,10 +726,16 @@ class IsHoldingSensor(UsesArticulatedAgentInterface, Sensor):
         return spaces.Box(shape=(1,), low=0, high=1, dtype=np.float32)
 
     def get_observation(self, observations, episode, *args, **kwargs):
-        return np.array(
+        # if not self.agent_id:
+        #     return np.array(
+        #         int(self._sim.get_agent_data(self.agent_id).grasp_mgr.force_is_snapped),
+        #         dtype=np.float32,
+        #     ).reshape((1,))
+        is_holding_bool = np.array(
             int(self._sim.get_agent_data(self.agent_id).grasp_mgr.is_grasped),
             dtype=np.float32,
         ).reshape((1,))
+        return is_holding_bool
 
 
 @registry.register_sensor
@@ -2203,8 +2209,9 @@ class DepthRotSensor(UsesArticulatedAgentInterface, Sensor):
 @registry.register_sensor
 class DepthTransSensor(UsesArticulatedAgentInterface, Sensor):
     cls_uuid: str = "depth_trans"
-    def __init__(self, sim, config, *args, **kwargs):
+    def __init__(self, sim, config, task,*args, **kwargs):
         self._sim = sim
+        self._task = task
         # self.agent_idx = config.agent_idx
         # self.height = config.height
         # self.width = config.width
@@ -2466,21 +2473,19 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
     def _is_reachable(self, cur_articulated_agent, ik_helper, point, thresh=0.05):
         cur_base_pos, cur_base_orn = ik_helper.get_base_state()
-
         base_transformation = cur_articulated_agent.base_transformation
+    
         orn_quaternion = mn.Quaternion.from_matrix(base_transformation.rotation())
         base_pos = base_transformation.translation
         base_orn = list(orn_quaternion.vector)
         base_orn.append(orn_quaternion.scalar)
         ik_helper.set_base_state(base_pos, base_orn)
-
         # point_base = cur_articulated_agent.base_transformation.inverted().transform_vector(point)
         point_base = point
 
         cur_joint_pos = cur_articulated_agent.arm_joint_pos
 
         des_joint_pos = ik_helper.calc_ik(point_base)
-
         # temporarily set arm joint position
         if cur_articulated_agent.sim_obj.motion_type == MotionType.DYNAMIC:
             cur_articulated_agent.arm_motor_pos = des_joint_pos

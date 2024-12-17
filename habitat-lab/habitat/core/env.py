@@ -300,8 +300,8 @@ class Env:
         print("========================Episode Step Info==========================")
         print(f"Episode ID: {episode_data['episode_id']}, Num Steps: {episode_data['num_steps']}")
         print("===================================================================")
-
-        dataset_name = self._config.dataset.data_path.split("/")[-1].split(".")[:-2][0]
+        print("self._config.dataset.data_path:",self._config.dataset.data_path)
+        dataset_name = self._config.dataset.data_path.split("/")[-1]
         ablation_mode = ABLATION_MODE[
             (
                 self._config.dataset.should_group_discussion,

@@ -29,7 +29,7 @@ def run_scene_graph_generate(args):
     # os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
     seed = random.randint(1, 100000000)
     min_point_dis = 2.0
-    zxz_yaml_path = './habitat-lab/habitat/config/benchmark/single_agent/zxz_fetch.yaml'
+    zxz_yaml_path = './habitat-lab/habitat/config/benchmark/single_agent/config_fetch.yaml'
     with open(zxz_yaml_path,'r') as file:
         data = yaml.load(file)
     data['habitat']['dataset']['data_path'] = dataset_path
@@ -60,6 +60,7 @@ def run_scene_graph_generate(args):
 
 if __name__ == '__main__':
     #!!!!需要重新配置一下zxz_fetch.yaml的lab_sensors和image_filter_list
+    dataset_path = "./sat_test"
     parser = argparse.ArgumentParser(description="Setup dataset and log paths.")
     parser.add_argument('--start_dir', type=int, required=True, help='Start')
     parser.add_argument('--end_dir', type=int, required=True, help='End')
@@ -67,7 +68,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     start_dir = args.start_dir
     end_dir = args.end_dir
-    dataset_path = "./sat_DATASET_filter_test"
     image_dataset_path = os.path.join(dataset_path, "image")
     yaml_dir_name = f"startfrom_{start_dir}endat_{end_dir}"
     log_path = f'./log/scene_graph_pipeline/{yaml_dir_name}'

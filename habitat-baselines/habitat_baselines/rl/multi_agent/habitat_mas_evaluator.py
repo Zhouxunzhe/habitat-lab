@@ -312,8 +312,7 @@ class HabitatMASEvaluator(Evaluator):
             with inference_mode():
                 ep_info = [int(cur_ep_id),dataset_info]
                 # print("ep_info:",ep_info)
-                agent_0_image = batch["agent_0_head_rgb"].cpu()
-                # print("agent_0_imageshape:",agent_0_image.shape)
+                # agent_0_loc = batch["agent_0_localization_sensor"].cpu()
                 action_data = agent.actor_critic.act(
                     batch,
                     test_recurrent_hidden_states,
@@ -438,7 +437,7 @@ class HabitatMASEvaluator(Evaluator):
                         # but the info is correct. So we use a black frame
                         final_frame = observations_to_image(
                             {k: v[i] * 0.0 for k, v in batch.items()if
-                             k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb"},
+                             k != "agent_0_fourth_rgb" and k != "agent_1_fourth_rgb" and ("camera_info" not in k)},
                             disp_info, config,
                             frame_id=len(rgb_frames[0]),
                             episode_id=current_episodes_info[i].episode_id,
