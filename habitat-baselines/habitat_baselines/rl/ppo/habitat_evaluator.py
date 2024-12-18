@@ -160,6 +160,8 @@ class HabitatEvaluator(Evaluator):
                     # image = [agent_0_image,agent_1_image]
             agent_0_depth_rot = batch["depth_rot"].cpu()
             agent_0_depth_trans = batch["depth_trans"].cpu()
+            agent_0_depth_trans = batch["arm_workspace_rgb"].cpu()
+            # print("agent_0_depth_trans:",agent_0_depth_trans)
             # print("agent_0_depth_info:",agent_0_depth_info.shape)
             # print("agent_0_depth_rot:",agent_0_depth_rot)
             # print("agent_0_depth_trans:",agent_0_depth_trans)
@@ -262,7 +264,8 @@ class HabitatEvaluator(Evaluator):
                         # The last frame corresponds to the first frame of the next episode
                         # but the info is correct. So we use a black frame
                         final_frame = observations_to_image(
-                            {k: v[i] * 0.0 for k, v in batch.items() if ("camera_info" not in k)},
+                            {k: v[i] * 0.0 for k, v in batch.items() if (("camera_info" not in k) and ("arm_workspace_rgb" not in k))},
+                            #need to add to config
                             disp_info, config, len(rgb_frames[0]),
                         )
                         final_frame = overlay_frame(final_frame, disp_info)

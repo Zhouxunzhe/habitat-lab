@@ -22,10 +22,14 @@ stage_goals:
     expr_type: AND
     sub_exprs:
       - holding(any_targets|0, agent_0)
+  stage_3:
+    expr_type: AND
+    sub_exprs:
+      - robot_at(TARGET_any_targets|0, agent_0)
 
 solution:
   - reset_arm(agent_0)
-  - nav_to_goal(any_targets|0, agent_0)
+  - nav_to_obj(any_targets|0, agent_0)
   - pick(any_targets|0, agent_0)
   - reset_arm(agent_0)
   - nav_to_obj(TARGET_any_targets|0, agent_0)

@@ -95,6 +95,7 @@ __all__ = [
     "ArtObjRewardMeasurementConfig",
     "NavToObjSuccessMeasurementConfig",
     "NavToObjRewardMeasurementConfig",
+    "MoveObjectsRewardMeasurementConfig",
     "PddlSuccessMeasurementConfig",
     # PROFILING MEASURES
     "RuntimePerfStatsMeasurementConfig",
@@ -966,6 +967,7 @@ class ArmWorkspaceRGBSensorConfig(LabSensorConfig):
     rgb_sensor_name: str = "head_rgb"
     depth_sensor_name: str = "head_depth"
     debug_tf: bool = True
+    single_agent_eval_option: bool = False
 
 @dataclass
 class NavWorkspaceRGBSensorConfig(LabSensorConfig):

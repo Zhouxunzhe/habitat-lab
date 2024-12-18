@@ -406,13 +406,14 @@ class DummyAgent:
         point_3d = self._2d_to_3d_single_point(depth_obs.cpu(), depth_rot.cpu(),depth_trans.cpu(),pixel_x, pixel_y)
         IGNORE_NODE = [-100]
         point_3d_debug = np.concatenate((point_3d, IGNORE_NODE))
-        print("point_3d:",point_3d_debug)
+        # print("point_3d:",point_3d_debug)s
         return point_3d_debug
     def debug_green_point_rgb_get(self):
         return True    
     def agent_output(self,observations,eval_info,**kwargs):
         # print("kwargs",kwargs)
         # episode_id,data_path = eval_info
+        
         if self.agent_name == "agent_0":
             info = [
                 # {
@@ -428,6 +429,10 @@ class DummyAgent:
                     "arguments": ['agent_0']
                 }, #非常重要！！！！！
                 {
+                    "name": "wait",
+                    "arguments": ['1','agent_0']
+                },
+                {
                     "name": "nav_to_position",
                     "arguments": {
                         "target_position": [-9.23664379119873,0.0721273422241211,0.7160382866859436,-0.6195393204689026],
@@ -438,6 +443,10 @@ class DummyAgent:
                     "name": "reset_arm",
                     "arguments": ['agent_0']
                 }, #非常重要！！！！
+                {
+                    "name": "wait",
+                    "arguments": ['1','agent_0']
+                },
                 {
                     "name": "nav_to_position",
                     "arguments": {
@@ -462,6 +471,10 @@ class DummyAgent:
                     "arguments": ['agent_0']
                 }, #非常重要！！！！
                 {
+                    "name": "wait",
+                    "arguments": ['1','agent_0']
+                },
+                {
                     "name": "pick_key_point",
                     "arguments": {
                         "position": [384,256],
@@ -471,6 +484,10 @@ class DummyAgent:
                 {
                     "name": "reset_arm",
                     "arguments": ['agent_0']
+                },
+                {
+                    "name": "wait",
+                    "arguments": ['1','agent_0']
                 },
                 # {
                 #     "name": "reset_arm",
@@ -499,12 +516,24 @@ class DummyAgent:
                     "arguments": ['agent_0']
                 },
                 {
+                    "name": "wait",
+                    "arguments": ['1','agent_0']
+                },
+                {
                     "name": "nav_to_position",
                     "arguments": {
                         "target_position": self.debug_2d_to_3d(observations['depth_obs'], 
                         observations['depth_rot'],observations['depth_trans'],[60,450]),
                         "robot": self.agent_name,
                     }
+                },
+                {
+                    "name": "reset_arm",
+                    "arguments": ['agent_0']
+                },
+                {
+                    "name": "wait",
+                    "arguments": ['1','agent_0']
                 },
                 {
                     "name": "place_key_point",
@@ -516,6 +545,10 @@ class DummyAgent:
                 {
                     "name": "reset_arm",
                     "arguments": ['agent_0']
+                },
+                {
+                    "name": "wait",
+                    "arguments": ['1','agent_0']
                 },
                 #after finish nav,you should force the robot wait for 1sc,so that it could do the next action.
                 {
@@ -541,6 +574,8 @@ class DummyAgent:
         if self.agent_name == "agent_0":
             self.return_num += 1
             print("self.return_num:",self.return_num)
+            if observations["arm_workspace_rgb"] !=[[0]]:
+                print("Yes I got it!!",observations["arm_workspace_rgb"].cpu().shape)
             return info[self.return_num]
         else:
             return {

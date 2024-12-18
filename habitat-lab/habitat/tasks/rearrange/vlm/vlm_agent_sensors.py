@@ -620,14 +620,12 @@ class TargetBBoxSenor(UsesArticulatedAgentInterface, Sensor):
         else:
             return np.array([[-1, -1, -1, -1]])
 
-
 @registry.register_sensor
 class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
-    """Sensor to visualize the reachable workspace of an articulated arm"""
-
+    """ Sensor to visualize the reachable workspace of an articulated arm """
     cls_uuid: str = "arm_workspace_rgb"
 
-    def __init__(self, sim, task, config, *args, **kwargs):
+    def __init__(self, sim, task,config, *args, **kwargs):
         self._sim = sim
         # self.agent_idx = config.agent_idx
         self._task = task
@@ -639,14 +637,15 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         self.down_sample_voxel_size = config.get("down_sample_voxel_size", 0.1)
         self.ctrl_lim = config.get("down_sample_voxel_size", 0.1)
         self._entities = self._task.pddl_problem.get_ordered_entities_list()
-
+        self.single_agent_eval_option = config.get("single_agent_eval_option",False)
+        self.pre_wait = False
         super().__init__(config=config)
-
+                
         self._debug_tf = config.get("debug_tf", False)
         if self._debug_tf:
             self.pcl_o3d_list = []
             self._debug_save_counter = 0
-
+            
     def _get_uuid(self, *args, **kwargs):
         # return f"agent_{self.agent_idx}_{ArmWorkspaceRGBSensor.cls_uuid}"
         return ArmWorkspaceRGBSensor.cls_uuid
@@ -655,30 +654,20 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         return SensorTypes.COLOR
 
     def _get_observation_space(self, *args, config, **kwargs):
-        return spaces.Box(
-            low=0, high=255, shape=(self.height, self.width, 3), dtype=np.uint8
-        )
+        return spaces.Box(low=0, high=255, shape=(self.height, self.width, 3), dtype=np.uint8)
 
     def _2d_to_3d(self, depth_name, depth_obs):
         # get the scene render camera and sensor object
-        depth_camera = self._sim._sensors[
-            depth_name
-        ]._sensor_object.render_camera
+        depth_camera = self._sim._sensors[depth_name]._sensor_object.render_camera
 
-        hfov = (
-            float(self._sim._sensors[depth_name]._sensor_object.hfov)
-            * np.pi
-            / 180.0
-        )
+        hfov = float(self._sim._sensors[depth_name]._sensor_object.hfov) * np.pi / 180.
         W, H = depth_camera.viewport[0], depth_camera.viewport[1]
-        K = np.array(
-            [
-                [1 / np.tan(hfov / 2.0), 0.0, 0.0, 0.0],
-                [0.0, 1 / np.tan(hfov / 2.0), 0.0, 0.0],
-                [0.0, 0.0, 1, 0],
-                [0.0, 0.0, 0, 1],
-            ]
-        )
+        K = np.array([
+            [1 / np.tan(hfov / 2.), 0., 0., 0.],
+            [0., 1 / np.tan(hfov / 2.), 0., 0.],
+            [0., 0., 1, 0],
+            [0., 0., 0, 1]
+        ])
 
         xs, ys = np.meshgrid(np.linspace(-1, 1, W), np.linspace(1, -1, W))
         depth = depth_obs.reshape(1, W, W)
@@ -710,9 +699,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
     def _3d_to_2d(self, sensor_name, point_3d):
         # get the scene render camera and sensor object
-        render_camera = self._sim._sensors[
-            sensor_name
-        ]._sensor_object.render_camera
+        render_camera = self._sim._sensors[sensor_name]._sensor_object.render_camera
         W, H = render_camera.viewport[0], render_camera.viewport[1]
 
         # use the camera and projection matrices to transform the point onto the near plane
@@ -726,12 +713,7 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         point_2d *= render_camera.viewport
         # print(f"info:view:{render_camera.viewport}/size:{render_camera.projection_size()[0]}/")
         out_bound = 10
-        point_2d = np.nan_to_num(
-            point_2d,
-            nan=W + out_bound,
-            posinf=W + out_bound,
-            neginf=-out_bound,
-        )
+        point_2d = np.nan_to_num(point_2d, nan=W+out_bound, posinf=W+out_bound, neginf=-out_bound)
         return point_2d.astype(int)
 
     def voxel_grid_filter(self, points, voxel_size):
@@ -752,27 +734,21 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         return np.array(downsampled_points)
 
-    def _is_reachable(
-        self, cur_articulated_agent, ik_helper, point, thresh=0.05
-    ):
+    def _is_reachable(self, cur_articulated_agent, ik_helper, point, thresh=0.05):
         cur_base_pos, cur_base_orn = ik_helper.get_base_state()
-
         base_transformation = cur_articulated_agent.base_transformation
-        orn_quaternion = mn.Quaternion.from_matrix(
-            base_transformation.rotation()
-        )
+    
+        orn_quaternion = mn.Quaternion.from_matrix(base_transformation.rotation())
         base_pos = base_transformation.translation
         base_orn = list(orn_quaternion.vector)
         base_orn.append(orn_quaternion.scalar)
         ik_helper.set_base_state(base_pos, base_orn)
-
         # point_base = cur_articulated_agent.base_transformation.inverted().transform_vector(point)
         point_base = point
 
         cur_joint_pos = cur_articulated_agent.arm_joint_pos
 
         des_joint_pos = ik_helper.calc_ik(point_base)
-
         # temporarily set arm joint position
         if cur_articulated_agent.sim_obj.motion_type == MotionType.DYNAMIC:
             cur_articulated_agent.arm_motor_pos = des_joint_pos
@@ -791,31 +767,27 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         ik_helper.set_base_state(cur_base_pos, cur_base_orn)
 
-        return (
-            np.linalg.norm(np.array(point_base) - np.array(des_ee_pos))
-            < thresh
-        )
+        return np.linalg.norm(np.array(point_base) - np.array(des_ee_pos)) < thresh
 
     def get_observation(self, observations, *args, **kwargs):
-        """Get the RGB image with reachable and unreachable points marked"""
-
+        """ Get the RGB image with reachable and unreachable points marked """
         if self.agent_id is not None:
-            depth_obs = observations[
-                f"agent_{self.agent_id}_{self.depth_sensor_name}"
-            ]
-            rgb_obs = observations[
-                f"agent_{self.agent_id}_{self.rgb_sensor_name}"
-            ]
-            depth_camera_name = (
-                f"agent_{self.agent_id}_{self.depth_sensor_name}"
-            )
+            depth_obs = observations[f"agent_{self.agent_id}_{self.depth_sensor_name}"]
+            rgb_obs = observations[f"agent_{self.agent_id}_{self.rgb_sensor_name}"]
+            depth_camera_name = f"agent_{self.agent_id}_{self.depth_sensor_name}"
             semantic_camera_name = f"agent_{self.agent_id}_head_semantic"
         else:
             depth_obs = observations[self.depth_sensor_name]
             rgb_obs = observations[self.rgb_sensor_name]
             depth_camera_name = self.depth_sensor_name
             semantic_camera_name = f"head_semantic"
-
+        wait_flag = self._task.actions["wait"].skill_done
+        # assert wait_flag is bool, "wait_flag is not bool"
+        if not (not self.pre_wait and wait_flag) and self.single_agent_eval_option:
+            self.pre_wait = wait_flag
+            return np.array([0],dtype=np.int8)
+        self.pre_wait = wait_flag
+        
         rgb_obs = np.ascontiguousarray(rgb_obs)
         depth_obs = np.ascontiguousarray(depth_obs)
 
@@ -823,42 +795,30 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         ep_objects = []
         nav_to_obj_number = -1
         try:
-            nav_to_target_idx = kwargs["action"]["action_args"][
+            nav_to_target_idx = kwargs['action']['action_args'][
                 f"agent_{self.agent_id}_oracle_nav_action"
-            ]
+            ]    
             nav_to_target_idx = int(nav_to_target_idx[0]) - 1
             nav_to_obj = self._entities[nav_to_target_idx]
-            match = re.search(r"\|(\d+)-", str(nav_to_obj))
+            match = re.search(r'\|(\d+)-', str(nav_to_obj))
             if match:
                 nav_to_obj_number = int(match.group(1))
-        except Exception as e:
-            print(f"Error loading navigation action: {e}")
-
+        except:
+            # print(f"Error loading navigation action: {e}")
+            pass
+        
         # print("info::",self._sim.ep_info.target_receptacles)
         # print("nav_to_obj_number:",nav_to_obj_number,flush = True)
-        if nav_to_obj_number != -1:
-            for i in range(
-                len(self._sim.ep_info.target_receptacles[nav_to_obj_number])
-                - 1
-            ):
-                ep_objects.append(
-                    self._sim.ep_info.target_receptacles[nav_to_obj_number][i]
-                )
-            for i in range(
-                len(self._sim.ep_info.goal_receptacles[nav_to_obj_number]) - 1
-            ):
-                ep_objects.append(
-                    self._sim.ep_info.goal_receptacles[nav_to_obj_number][i]
-                )
+        if nav_to_obj_number!= -1:
+            for i in range(len(self._sim.ep_info.target_receptacles[nav_to_obj_number]) - 1):
+                ep_objects.append(self._sim.ep_info.target_receptacles[nav_to_obj_number][i])
+            for i in range(len(self._sim.ep_info.goal_receptacles[nav_to_obj_number]) - 1):
+                ep_objects.append(self._sim.ep_info.goal_receptacles[nav_to_obj_number][i])
         else:
             for item in range(len(self._sim.ep_info.target_receptacles)):
-                for i in range(
-                    len(self._sim.ep_info.target_receptacles[item]) - 1
-                ):
-                    ep_objects.append(
-                        self._sim.ep_info.target_receptacles[item][i]
-                    )
-
+                for i in range(len(self._sim.ep_info.target_receptacles[item]) - 1):
+                    ep_objects.append(self._sim.ep_info.target_receptacles[item][i])
+        
             for i in range(len(self._sim.ep_info.goal_receptacles[item]) - 1):
                 ep_objects.append(self._sim.ep_info.goal_receptacles[item][i])
             # for key, val in self._sim.ep_info.info['object_labels'].items():
@@ -875,13 +835,9 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
 
         semantic_obs = observations[semantic_camera_name].squeeze()
 
-        mask = np.isin(
-            semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset
-        ).astype(np.uint8)
+        mask = np.isin(semantic_obs, np.array(list(objects_info.keys())) + obj_id_offset).astype(np.uint8)
 
-        contours, _ = cv2.findContours(
-            mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
+        contours, _ = cv2.findContours(mask,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         bounding_box = []
         colored_mask = np.zeros_like(rgb_obs)
         colored_mask[mask == 1] = [0, 0, 255]
@@ -903,38 +859,28 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         # Reproject depth pixels to 3D points
         points_world = self._2d_to_3d(depth_camera_name, depth_obs)
         # downsample the 3d-points
-        down_sampled_points = self.voxel_grid_filter(
-            points_world, self.down_sample_voxel_size
-        )
+        down_sampled_points = self.voxel_grid_filter(points_world, self.down_sample_voxel_size)
 
         # Check reachability and color points
         colors = []
 
-        articulated_agent_mgr = self._sim.agents_mgr._all_agent_data[
-            self.agent_id if self.agent_id is not None else 0
-        ]
+        articulated_agent_mgr = self._sim.agents_mgr._all_agent_data[self.agent_id if self.agent_id is not None else 0]
         cur_articulated_agent = articulated_agent_mgr.articulated_agent
         ik_helper = articulated_agent_mgr.ik_helper
 
         for point in down_sampled_points:
-            reachable = self._is_reachable(
-                cur_articulated_agent, ik_helper, point
-            )
+            reachable = self._is_reachable(cur_articulated_agent, ik_helper, point)
             # Green if reachable, red if not
             colors.append([0, 255, 0] if reachable else [255, 0, 0])
 
         pixel_coords = []
-        if self._debug_tf and "obj_pos" in kwargs:
-            if kwargs["obj_pos"] is not None:
-                pixel_coord = self._3d_to_2d(
-                    depth_camera_name, np.array(list(kwargs["obj_pos"]))
-                )
-                if np.any(np.isnan(pixel_coord)) or np.any(
-                    np.isinf(pixel_coord)
-                ):
+        if self._debug_tf and 'obj_pos' in kwargs:
+            if kwargs['obj_pos'] is not None:
+                pixel_coord = self._3d_to_2d(depth_camera_name, np.array(list(kwargs['obj_pos'])))
+                if np.any(np.isnan(pixel_coord)) or np.any(np.isinf(pixel_coord)):
                     print("obj_pos is invalid")
                 else:
-                    down_sampled_points = np.array([list(kwargs["obj_pos"])])
+                    down_sampled_points = np.array([list(kwargs['obj_pos'])])
                     colors = [[0, 255, 0]]
 
         # Project the points to the image and color the pixels with circles
@@ -950,19 +896,18 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
                     else:
                         print(f"obj_pos can not be seen: {x}, {y}")
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
-        mask_img = cv2.imread("mask.png", cv2.IMREAD_UNCHANGED)
-        bgr = mask_img[:, :, :3]
-        alpha = mask_img[:, :, 3]
-        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        mask_img_rga = cv2.merge((rgb, alpha))
-        assert rgb_obs.shape[:2] == mask_img_rga.shape[:2]
-        alpha_channel = mask_img_rga[:, :, 3] / 255.0
-        rgb_obs
-        for c in range(0, 3):
-            rgb_obs[:, :, c] = (
-                alpha_channel * mask_img_rga[:, :, c]
-                + (1 - alpha_channel) * rgb_obs[:, :, c]
-            )
+                    # the arm now is out of robot's head_rgb so that don't need mask
+        # mask_img = cv2.imread('mask.png', cv2.IMREAD_UNCHANGED)
+        # bgr = mask_img[:, :, :3]
+        # alpha = mask_img[:, :, 3]
+        # rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        # mask_img_rga = cv2.merge((rgb, alpha))
+        # assert rgb_obs.shape[:2] == mask_img_rga.shape[:2]
+        # alpha_channel = mask_img_rga[:, :, 3] / 255.0
+        # rgb_obs
+        # for c in range(0, 3):
+        #     rgb_obs[:, :, c] = (alpha_channel * mask_img_rga[:, :, c] +
+        #                         (1 - alpha_channel) * rgb_obs[:, :, c])
         return rgb_obs
 
 

@@ -136,7 +136,6 @@ class MoveObjectsReward(RearrangeReward):
 
         obj_to_goal_dist = self.get_distance(task, ObjectToGoalDistance)
         ee_to_obj_dist = self.get_distance(task, EndEffectorToObjectDistance)
-
         is_holding_obj = self._sim.grasp_mgr.snap_idx == self.abs_targ_obj_idx
         picked_up_obj = is_holding_obj and not self._prev_holding_obj
 
@@ -158,7 +157,7 @@ class MoveObjectsReward(RearrangeReward):
             self._metric += self._config.pick_reward
             self._gave_pick_reward[self._cur_rearrange_stage] = True
 
-        # PLACE REWARD: Reward for placing the object correcly (within success dist)
+        # PLACE REWARD: Reward for plaixcing the object correcly (within success dist)
         # We also udate the target object for the next stage.
 
         place_success = obj_to_goal_dist < self._config.success_dist

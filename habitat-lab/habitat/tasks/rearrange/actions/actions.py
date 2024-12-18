@@ -259,7 +259,6 @@ class ResetArmAction(ArmAction):
 
     def step(self, *args, **kwargs):
         arm_action = kwargs[self._action_arg_prefix + "arm_reset_action"]
-
         # Check if we can apply the arm action given a_selection_of_base_or_arm action.
         # This is useful if we do not allow base and arm to move at the same time
         if (
@@ -1134,6 +1133,7 @@ class WaitAction(ArticulatedAgentAction):
     def __init__(self, *args, config, sim: RearrangeSim, **kwargs):
         super().__init__(*args, config=config, sim=sim, **kwargs)
         self.wait_steps = 0
+        self.skill_done = False
 
     @property
     def action_space(self):
@@ -1145,6 +1145,7 @@ class WaitAction(ArticulatedAgentAction):
     def step(self, *args, **kwargs):
         # The agent simply waits, so there's no change in position or state.
         wait_action = kwargs[self._action_arg_prefix + "wait"]
+        self.skill_done = bool(int(wait_action[0]))
         if wait_action:
             self.wait_steps += 1
     

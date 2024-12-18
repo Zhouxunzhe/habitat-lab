@@ -9,10 +9,15 @@ from dataclasses import dataclass
 from typing import Tuple, List, Dict
 import numpy as np
 import torch
+import magnum as mn
 from habitat_baselines.rl.hrl.skills.nn_skill import NnSkillPolicy
 from habitat_baselines.rl.hrl.skills.oracle_arm_policies import (
     OraclePickPolicy, 
     OraclePlacePolicy
+)
+from habitat.tasks.rearrange.rearrange_sensors import (
+    IsHoldingSensor,
+    ObjectToGoalDistanceSensor,
 )
 from habitat_baselines.rl.hrl.skills.oracle_nav import OracleNavPolicy
 from habitat_baselines.rl.hrl.utils import find_action_range
@@ -23,7 +28,6 @@ import numpy as np
 RELEASE_ID = 0
 PICK_ID = 1
 PLACE_ID = 2
-
 class OraclePixelPickPolicy(OraclePickPolicy):
     """
     Skill to generate a picking motion based on a pixel position.
@@ -109,7 +113,20 @@ class OraclePixelPlacePolicy(OraclePlacePolicy):
             raise ValueError(f"'position' must be a list of [x, y], got {position}")
 
         return OraclePixelPlacePolicy.OraclePixelPlaceActionArgs(position=position, grab_release=RELEASE_ID)
-
+    def _is_skill_done(
+        self,
+        observations,
+        rnn_hidden_states,
+        prev_actions,
+        masks,
+        batch_idx,
+    ) -> torch.BoolTensor:
+        rel_resting_pos = torch.linalg.vector_norm(
+            observations[ObjectToGoalDistanceSensor.cls_uuid], dim=-1
+        )
+        
+        # TODO: need to change the done condition
+        return torch.tensor([rel_resting_pos < 0.5])
     def _internal_act(
         self,
         observations,
@@ -126,14 +143,25 @@ class OraclePixelPlacePolicy(OraclePlacePolicy):
             [self._cur_skill_args[i].position for i in cur_batch_idx]
         )
         
-        full_action[:, self._place_srt_idx:self._place_srt_idx + 2] = positions
-        full_action[:, self._place_end_idx-1] = -1.0
-        full_action[:, self._place_end_idx-2] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
+        # full_action[:, self._place_srt_idx:self._place_srt_idx + 2] = positions
+        # full_action[:, self._place_end_idx-1] = -1.0
+        # full_action[:, self._place_end_idx-2] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
 
-        full_action[:, self._grip_ac_idx] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
+        # full_action[:, self._grip_ac_idx] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
         # if self._is_skill_done(observations, rnn_hidden_states, prev_actions, masks, cur_batch_idx):
         #     full_action[0][self._place_end_idx-1] = -1.0
+        full_action[:, self._place_srt_idx:self._place_srt_idx + 2] = positions
+        # print("full_action1:",full_action)
+        full_action[:, self._place_end_idx-2] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
+        # print("full_action2:",full_action)
+        full_action[:, self._place_end_idx-1] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
         
+        # full_action[:, self._grip_ac_idx] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
+        if self._is_skill_done(observations, rnn_hidden_states, prev_actions, masks, cur_batch_idx):
+            # full_action[:, self._grip_ac_idx] = torch.FloatTensor([PLACE_ID] * masks.shape[0])
+            full_action[0][self._place_end_idx-1] = -1.0
+            # full_action[:, self._place_end_idx-2] = -1.0
+
         return PolicyActionData(
             actions=full_action, rnn_hidden_states=rnn_hidden_states
         )

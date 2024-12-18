@@ -327,7 +327,6 @@ class OracleNavDiffBaseAction(OracleNavAction):
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
         ]
-        print("kwargs:",kwargs)
         base_T = self.cur_articulated_agent.base_transformation
         if self._action_arg_prefix:
             nav_to_target_coord = kwargs.get(

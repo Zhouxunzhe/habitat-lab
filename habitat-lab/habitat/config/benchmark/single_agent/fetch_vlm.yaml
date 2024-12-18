@@ -42,7 +42,7 @@ defaults:
     - get_depth
     - get_depth_rot
     - get_depth_trans
-    # - arm_workspace_rgb_sensor
+    - arm_workspace_rgb_sensor
     - camera_info
     # # - object_masks_sensor
     # - nav_workspace_rgb_sensor
@@ -78,10 +78,15 @@ habitat:
     task_spec_base_path: benchmark/single_agent/
     task_spec: pddl/pddl_single_agent_man
     pddl_domain_def: fp
-    robot_at_thresh: 1.0
+    robot_at_thresh: 2.0
+    obj_succ_thresh: 0.6
+    lab_sensors:
+      arm_workspace_rgb_sensor:
+        single_agent_eval_option: True
+
 
   environment:
-    max_episode_steps: 800
+    max_episode_steps: 700
   simulator:
     type: RearrangeSim-v0
     seed: 100

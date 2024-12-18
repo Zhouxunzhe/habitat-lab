@@ -55,15 +55,15 @@ import shutil
 # print(len(file_dir_path_start))
 # print("file_dir_path_start",file_dir_path_start)
 # file_dir_path = file_dir_path_start[start_dir:end_dir]
-def get_numbers_from_filenames(directory):
-    numbers = []
-    for filename in os.listdir(directory):
-        if filename.endswith('.scene_instance.json'):
-            # 提取文件名中 .scene_instance 前的数字部分
-            number = filename.split('.scene_instance')[0]
-            numbers.append(number)
-    return numbers
+# def get_numbers_from_filenames(directory):
+#     numbers = []
+#     for filename in os.listdir(directory):
+#         if filename.endswith('.scene_instance.json'):
+#             # 提取文件名中 .scene_instance 前的数字部分
+#             number = filename.split('.scene_instance')[0]
+#             numbers.append(number)
+#     return numbers
 
-directory_path = 'data/scene_datasets/hssd-hab/scenes'
-numbers_list = get_numbers_from_filenames(directory_path)
-print(numbers_list)
+# directory_path = 'data/scene_datasets/hssd-hab/scenes'
+# numbers_list = get_numbers_from_filenames(directory_path)
+# print(numbers_list)

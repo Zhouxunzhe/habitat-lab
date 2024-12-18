@@ -65,7 +65,6 @@ class MagicGraspAction(GripSimulatorTaskAction):
                     rel_pos=mn.Vector3(0.1, 0.0, 0.0),
                     keep_T=keep_T,
                 )
-                self.cur_grasp_mgr.force_is_snapped = True
                 return
 
         # Get markers we are close to.
@@ -90,14 +89,9 @@ class MagicGraspAction(GripSimulatorTaskAction):
     def step(self, grip_action, should_step=True, *args, **kwargs):
         if grip_action is None:
             return
-        
         if grip_action > 0 and not self.cur_grasp_mgr.is_grasped:
             self._grasp()
         elif grip_action < 0 and self.cur_grasp_mgr.is_grasped:
-            self._ungrasp()
-        if not self.cur_grasp_mgr.is_grasped:
-            self._grasp()
-        if self.cur_grasp_mgr.is_grasped:
             self._ungrasp()
 
 

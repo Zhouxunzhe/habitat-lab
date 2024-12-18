@@ -142,7 +142,6 @@ class PixelArmAction(OraclePickAction):
             return self.ee_target            
         depth_obs = self._sim._prev_sim_obs[self.depth_camera_name].squeeze()
         target_coord = unproject_pixel_to_point(self._sim, self.depth_camera_name, depth_obs, pixel_coord)
-        print("target_coord:",target_coord)
         cur_ee_pos = self.cur_articulated_agent.ee_transform().translation
         if not self.is_reset:
             self.ee_target = self._ik_helper.calc_fk(self.cur_articulated_agent.arm_joint_pos)

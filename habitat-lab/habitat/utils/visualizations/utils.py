@@ -148,7 +148,11 @@ def images_to_video(
     else:
         images_iter = tqdm.tqdm(images)  # type: ignore[assignment]
     for im in images_iter:
-        writer.append_data(im)
+        print(im)
+        try:
+            writer.append_data(im)
+        except:
+            continue
     writer.close()
 
 
