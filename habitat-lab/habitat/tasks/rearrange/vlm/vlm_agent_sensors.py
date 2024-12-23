@@ -890,11 +890,6 @@ class ArmWorkspaceRGBSensor(UsesArticulatedAgentInterface, Sensor):
         for pixel_coord, color in zip(pixel_coords, colors):
             x, y = pixel_coord.astype(int)
             if color == [0, 255, 0]:
-                if self._debug_tf:
-                    if x < 256 and y < 256:
-                        print(f"obj_pos can be seen: {x}, {y}")
-                    else:
-                        print(f"obj_pos can not be seen: {x}, {y}")
                 cv2.circle(rgb_obs, (x, y), 2, color, -1)
                     # the arm now is out of robot's head_rgb so that don't need mask
         # mask_img = cv2.imread('mask.png', cv2.IMREAD_UNCHANGED)

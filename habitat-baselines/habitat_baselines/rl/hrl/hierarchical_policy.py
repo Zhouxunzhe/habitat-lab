@@ -52,6 +52,7 @@ class HierarchicalPolicy(nn.Module, Policy):
         nn.Module.__init__(self)
         self._num_envs: int = num_envs
         self.config = config
+        self.full_config = full_config
         # Maps (skill idx -> skill)
         self._skills: Dict[int, SkillPolicy] = {}
         self._name_to_idx: Dict[str, int] = {}
@@ -518,6 +519,7 @@ class HierarchicalPolicy(nn.Module, Policy):
                     deterministic,
                     log_info,
                     eval_info = eval_info,
+                    full_config = self.full_config,
                     **kwargs,
                 )
             # print("_______________________info_________________",flush=True)

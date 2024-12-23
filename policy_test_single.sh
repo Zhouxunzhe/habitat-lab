@@ -1,7 +1,7 @@
 # bin/bash
 python -u -m habitat_baselines.run \
     --config-name=single_rearrange/vlm_fetch.yaml \
-    habitat.dataset.data_path=data/datasets/sat_DLC_test10_dataset/image/8/scene_graph.gz \
+    habitat.dataset.data_path=data/datasets/sat_DLC_test10_dataset/image/80/scene_graph.gz \
     habitat.seed=8888 \
     habitat_baselines.image_dir="video_dir_test_pixel_action" \
     habitat_baselines.video_dir="video_dir_test_pixel_action" \

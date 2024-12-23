@@ -7,7 +7,7 @@ from habitat_mas.agents.actions.arm_actions import *
 from habitat_mas.agents.actions.base_actions import *
 from habitat_mas.agents.crab_agent import CrabAgent
 
-from habitat_mas.agents.dummy_agent import DummyAgent
+from habitat_mas.agents.dummy_agent import DummyAgent,DummyAgentSingle
 
 from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
 from habitat_baselines.rl.ppo.policy import PolicyActionData
@@ -31,7 +31,7 @@ class DummyPolicy(HighLevelPolicy):
         self.llm_agent = self._init_llm_agent(**kwargs)
 
     def _init_llm_agent(self, **kwargs):
-        return DummyAgent(**kwargs)
+        return DummyAgentSingle(**kwargs) #now,is true dummy agent!
 
     def _parse_function_call_args(self, llm_args: Dict) -> str:
         """
@@ -63,6 +63,8 @@ class DummyPolicy(HighLevelPolicy):
         """
         Get the next skill to execute from the LLM agent.
         """
+        full_config = kwargs.get("full_config",None)
+        data_path = full_config['habitat']['dataset']['data_path']
         # print("obserations:",observations,flush = True)
         batch_size = masks.shape[0]
         next_skill = torch.zeros(batch_size)
@@ -77,8 +79,8 @@ class DummyPolicy(HighLevelPolicy):
             # print("plan_mask:",plan_masks,flush=True)
             # vlm_output =
             # print("eval_info_dummypolicy",eval_info)
-            # llm_output = self.llm_agent.agent_output(self._skill_name_to_idx,observations = observations,eval_info = eval_info)
-            llm_output = self.llm_agent.agent_output(observations,eval_info)
+            # llm_output = self.llm_agent.agent_output(observations,eval_info)
+            llm_output = self.llm_agent.vlm_eval_response(observations,data_path)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["50"]
