@@ -2,7 +2,6 @@
 from typing import Any, Dict, List, Tuple
 
 import torch
-import json
 from habitat.tasks.rearrange.multi_task.pddl_action import PddlAction
 from habitat_mas.agents.actions.arm_actions import *
 from habitat_mas.agents.actions.base_actions import *
@@ -81,8 +80,7 @@ class DummyPolicy(HighLevelPolicy):
             # vlm_output =
             # print("eval_info_dummypolicy",eval_info)
             # llm_output = self.llm_agent.agent_output(observations,eval_info)
-            camera_info = json.loads(kwargs['pivot_sim_info'][0]['camera_info'])
-            llm_output = self.llm_agent.vlm_eval_response(observations,data_path, camera_info)
+            llm_output = self.llm_agent.vlm_eval_response(observations,data_path)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["50"]

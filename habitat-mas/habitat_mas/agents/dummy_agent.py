@@ -11,14 +11,7 @@ from io import BytesIO
 from openai import OpenAI
 from torchvision import transforms
 import torch
-from habitat_mas.pivot.run_pivot import run_pivot
 json_format_info = {
-    "reasoning":"Based on the current image information and history, think and infer the actions that need to be executed and action's information.",
-    "action":"The action name of your reasoning result.",
-    "action_information":"If the action is \"nav_to_point\",\"pick\" or \"place\", the information format should be \"<box>[[x1, y1, x2, y2]]</box>\" to indicate location information,where x1, y1, x2, y2 are the coordinates of the bounding box;if the action is \"search_scene_frame\",the information format should be \"id\",where id is the value of the frame index you choose.",
-    "summarization":"summarize based on the current action information and history."
-}
-pivot_json_format_info = {
     "reasoning":"Based on the current image information and history, think and infer the actions that need to be executed and action's information.",
     "action":"The action name of your reasoning result.",
     "action_information":"If the action is \"nav_to_point\",\"pick\" or \"place\", the information format should be \"<box>[[x1, y1, x2, y2]]</box>\" to indicate location information,where x1, y1, x2, y2 are the coordinates of the bounding box;if the action is \"search_scene_frame\",the information format should be \"id\",where id is the value of the frame index you choose.",
@@ -48,9 +41,7 @@ class DummyAgentSingle:
                     "name": "wait",
                     "arguments": ['1','agent_0']
                 }]
-        self.use_pivot = True
-
-    def _init_model(self):
+    def _init_model():
         client = OpenAI(api_key='', base_url='http://0.0.0.0:23333/v1')
         model_name = client.models.list().data[0].id
         response = client.chat.completions.create(
@@ -131,8 +122,6 @@ class DummyAgentSingle:
         else:
             robot_history = f"Robot's history:\"{history}\""
         image_token_pad = '<IMAGE_TOKEN>'
-        # set json format for pivot
-        json_format = pivot_json_format_info if self.use_pivot else json_format_info
         question_prompt_align_with_ovmm = f"""You are an AI visual assistant that can manage a single robot. You receive the robot's task,one image representing the robot's current view and eight frames of the scene from the robot's tour. You need to output the robot's next action. Actions the robot can perform are "search_scene_frame","nav_to_point","pick" and "place".
 These frames are from the robot's tour of the scene:
 Image-1:{image_token_pad}
@@ -146,7 +135,7 @@ Image-8:{image_token_pad}
 If you can not find the target you need to identify,you should find the frame that the robot should navigate to complete the task,and output "search_scene_frame" action and the id of frame.
 Robot's current view is: Image-9:{image_token_pad}.If you can find the position that you should navigate to, pick or place,you should output your action information.In robot's current view, some green points may appear,indicating the positions that the robot's arm can reach. When there are green points on the object that needs to be picked, it means the robot's arm can pick up the object. When there are enough green points on the goal container where the object needs to be placed, it means the robot's arm can place the object into the goal container.
 Besides,you need to explain why you choose this action in your output and summarize by combining your chosen action with historical information.
-Robot's Task: {task_prompt}{robot_history}Your output format should be in pure JSON format as follow:{json_format}."""
+Robot's Task: {task_prompt}{robot_history}Your output format should be in pure JSON format as follow:{json_format_info}."""
         return question_prompt_align_with_ovmm
     def process_message(self,data_path,robot_image,prompt): #sr:send&receive
         content = [
@@ -258,21 +247,18 @@ Robot's Task: {task_prompt}{robot_history}Your output format should be in pure J
             "name": f"wait",
             "arguments": ['3000',self.agent_name]
         }
-    def process_vlm_output(self,data_path,vlm_output,rgb_image_path_list,observations,action_information=None):
+    def process_vlm_output(self,data_path,vlm_output,rgb_image_path_list,observations):
         # print("vlm_output:",vlm_output)
         vlm_output = json.loads(vlm_output.choices[0].message.content)
         print("vlm_output:",vlm_output)
         vlm_action = vlm_output['action']
-        if self.use_pivot:
-            vlm_action_information = action_information
-        else:
-            vlm_action_information = vlm_output['action_information']
+        vlm_action_information = vlm_output['action_information']
         vlm_action_summarization = vlm_output['summarization']
         vlm_return = self.process_action(
             vlm_action,vlm_action_information,data_path,observations,rgb_image_path_list
         )
         return vlm_return,vlm_action_summarization
-    def vlm_eval_response(self,observations,data_path, camera_info=None):
+    def vlm_eval_response(self,observations,data_path):
         if self.prepare_action_num:
             action_num = self.prepare_action_num
             self.prepare_action_num -= 1
@@ -288,28 +274,9 @@ Robot's Task: {task_prompt}{robot_history}Your output format should be in pure J
         content, rgb_image_path_list = self.process_message(data_path,robot_image,prompt)
         # print("query_content:",content)
         vlm_output = self.query_and_receive(content,self.client)
-
-        # TODO: Query pivot
-        if self.use_pivot:
-            text_vlm_output = vlm_output.choices[0].message.content
-            sampled_point = run_pivot(
-                            im=robot_image,
-                            query=text_vlm_output,
-                            n_samples_init=8,
-                            n_samples_opt=6,
-                            n_iters=2,
-                            n_parallel_trials=1,
-                            # TODO: Add openai key here
-                            openai_api_key=openai_key,
-                            camera_info=camera_info,
-                        )
-            vlm_return,self.robot_history = self.process_vlm_output(
-                data_path,vlm_output,rgb_image_path_list,observations,sampled_point
-            )
-        else:
-            vlm_return, self.robot_history = self.process_vlm_output(
-                data_path, vlm_output, rgb_image_path_list, observations,
-            )
+        vlm_return,self.robot_history = self.process_vlm_output(
+            data_path,vlm_output,rgb_image_path_list,observations
+        )
         return vlm_return
 
 

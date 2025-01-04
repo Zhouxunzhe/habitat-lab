@@ -2,30 +2,17 @@
 from typing import Any, Dict, List, Tuple
 
 import torch
+import json
 from habitat.tasks.rearrange.multi_task.pddl_action import PddlAction
 from habitat_mas.agents.actions.arm_actions import *
 from habitat_mas.agents.actions.base_actions import *
 from habitat_mas.agents.crab_agent import CrabAgent
 
-from habitat_mas.agents.dummy_agent import DummyAgent, DummyAgentSingle
+from habitat_mas.agents.pivot_agent import PIVOTAgent
 
 from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
 from habitat_baselines.rl.ppo.policy import PolicyActionData
-from typing import List, Tuple
-import torch
-import numpy as np
 
-from habitat.tasks.rearrange.multi_task.rearrange_pddl import parse_func
-from habitat_baselines.common.logging import baselines_logger
-from habitat_baselines.rl.hrl.hl.high_level_policy import HighLevelPolicy
-from habitat_baselines.rl.ppo.policy import PolicyActionData
-from habitat.tasks.rearrange.rearrange_sensors import (
-    LocalizationSensor,
-    EEPositionSensor,
-)
-
-from habitat_mas.pivot.run_pivot import run_pivot
-import json
 
 
 class PivotPolicy(HighLevelPolicy):
@@ -42,6 +29,18 @@ class PivotPolicy(HighLevelPolicy):
         environment_action_name_set = set(
             [action._name for action in self._all_actions]
         )
+
+        # Initialize the LLM agent
+        self.llm_agent = self._init_llm_agent(**kwargs)
+
+    def _init_llm_agent(self, **kwargs):
+        return PIVOTAgent(**kwargs)  # now,is true pivot agent!
+
+    def _parse_function_call_args(self, llm_args: Dict) -> str:
+        """
+        Parse the arguments of a function call from the LLM agent to the policy input argument format.
+        """
+        return llm_args
 
     def apply_mask(self, mask):
         """
@@ -78,7 +77,8 @@ class PivotPolicy(HighLevelPolicy):
         for batch_idx, should_plan in enumerate(plan_masks):
             if should_plan != 1.0:
                 continue
-            llm_output = self.llm_agent.vlm_eval_response(observations,data_path)
+            camera_info = json.loads(kwargs['pivot_sim_info'][0]['camera_info'])
+            llm_output = self.llm_agent.vlm_eval_response(observations, data_path, camera_info)
             if llm_output is None:
                 next_skill[batch_idx] = self._skill_name_to_idx["wait"]
                 skill_args_data[batch_idx] = ["50"]
